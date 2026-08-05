@@ -1,9 +1,10 @@
 import react from "@vitejs/plugin-react";
 import { defineConfig } from "vite";
 
-// Backend origin, e.g. "http://localhost:8000/api" (host) or "http://backend:8000/api" (docker).
-const apiBase = process.env.VITE_API_BASE_URL ?? "http://localhost:8000/api";
-const backendOrigin = apiBase.replace(/\/+$/, "").replace(/\/api$/, "");
+// Backend origin for the Vite dev proxy (server-side only, resolved inside Docker).
+// Browser requests use the relative "/api" path, which the proxy forwards here.
+const proxyTarget = process.env.PROXY_TARGET ?? "http://localhost:8000/api";
+const backendOrigin = proxyTarget.replace(/\/+$/, "").replace(/\/api$/, "");
 
 export default defineConfig({
   plugins: [react()],
@@ -12,7 +13,7 @@ export default defineConfig({
     port: 5173,
     proxy: {
       "/api": {
-        target: apiBase,
+        target: proxyTarget,
         changeOrigin: true,
         rewrite: (path) => path.replace(/^\/api/, ""),
       },

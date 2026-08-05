@@ -75,8 +75,9 @@ async function tryRefresh(): Promise<boolean> {
       clearTokens();
       return false;
     }
-    const data = (await res.json()) as { access: string };
+    const data = (await res.json()) as { access: string; refresh?: string };
     localStorage.setItem(TOKEN_KEY, data.access);
+    if (data.refresh) localStorage.setItem(REFRESH_KEY, data.refresh);
     return true;
   } catch {
     return false;

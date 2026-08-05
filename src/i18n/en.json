@@ -10,14 +10,24 @@
     "medicines": "Medicines",
     "appointments": "Appointments",
     "records": "Medical Records",
+    "users": "Users",
     "logout": "Log out"
   },
   "auth": {
     "login": "Log in",
-    "logout": "Log out",
+    "loginTitle": "Sign in to your account",
     "username": "Username",
     "password": "Password",
-    "invalidCredentials": "Invalid username or password"
+    "invalidCredentials": "Invalid username or password",
+    "logout": "Log out"
+  },
+  "dashboard": {
+    "welcome": "Welcome,",
+    "overview": "Overview",
+    "appointmentsToday": "Appointments today",
+    "patientsTotal": "Total patients",
+    "doctorsTotal": "Total doctors",
+    "recentAppointments": "Recent appointments"
   },
   "common": {
     "save": "Save",
@@ -25,10 +35,110 @@
     "edit": "Edit",
     "delete": "Delete",
     "create": "Create",
+    "new": "New",
     "search": "Search",
     "actions": "Actions",
     "loading": "Loading...",
     "noData": "No data found",
-    "back": "Back"
+    "back": "Back",
+    "accessDenied": "Access denied",
+    "name": "Name",
+    "phone": "Phone",
+    "email": "Email",
+    "address": "Address",
+    "status": "Status"
+  },
+  "patients": {
+    "title": "Patients",
+    "new": "New patient",
+    "firstName": "First name",
+    "lastName": "Last name",
+    "birthDate": "Birth date",
+    "gender": "Gender",
+    "phone": "Phone",
+    "address": "Address",
+    "email": "Email (optional)",
+    "genderMale": "Male",
+    "genderFemale": "Female",
+    "genderOther": "Other",
+    "age": "Age"
+  },
+  "doctors": {
+    "title": "Doctors",
+    "new": "New doctor",
+    "user": "User account",
+    "specialty": "Specialty",
+    "license": "License number",
+    "contactPhone": "Contact phone",
+    "contactEmail": "Contact email",
+    "bio": "Bio",
+    "fullName": "Full name"
+  },
+  "centers": {
+    "title": "Medical Centers",
+    "new": "New center",
+    "code": "Code",
+    "name": "Name",
+    "address": "Address",
+    "phone": "Phone",
+    "email": "Email",
+    "doctorsCount": "Doctors"
+  },
+  "medicines": {
+    "title": "Medicines",
+    "new": "New medicine",
+    "genericName": "Generic (medical) term",
+    "commercialName": "Commercial name",
+    "concentration": "Concentration"
+  },
+  "users": {
+    "title": "Users",
+    "new": "New user",
+    "username": "Username",
+    "role": "Role",
+    "firstName": "First name",
+    "lastName": "Last name",
+    "password": "Password",
+    "email": "Email",
+    "active": "Active"
+  },
+  "appointments": {
+    "title": "Appointments",
+    "new": "New appointment",
+    "patient": "Patient",
+    "doctor": "Doctor",
+    "center": "Center",
+    "dateTime": "Date & time",
+    "duration": "Duration (min)",
+    "notes": "Notes",
+    "statusScheduled": "Scheduled",
+    "statusConfirmed": "Confirmed",
+    "statusCompleted": "Completed",
+    "statusCancelled": "Cancelled",
+    "statusNoShow": "No show",
+    "cancel": "Cancel appointment",
+    "complete": "Complete",
+    "createdBy": "Created by"
+  },
+  "records": {
+    "title": "Medical Records",
+    "newRecord": "New record",
+    "newLog": "New consultation log",
+    "patient": "Patient",
+    "title": "Title",
+    "date": "Date",
+    "diagnosis": "Diagnosis",
+    "treatment": "Treatment",
+    "medicineAndDoses": "Medicine & doses",
+    "notes": "Notes",
+    "subjective": "Subjective",
+    "objective": "Objective",
+    "assessment": "Assessment",
+    "plan": "Plan",
+    "doctor": "Doctor",
+    "images": "Images",
+    "addImage": "Add image",
+    "uploadImage": "Upload image",
+    "caption": "Caption"
   }
 }

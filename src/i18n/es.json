@@ -10,14 +10,24 @@
     "medicines": "Medicamentos",
     "appointments": "Citas",
     "records": "Expedientes Médicos",
+    "users": "Usuarios",
     "logout": "Cerrar sesión"
   },
   "auth": {
     "login": "Iniciar sesión",
-    "logout": "Cerrar sesión",
+    "loginTitle": "Inicia sesión en tu cuenta",
     "username": "Usuario",
     "password": "Contraseña",
-    "invalidCredentials": "Usuario o contraseña inválidos"
+    "invalidCredentials": "Usuario o contraseña inválidos",
+    "logout": "Cerrar sesión"
+  },
+  "dashboard": {
+    "welcome": "Bienvenido,",
+    "overview": "Resumen",
+    "appointmentsToday": "Citas de hoy",
+    "patientsTotal": "Total de pacientes",
+    "doctorsTotal": "Total de médicos",
+    "recentAppointments": "Citas recientes"
   },
   "common": {
     "save": "Guardar",
@@ -25,10 +35,110 @@
     "edit": "Editar",
     "delete": "Eliminar",
     "create": "Crear",
+    "new": "Nuevo",
     "search": "Buscar",
     "actions": "Acciones",
     "loading": "Cargando...",
     "noData": "No se encontraron datos",
-    "back": "Volver"
+    "back": "Volver",
+    "accessDenied": "Acceso denegado",
+    "name": "Nombre",
+    "phone": "Teléfono",
+    "email": "Correo",
+    "address": "Dirección",
+    "status": "Estado"
+  },
+  "patients": {
+    "title": "Pacientes",
+    "new": "Nuevo paciente",
+    "firstName": "Nombre",
+    "lastName": "Apellido",
+    "birthDate": "Fecha de nacimiento",
+    "gender": "Género",
+    "phone": "Teléfono",
+    "address": "Dirección",
+    "email": "Correo (opcional)",
+    "genderMale": "Masculino",
+    "genderFemale": "Femenino",
+    "genderOther": "Otro",
+    "age": "Edad"
+  },
+  "doctors": {
+    "title": "Médicos",
+    "new": "Nuevo médico",
+    "user": "Cuenta de usuario",
+    "specialty": "Especialidad",
+    "license": "Número de licencia",
+    "contactPhone": "Teléfono de contacto",
+    "contactEmail": "Correo de contacto",
+    "bio": "Biografía",
+    "fullName": "Nombre completo"
+  },
+  "centers": {
+    "title": "Centros Médicos",
+    "new": "Nuevo centro",
+    "code": "Código",
+    "name": "Nombre",
+    "address": "Dirección",
+    "phone": "Teléfono",
+    "email": "Correo",
+    "doctorsCount": "Médicos"
+  },
+  "medicines": {
+    "title": "Medicamentos",
+    "new": "Nuevo medicamento",
+    "genericName": "Término genérico (médico)",
+    "commercialName": "Nombre comercial",
+    "concentration": "Concentración"
+  },
+  "users": {
+    "title": "Usuarios",
+    "new": "Nuevo usuario",
+    "username": "Usuario",
+    "role": "Rol",
+    "firstName": "Nombre",
+    "lastName": "Apellido",
+    "password": "Contraseña",
+    "email": "Correo",
+    "active": "Activo"
+  },
+  "appointments": {
+    "title": "Citas",
+    "new": "Nueva cita",
+    "patient": "Paciente",
+    "doctor": "Médico",
+    "center": "Centro",
+    "dateTime": "Fecha y hora",
+    "duration": "Duración (min)",
+    "notes": "Notas",
+    "statusScheduled": "Programada",
+    "statusConfirmed": "Confirmada",
+    "statusCompleted": "Completada",
+    "statusCancelled": "Cancelada",
+    "statusNoShow": "No asistió",
+    "cancel": "Cancelar cita",
+    "complete": "Completar",
+    "createdBy": "Creada por"
+  },
+  "records": {
+    "title": "Expedientes Médicos",
+    "newRecord": "Nuevo expediente",
+    "newLog": "Nuevo registro de consulta",
+    "patient": "Paciente",
+    "title": "Título",
+    "date": "Fecha",
+    "diagnosis": "Diagnóstico",
+    "treatment": "Tratamiento",
+    "medicineAndDoses": "Medicamento y dosis",
+    "notes": "Notas",
+    "subjective": "Subjetivo",
+    "objective": "Objetivo",
+    "assessment": "Evaluación",
+    "plan": "Plan",
+    "doctor": "Médico",
+    "images": "Imágenes",
+    "addImage": "Añadir imagen",
+    "uploadImage": "Subir imagen",
+    "caption": "Título de la imagen"
   }
 }

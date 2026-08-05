@@ -93,3 +93,16 @@ export const api = {
   delete: <T>(path: string, options?: RequestInit) =>
     request<T>(path, { ...options, method: "DELETE" }),
 };
+
+export async function upload<T>(path: string, formData: FormData): Promise<T> {
+  const headers = new Headers();
+  const token = getAccessToken();
+  if (token) headers.set("Authorization", `Bearer ${token}`);
+  const res = await fetch(`${apiBase}${path}`, {
+    method: "POST",
+    headers,
+    body: formData,
+  });
+  if (!res.ok) throw new ApiError(res.statusText, res.status);
+  return (await res.json()) as T;
+}

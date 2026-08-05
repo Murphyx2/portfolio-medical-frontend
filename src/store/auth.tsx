@@ -6,14 +6,14 @@ import {
   type ReactNode,
 } from "react";
 
-import { api, clearTokens, getAccessToken, setTokens } from "../services/api";
+import { api, clearTokens, getAccessToken, getRefreshToken, setTokens } from "../services/api";
 import type { LoginResponse, User } from "../services/types";
 
 interface AuthState {
   user: User | null;
   loading: boolean;
   login: (username: string, password: string) => Promise<void>;
-  logout: () => void;
+  logout: () => Promise<void>;
   refreshUser: () => Promise<void>;
 }
 
@@ -42,9 +42,18 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setUser(data.user);
   }
 
-  function logout() {
-    clearTokens();
-    setUser(null);
+  async function logout() {
+    try {
+      const refresh = getRefreshToken();
+      if (refresh) {
+        await api.post("/auth/logout/", { refresh });
+      }
+    } catch {
+      // Token may already be invalid/expired; still clear local state.
+    } finally {
+      clearTokens();
+      setUser(null);
+    }
   }
 
   async function refreshUser() {

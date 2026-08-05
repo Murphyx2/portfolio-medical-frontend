@@ -63,8 +63,26 @@ export interface Patient {
   phone: string;
   address: string;
   email: string;
+  cedula: string;
+  nss: string;
+  ars: number | null;
+  ars_name: string | null;
+  ars_program: number | null;
+  ars_program_name: string | null;
   created_at: string;
   updated_at: string;
+}
+
+export interface ARSProgram {
+  id: number;
+  name: string;
+}
+
+export interface ARS {
+  id: number;
+  ars_id: string;
+  name: string;
+  programs: ARSProgram[];
 }
 
 export interface Medicine {

@@ -11,6 +11,7 @@ const NAV: { to: string; key: string; roles?: Role[] }[] = [
   { to: "/patients", key: "nav.patients" },
   { to: "/doctors", key: "nav.doctors" },
   { to: "/centers", key: "nav.centers" },
+  { to: "/ars", key: "nav.ars", roles: ["ADMIN", "RECEPTIONIST"] },
   { to: "/medicines", key: "nav.medicines" },
   { to: "/appointments", key: "nav.appointments" },
   { to: "/records", key: "nav.records" },

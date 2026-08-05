@@ -11,6 +11,7 @@
     "appointments": "Appointments",
     "records": "Medical Records",
     "users": "Users",
+    "ars": "ARS",
     "logout": "Log out"
   },
   "auth": {
@@ -61,7 +62,11 @@
     "genderMale": "Male",
     "genderFemale": "Female",
     "genderOther": "Other",
-    "age": "Age"
+    "age": "Age",
+    "cedula": "Cedula",
+    "nss": "NSS",
+    "ars": "ARS (insurance)",
+    "arsProgram": "ARS Program"
   },
   "doctors": {
     "title": "Doctors",
@@ -90,6 +95,15 @@
     "genericName": "Generic (medical) term",
     "commercialName": "Commercial name",
     "concentration": "Concentration"
+  },
+  "ars": {
+    "title": "ARS Insurers",
+    "new": "New ARS",
+    "arsId": "ARS ID",
+    "name": "Name",
+    "programs": "Programs",
+    "programName": "Program name",
+    "addProgram": "Add program"
   },
   "users": {
     "title": "Users",

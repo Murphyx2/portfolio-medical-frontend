@@ -11,6 +11,7 @@
     "appointments": "Citas",
     "records": "Expedientes Médicos",
     "users": "Usuarios",
+    "ars": "ARS",
     "logout": "Cerrar sesión"
   },
   "auth": {
@@ -61,7 +62,11 @@
     "genderMale": "Masculino",
     "genderFemale": "Femenino",
     "genderOther": "Otro",
-    "age": "Edad"
+    "age": "Edad",
+    "cedula": "Cédula",
+    "nss": "NSS",
+    "ars": "ARS (aseguradora)",
+    "arsProgram": "Programa ARS"
   },
   "doctors": {
     "title": "Médicos",
@@ -90,6 +95,15 @@
     "genericName": "Término genérico (médico)",
     "commercialName": "Nombre comercial",
     "concentration": "Concentración"
+  },
+  "ars": {
+    "title": "Aseguradoras ARS",
+    "new": "Nueva ARS",
+    "arsId": "ID de la ARS",
+    "name": "Nombre",
+    "programs": "Programas",
+    "programName": "Nombre del programa",
+    "addProgram": "Añadir programa"
   },
   "users": {
     "title": "Usuarios",

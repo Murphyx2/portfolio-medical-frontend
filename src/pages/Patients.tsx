@@ -3,7 +3,7 @@ import { useTranslation } from "react-i18next";
 
 import { Field, FormModal, Page, Spinner, Table, type Column } from "../components/ui";
 import { api } from "../services/api";
-import type { Paginated, Patient } from "../services/types";
+import type { ARS, Paginated, Patient } from "../services/types";
 
 const EMPTY = {
   first_name: "",
@@ -13,11 +13,16 @@ const EMPTY = {
   phone: "",
   address: "",
   email: "",
+  cedula: "",
+  nss: "",
+  ars: "",
+  ars_program: "",
 };
 
 export function Patients() {
   const { t } = useTranslation();
   const [rows, setRows] = useState<Patient[]>([]);
+  const [arsList, setArsList] = useState<ARS[]>([]);
   const [loading, setLoading] = useState(true);
   const [modal, setModal] = useState(false);
   const [form, setForm] = useState(EMPTY);
@@ -32,6 +37,15 @@ export function Patients() {
   }, []);
 
   useEffect(load, [load]);
+
+  useEffect(() => {
+    api
+      .get<Paginated<ARS>>("/ars/?page_size=100")
+      .then((r) => setArsList(r.results))
+      .catch(() => {});
+  }, []);
+
+  const selectedArs = arsList.find((a) => String(a.id) === form.ars);
 
   function openNew() {
     setForm(EMPTY);
@@ -48,13 +62,22 @@ export function Patients() {
       phone: p.phone,
       address: p.address,
       email: p.email,
+      cedula: p.cedula,
+      nss: p.nss,
+      ars: p.ars ? String(p.ars) : "",
+      ars_program: p.ars_program ? String(p.ars_program) : "",
     });
     setEditId(p.id);
     setModal(true);
   }
 
   async function submit() {
-    const body = { ...form, birth_date: form.birth_date || null };
+    const body = {
+      ...form,
+      birth_date: form.birth_date || null,
+      ars: form.ars ? Number(form.ars) : null,
+      ars_program: form.ars_program ? Number(form.ars_program) : null,
+    };
     if (editId) await api.patch(`/patients/${editId}/`, body);
     else await api.post("/patients/", body);
     setModal(false);
@@ -72,6 +95,10 @@ export function Patients() {
     { key: "gender", header: t("patients.gender") },
     { key: "phone", header: t("patients.phone") },
     { key: "email", header: t("common.email") },
+    { key: "cedula", header: t("patients.cedula") },
+    { key: "nss", header: t("patients.nss") },
+    { key: "ars_name", header: t("patients.ars") },
+    { key: "ars_program_name", header: t("patients.arsProgram") },
   ];
 
   return (
@@ -134,6 +161,19 @@ export function Patients() {
               onChange={(e) => setForm({ ...form, phone: e.target.value })}
             />
           </Field>
+          <Field label={t("patients.cedula")}>
+            <input
+              value={form.cedula}
+              placeholder="000-0000000-0"
+              onChange={(e) => setForm({ ...form, cedula: e.target.value })}
+            />
+          </Field>
+          <Field label={t("patients.nss")}>
+            <input
+              value={form.nss}
+              onChange={(e) => setForm({ ...form, nss: e.target.value })}
+            />
+          </Field>
           <Field label={t("patients.address")}>
             <input
               value={form.address}
@@ -146,6 +186,33 @@ export function Patients() {
               value={form.email}
               onChange={(e) => setForm({ ...form, email: e.target.value })}
             />
+          </Field>
+          <Field label={t("patients.ars")}>
+            <select
+              value={form.ars}
+              onChange={(e) => setForm({ ...form, ars: e.target.value, ars_program: "" })}
+            >
+              <option value="">—</option>
+              {arsList.map((a) => (
+                <option key={a.id} value={a.id}>
+                  {a.name}
+                </option>
+              ))}
+            </select>
+          </Field>
+          <Field label={t("patients.arsProgram")}>
+            <select
+              value={form.ars_program}
+              onChange={(e) => setForm({ ...form, ars_program: e.target.value })}
+              disabled={!form.ars}
+            >
+              <option value="">—</option>
+              {(selectedArs?.programs ?? []).map((p) => (
+                <option key={p.id} value={p.id}>
+                  {p.name}
+                </option>
+              ))}
+            </select>
           </Field>
         </FormModal>
       )}

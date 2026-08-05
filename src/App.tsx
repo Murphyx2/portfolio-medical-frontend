@@ -3,6 +3,7 @@ import { Route, Routes } from "react-router-dom";
 import { Layout } from "./components/Layout";
 import { ProtectedRoute } from "./components/guards";
 import { Appointments } from "./pages/Appointments";
+import { Ars } from "./pages/Ars";
 import { Centers } from "./pages/Centers";
 import { Dashboard } from "./pages/Dashboard";
 import { Doctors } from "./pages/Doctors";
@@ -62,6 +63,16 @@ export default function App() {
           <ProtectedRoute>
             <Layout>
               <Medicines />
+            </Layout>
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/ars"
+        element={
+          <ProtectedRoute>
+            <Layout>
+              <Ars />
             </Layout>
           </ProtectedRoute>
         }

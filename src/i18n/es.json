@@ -1,0 +1,34 @@
+{
+  "app": {
+    "name": "MedicalConsultations"
+  },
+  "nav": {
+    "dashboard": "Panel",
+    "patients": "Pacientes",
+    "doctors": "Médicos",
+    "centers": "Centros Médicos",
+    "medicines": "Medicamentos",
+    "appointments": "Citas",
+    "records": "Expedientes Médicos",
+    "logout": "Cerrar sesión"
+  },
+  "auth": {
+    "login": "Iniciar sesión",
+    "logout": "Cerrar sesión",
+    "username": "Usuario",
+    "password": "Contraseña",
+    "invalidCredentials": "Usuario o contraseña inválidos"
+  },
+  "common": {
+    "save": "Guardar",
+    "cancel": "Cancelar",
+    "edit": "Editar",
+    "delete": "Eliminar",
+    "create": "Crear",
+    "search": "Buscar",
+    "actions": "Acciones",
+    "loading": "Cargando...",
+    "noData": "No se encontraron datos",
+    "back": "Volver"
+  }
+}

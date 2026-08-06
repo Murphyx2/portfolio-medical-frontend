@@ -98,6 +98,21 @@ describe("FormModal backdrop close", () => {
     expect(screen.getAllByRole("button", { name: "Eliminar" })).toHaveLength(2);
   });
 
+  it("renders an alert banner when an error is passed to the form", () => {
+    render(
+      <FormModal
+        title="Test modal"
+        onClose={() => {}}
+        onSubmit={() => {}}
+        submitLabel="Save"
+        error={"nss: digits only"}
+      >
+        <div>content</div>
+      </FormModal>,
+    );
+    expect(screen.getByRole("alert")).toHaveTextContent("nss: digits only");
+  });
+
   it("renders the empty-state label translated when no rows", () => {
     render(<Table columns={[{ key: "name", header: "Nombre" }]} rows={[]} />);
     expect(screen.getByText("No se encontraron datos")).toBeInTheDocument();

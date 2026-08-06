@@ -18,11 +18,12 @@ export function Page({ title, actions, children }: {
   );
 }
 
-export function FormModal({ title, onClose, onSubmit, children, submitLabel }: {
+export function FormModal({ title, onClose, onSubmit, children, submitLabel, error }: {
   title: string;
   onClose: () => void;
   onSubmit: () => void;
   submitLabel: string;
+  error?: string;
   children: ReactNode;
 }) {
   const pressOnBackdrop = useRef(false);
@@ -56,6 +57,11 @@ export function FormModal({ title, onClose, onSubmit, children, submitLabel }: {
           }}
         >
           {children}
+          {error && (
+            <p className="form-error" role="alert">
+              {error}
+            </p>
+          )}
           <div className="modal-actions">
             <button type="button" className="btn ghost" onClick={onClose}>
               {t("common.cancel")}

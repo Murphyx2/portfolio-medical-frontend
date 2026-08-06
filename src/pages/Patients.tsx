@@ -2,9 +2,9 @@ import { useCallback, useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 
 import { Field, FormModal, Page, Spinner, Table, type Column } from "../components/ui";
-import { api } from "../services/api";
+import { api, ApiError } from "../services/api";
 import type { ARS, MedicalCenter, Paginated, Patient } from "../services/types";
-import { formatPhone, formatPhoneInput, isValidPhone } from "../utils/phone";
+import { formatPhone, formatPhoneInput, isValidPhone, stripToDigits } from "../utils/phone";
 
 const EMPTY = {
   first_name: "",
@@ -28,6 +28,23 @@ function formatCedula(value: string): string {
   return `${digits.slice(0, 3)}-${digits.slice(3, 10)}-${digits.slice(10)}`;
 }
 
+function flattenError(message: string): string {
+  try {
+    const parsed = JSON.parse(message) as unknown;
+    if (typeof parsed === "string") return parsed;
+    if (parsed && typeof parsed === "object") {
+      const lines: string[] = [];
+      for (const [key, value] of Object.entries(parsed as Record<string, unknown>)) {
+        lines.push(`${key}: ${Array.isArray(value) ? value.join(" ") : String(value)}`);
+      }
+      return lines.join("\n");
+    }
+  } catch {
+    /* not JSON */
+  }
+  return message;
+}
+
 export function Patients() {
   const { t } = useTranslation();
   const [rows, setRows] = useState<Patient[]>([]);
@@ -38,6 +55,7 @@ export function Patients() {
   const [form, setForm] = useState(EMPTY);
   const [editId, setEditId] = useState<number | null>(null);
   const [phoneError, setPhoneError] = useState("");
+  const [formError, setFormError] = useState("");
 
   const load = useCallback(() => {
     setLoading(true);
@@ -69,6 +87,7 @@ export function Patients() {
     setForm(EMPTY);
     setEditId(null);
     setPhoneError("");
+    setFormError("");
     setModal(true);
   }
 
@@ -89,6 +108,7 @@ export function Patients() {
     });
     setEditId(p.id);
     setPhoneError("");
+    setFormError("");
     setModal(true);
   }
 
@@ -106,10 +126,15 @@ export function Patients() {
       ars_program: form.ars_program ? Number(form.ars_program) : null,
       center: form.center ? Number(form.center) : null,
     };
-    if (editId) await api.patch(`/patients/${editId}/`, body);
-    else await api.post("/patients/", body);
-    setModal(false);
-    load();
+    try {
+      if (editId) await api.patch(`/patients/${editId}/`, body);
+      else await api.post("/patients/", body);
+      setFormError("");
+      setModal(false);
+      load();
+    } catch (err) {
+      setFormError(err instanceof ApiError ? flattenError(err.message) : String(err));
+    }
   }
 
   async function remove(p: Patient) {
@@ -151,6 +176,7 @@ export function Patients() {
           onClose={() => setModal(false)}
           onSubmit={submit}
           submitLabel={t("common.save")}
+          error={formError}
         >
           <Field label={t("patients.firstName")}>
             <input
@@ -210,7 +236,9 @@ export function Patients() {
           <Field label={t("patients.nss")}>
             <input
               value={form.nss}
-              onChange={(e) => setForm({ ...form, nss: e.target.value })}
+              inputMode="numeric"
+              maxLength={11}
+              onChange={(e) => setForm({ ...form, nss: stripToDigits(e.target.value).slice(0, 11) })}
             />
           </Field>
           <Field label={t("patients.ars")}>

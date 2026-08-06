@@ -342,6 +342,16 @@ body {
   margin-top: 0.25rem;
 }
 
+.form-error {
+  color: var(--mc-danger);
+  font-size: 0.85rem;
+  margin: 0.75rem 0 0;
+  border: 1px solid var(--mc-danger);
+  border-radius: 6px;
+  padding: 0.5rem 0.6rem;
+  white-space: pre-line;
+}
+
 /* ---------- misc ---------- */
 .muted {
   color: var(--mc-muted);

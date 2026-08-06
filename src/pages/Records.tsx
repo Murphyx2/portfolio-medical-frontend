@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState, type FormEvent } from "react";
+import { useCallback, useEffect, useRef, useState, type FormEvent } from "react";
 import { useTranslation } from "react-i18next";
 
 import { Field, FormModal, Page, Spinner, Table, type Column } from "../components/ui";
@@ -32,6 +32,7 @@ export function Records() {
   const [patients, setPatients] = useState<Patient[]>([]);
   const [loading, setLoading] = useState(true);
   const [detail, setDetail] = useState<MedicalRecord | null>(null);
+  const pressOnBackdrop = useRef(false);
   const [logs, setLogs] = useState<ConsultationLog[]>([]);
   const [modal, setModal] = useState<"record" | "log" | null>(null);
   const [form, setForm] = useState(EMPTY_RECORD);
@@ -121,8 +122,19 @@ export function Records() {
       )}
 
       {detail && (
-        <div className="modal-backdrop" onClick={() => setDetail(null)}>
-          <div className="modal wide" onClick={(e) => e.stopPropagation()}>
+        <div
+          className="modal-backdrop"
+          onPointerDown={(e) => {
+            pressOnBackdrop.current = e.target === e.currentTarget;
+          }}
+          onClick={(e) => {
+            if (pressOnBackdrop.current && e.target === e.currentTarget) {
+              pressOnBackdrop.current = false;
+              setDetail(null);
+            }
+          }}
+        >
+          <div className="modal wide" onClick={(e) => e.stopPropagation()} onPointerDown={(e) => e.stopPropagation()}>
             <h3>
               {detail.title} — {detail.patient_info.full_name}
             </h3>

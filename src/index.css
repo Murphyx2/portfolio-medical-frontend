@@ -352,6 +352,29 @@ body {
   white-space: pre-line;
 }
 
+.pagination {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.35rem;
+  margin: 0.75rem 0;
+}
+
+.pagination .btn {
+  min-width: 2.3rem;
+}
+
+.pagination-ellipsis {
+  color: var(--mc-muted);
+  padding: 0 0.15rem;
+}
+
+.pagination-info {
+  margin-left: auto;
+  color: var(--mc-muted);
+  font-size: 0.85rem;
+}
+
 /* ---------- misc ---------- */
 .muted {
   color: var(--mc-muted);

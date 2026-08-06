@@ -1,12 +1,13 @@
 import { useCallback, useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 
-import { Field, FormModal, Page, Spinner, Table, type Column } from "../components/ui";
+import { Field, FormModal, Page, Pagination, Spinner, Table, type Column } from "../components/ui";
 import { RoleGate } from "../components/guards";
 import { api } from "../services/api";
 import type { Paginated, User } from "../services/types";
 
 const EMPTY = { username: "", email: "", first_name: "", last_name: "", password: "", role: "RECEPTIONIST" };
+const PAGE_SIZE = 100;
 
 export function Users() {
   const { t } = useTranslation();
@@ -15,14 +16,21 @@ export function Users() {
   const [modal, setModal] = useState(false);
   const [form, setForm] = useState(EMPTY);
   const [roles, setRoles] = useState<{ value: string; label: string }[]>([]);
+  const [page, setPage] = useState(1);
+  const [count, setCount] = useState(0);
 
   const load = useCallback(() => {
     setLoading(true);
     api
-      .get<Paginated<User>>("/auth/users/?page_size=100")
-      .then((r) => setRows(r.results))
+      .get<Paginated<User>>(`/auth/users/?page=${page}&page_size=${PAGE_SIZE}`)
+      .then((r) => {
+        setRows(r.results);
+        setCount(r.count);
+        const total = Math.ceil(r.count / PAGE_SIZE);
+        if (total > 0 && page > total) setPage(total);
+      })
       .finally(() => setLoading(false));
-  }, []);
+  }, [page]);
 
   useEffect(() => {
     load();
@@ -61,7 +69,11 @@ export function Users() {
         {loading ? (
           <Spinner />
         ) : (
-          <Table columns={columns} rows={rows} onDelete={remove} />
+          <>
+            <Pagination page={page} count={count} pageSize={PAGE_SIZE} onChange={setPage} />
+            <Table columns={columns} rows={rows} onDelete={remove} />
+            <Pagination page={page} count={count} pageSize={PAGE_SIZE} onChange={setPage} />
+          </>
         )}
 
         {modal && (

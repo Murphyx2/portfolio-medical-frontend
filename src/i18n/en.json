@@ -159,5 +159,12 @@
     "addImage": "Add image",
     "uploadImage": "Upload image",
     "caption": "Caption"
+  },
+  "pagination": {
+    "prev": "Previous",
+    "next": "Next",
+    "pageOf": "Page {{page}} of {{total}}",
+    "records": "{{count}} records",
+    "nav": "Pagination"
   }
 }

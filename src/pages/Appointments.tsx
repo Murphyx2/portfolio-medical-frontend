@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 
-import { Field, FormModal, Page, Spinner, Table, type Column } from "../components/ui";
+import { Field, FormModal, Page, Pagination, Spinner, Table, type Column } from "../components/ui";
 import { api } from "../services/api";
 import type {
   Appointment,
@@ -13,6 +13,7 @@ import type {
 import { useAuth } from "../store/auth";
 
 const EMPTY = { patient: 0, doctor: 0, center: 0, date_time: "", duration_minutes: 30, notes: "" };
+const PAGE_SIZE = 100;
 
 export function Appointments() {
   const { t } = useTranslation();
@@ -25,14 +26,21 @@ export function Appointments() {
   const [loading, setLoading] = useState(true);
   const [modal, setModal] = useState(false);
   const [form, setForm] = useState(EMPTY);
+  const [page, setPage] = useState(1);
+  const [count, setCount] = useState(0);
 
   const load = useCallback(() => {
     setLoading(true);
     api
-      .get<Paginated<Appointment>>("/appointments/?ordering=date_time&page_size=100")
-      .then((r) => setRows(r.results))
+      .get<Paginated<Appointment>>(`/appointments/?ordering=date_time&page=${page}&page_size=${PAGE_SIZE}`)
+      .then((r) => {
+        setRows(r.results);
+        setCount(r.count);
+        const total = Math.ceil(r.count / PAGE_SIZE);
+        if (total > 0 && page > total) setPage(total);
+      })
       .finally(() => setLoading(false));
-  }, []);
+  }, [page]);
 
   useEffect(() => {
     load();
@@ -101,7 +109,11 @@ export function Appointments() {
       {loading ? (
         <Spinner />
       ) : (
-        <Table columns={columns} rows={rows} />
+        <>
+          <Pagination page={page} count={count} pageSize={PAGE_SIZE} onChange={setPage} />
+          <Table columns={columns} rows={rows} />
+          <Pagination page={page} count={count} pageSize={PAGE_SIZE} onChange={setPage} />
+        </>
       )}
 
       {modal && (

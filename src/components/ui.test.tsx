@@ -17,7 +17,7 @@
 import { fireEvent, render, screen } from "@testing-library/react";
 import { describe, expect, it, vi } from "vitest";
 
-import { FormModal, Table } from "./ui";
+import { FormModal, Pagination, Table } from "./ui";
 
 function renderModal(onClose = vi.fn()) {
   const utils = render(
@@ -116,5 +116,47 @@ describe("FormModal backdrop close", () => {
   it("renders the empty-state label translated when no rows", () => {
     render(<Table columns={[{ key: "name", header: "Nombre" }]} rows={[]} />);
     expect(screen.getByText("No se encontraron datos")).toBeInTheDocument();
+  });
+});
+
+describe("Pagination", () => {
+  it("renders nothing when there is a single page", () => {
+    const { container } = render(
+      <Pagination page={1} count={50} pageSize={100} onChange={() => {}} />,
+    );
+    expect(container.querySelector(".pagination")).toBeNull();
+  });
+
+  it("shows prev/next, page numbers and the page info when multiple pages", () => {
+    render(<Pagination page={2} count={150} pageSize={100} onChange={() => {}} />);
+    expect(screen.getByRole("button", { name: "Anterior" })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Siguiente" })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "1" })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "2" })).toBeInTheDocument();
+    expect(screen.getByText(/Página 2 de 2/)).toBeInTheDocument();
+    expect(screen.getByText(/150 registros/)).toBeInTheDocument();
+  });
+
+  it("disables prev on the first page and next on the last page", () => {
+    render(<Pagination page={1} count={150} pageSize={100} onChange={() => {}} />);
+    expect(screen.getByRole("button", { name: "Anterior" })).toBeDisabled();
+    expect(screen.getByRole("button", { name: "Siguiente" })).not.toBeDisabled();
+  });
+
+  it("calls onChange with the clicked page number", () => {
+    const onChange = vi.fn();
+    render(<Pagination page={1} count={250} pageSize={100} onChange={onChange} />);
+    fireEvent.click(screen.getByRole("button", { name: "2" }));
+    expect(onChange).toHaveBeenCalledWith(2);
+  });
+
+  it("collapses long page ranges with ellipses and highlights the current page", () => {
+    render(<Pagination page={4} count={800} pageSize={100} onChange={() => {}} />);
+    expect(screen.getAllByText("…")).toHaveLength(2);
+    expect(screen.getByRole("button", { name: "3" })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "4" })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "5" })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "8" })).toBeInTheDocument();
+    expect(screen.getByText(/Página 4 de 8/)).toBeInTheDocument();
   });
 });

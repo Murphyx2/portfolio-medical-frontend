@@ -1,10 +1,12 @@
 import { useCallback, useEffect, useRef, useState, type FormEvent } from "react";
 import { useTranslation } from "react-i18next";
 
-import { Field, FormModal, Page, Spinner, Table, type Column } from "../components/ui";
+import { Field, FormModal, Page, Pagination, Spinner, Table, type Column } from "../components/ui";
 import { api, upload } from "../services/api";
 import type { ConsultationLog, MedicalRecord, Paginated, Patient } from "../services/types";
 import { useAuth } from "../store/auth";
+
+const PAGE_SIZE = 100;
 
 const EMPTY_RECORD = {
   patient: 0,
@@ -39,14 +41,21 @@ export function Records() {
   const [logForm, setLogForm] = useState(EMPTY_LOG);
   const [imageFile, setImageFile] = useState<File | null>(null);
   const [caption, setCaption] = useState("");
+  const [page, setPage] = useState(1);
+  const [count, setCount] = useState(0);
 
   const load = useCallback(() => {
     setLoading(true);
     api
-      .get<Paginated<MedicalRecord>>("/medical-records/?ordering=-date&page_size=100")
-      .then((r) => setRows(r.results))
+      .get<Paginated<MedicalRecord>>(`/medical-records/?ordering=-date&page=${page}&page_size=${PAGE_SIZE}`)
+      .then((r) => {
+        setRows(r.results);
+        setCount(r.count);
+        const total = Math.ceil(r.count / PAGE_SIZE);
+        if (total > 0 && page > total) setPage(total);
+      })
       .finally(() => setLoading(false));
-  }, []);
+  }, [page]);
 
   useEffect(() => {
     load();
@@ -126,7 +135,11 @@ export function Records() {
       {loading ? (
         <Spinner />
       ) : (
-        <Table columns={columns} rows={rows} />
+        <>
+          <Pagination page={page} count={count} pageSize={PAGE_SIZE} onChange={setPage} />
+          <Table columns={columns} rows={rows} />
+          <Pagination page={page} count={count} pageSize={PAGE_SIZE} onChange={setPage} />
+        </>
       )}
 
       {detail && (

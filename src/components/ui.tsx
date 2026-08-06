@@ -158,3 +158,72 @@ export function Spinner() {
   const { t } = useTranslation();
   return <div className="page-center muted">{t("common.loading")}</div>;
 }
+
+function pageItems(current: number, total: number): (number | "...")[] {
+  if (total <= 7) {
+    return Array.from({ length: total }, (_, i) => i + 1);
+  }
+  const wanted = new Set([1, total, current - 1, current, current + 1]);
+  const sorted = [...wanted]
+    .filter((n) => n >= 1 && n <= total)
+    .sort((a, b) => a - b);
+  const items: (number | "...")[] = [];
+  let prev = 0;
+  for (const n of sorted) {
+    if (prev && n - prev > 1) items.push("...");
+    items.push(n);
+    prev = n;
+  }
+  return items;
+}
+
+export function Pagination({ page, count, pageSize, onChange }: {
+  page: number;
+  count: number;
+  pageSize: number;
+  onChange: (page: number) => void;
+}) {
+  const { t } = useTranslation();
+  const total = Math.ceil(count / pageSize);
+  if (total <= 1) return null;
+  return (
+    <nav className="pagination" aria-label={t("pagination.nav")}>
+      <button
+        type="button"
+        className="btn small"
+        disabled={page <= 1}
+        onClick={() => onChange(page - 1)}
+      >
+        {t("pagination.prev")}
+      </button>
+      {pageItems(page, total).map((item, i) =>
+        item === "..." ? (
+          <span key={`ellipsis-${i}`} className="pagination-ellipsis">
+            …
+          </span>
+        ) : (
+          <button
+            key={item}
+            type="button"
+            className={`btn small${item === page ? " primary" : ""}`}
+            disabled={item === page}
+            onClick={() => onChange(item)}
+          >
+            {item}
+          </button>
+        ),
+      )}
+      <button
+        type="button"
+        className="btn small"
+        disabled={page >= total}
+        onClick={() => onChange(page + 1)}
+      >
+        {t("pagination.next")}
+      </button>
+      <span className="pagination-info">
+        {t("pagination.pageOf", { page, total })} · {t("pagination.records", { count })}
+      </span>
+    </nav>
+  );
+}

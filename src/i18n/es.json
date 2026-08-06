@@ -159,5 +159,12 @@
     "addImage": "Añadir imagen",
     "uploadImage": "Subir imagen",
     "caption": "Título de la imagen"
+  },
+  "pagination": {
+    "prev": "Anterior",
+    "next": "Siguiente",
+    "pageOf": "Página {{page}} de {{total}}",
+    "records": "{{count}} registros",
+    "nav": "Paginación"
   }
 }

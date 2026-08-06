@@ -1,13 +1,14 @@
 import { useCallback, useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 
-import { Field, FormModal, Page, Spinner, Table, type Column } from "../components/ui";
+import { Field, FormModal, Page, Pagination, Spinner, Table, type Column } from "../components/ui";
 import { api } from "../services/api";
 import type { DoctorProfile, Paginated, User } from "../services/types";
 import { useAuth } from "../store/auth";
 import { formatPhone, formatPhoneInput, isValidRequiredPhone } from "../utils/phone";
 
 const EMPTY = { user: 0, specialty: "", license_number: "", contact_phone: "", contact_email: "", bio: "" };
+const PAGE_SIZE = 100;
 
 export function Doctors() {
   const { t } = useTranslation();
@@ -20,14 +21,21 @@ export function Doctors() {
   const [form, setForm] = useState(EMPTY);
   const [editId, setEditId] = useState<number | null>(null);
   const [phoneError, setPhoneError] = useState("");
+  const [page, setPage] = useState(1);
+  const [count, setCount] = useState(0);
 
   const load = useCallback(() => {
     setLoading(true);
     api
-      .get<Paginated<DoctorProfile>>("/doctors/profiles/?page_size=100")
-      .then((r) => setRows(r.results))
+      .get<Paginated<DoctorProfile>>(`/doctors/profiles/?page=${page}&page_size=${PAGE_SIZE}`)
+      .then((r) => {
+        setRows(r.results);
+        setCount(r.count);
+        const total = Math.ceil(r.count / PAGE_SIZE);
+        if (total > 0 && page > total) setPage(total);
+      })
       .finally(() => setLoading(false));
-  }, []);
+  }, [page]);
 
   useEffect(() => {
     load();
@@ -94,12 +102,16 @@ export function Doctors() {
       {loading ? (
         <Spinner />
       ) : (
-        <Table
-          columns={columns}
-          rows={rows}
-          onEdit={canEdit ? openEdit : undefined}
-          onDelete={canEdit ? remove : undefined}
-        />
+        <>
+          <Pagination page={page} count={count} pageSize={PAGE_SIZE} onChange={setPage} />
+          <Table
+            columns={columns}
+            rows={rows}
+            onEdit={canEdit ? openEdit : undefined}
+            onDelete={canEdit ? remove : undefined}
+          />
+          <Pagination page={page} count={count} pageSize={PAGE_SIZE} onChange={setPage} />
+        </>
       )}
 
       {modal && (

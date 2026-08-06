@@ -1,10 +1,12 @@
 import { useCallback, useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 
-import { Field, FormModal, Page, Spinner, Table, type Column } from "../components/ui";
+import { Field, FormModal, Page, Pagination, Spinner, Table, type Column } from "../components/ui";
 import { api, ApiError } from "../services/api";
 import type { ARS, MedicalCenter, Paginated, Patient } from "../services/types";
 import { formatPhone, formatPhoneInput, isValidPhone, stripToDigits } from "../utils/phone";
+
+const PAGE_SIZE = 100;
 
 const EMPTY = {
   first_name: "",
@@ -56,14 +58,21 @@ export function Patients() {
   const [editId, setEditId] = useState<number | null>(null);
   const [phoneError, setPhoneError] = useState("");
   const [formError, setFormError] = useState("");
+  const [page, setPage] = useState(1);
+  const [count, setCount] = useState(0);
 
   const load = useCallback(() => {
     setLoading(true);
     api
-      .get<Paginated<Patient>>("/patients/?page_size=100")
-      .then((r) => setRows(r.results))
+      .get<Paginated<Patient>>(`/patients/?page=${page}&page_size=${PAGE_SIZE}`)
+      .then((r) => {
+        setRows(r.results);
+        setCount(r.count);
+        const total = Math.ceil(r.count / PAGE_SIZE);
+        if (total > 0 && page > total) setPage(total);
+      })
       .finally(() => setLoading(false));
-  }, []);
+  }, [page]);
 
   useEffect(load, [load]);
 
@@ -167,7 +176,11 @@ export function Patients() {
       {loading ? (
         <Spinner />
       ) : (
-        <Table columns={columns} rows={rows} onEdit={openEdit} onDelete={remove} />
+        <>
+          <Pagination page={page} count={count} pageSize={PAGE_SIZE} onChange={setPage} />
+          <Table columns={columns} rows={rows} onEdit={openEdit} onDelete={remove} />
+          <Pagination page={page} count={count} pageSize={PAGE_SIZE} onChange={setPage} />
+        </>
       )}
 
       {modal && (

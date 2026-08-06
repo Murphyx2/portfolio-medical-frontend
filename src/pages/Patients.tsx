@@ -19,6 +19,13 @@ const EMPTY = {
   ars_program: "",
 };
 
+function formatCedula(value: string): string {
+  const digits = value.replace(/\D/g, "").slice(0, 11);
+  if (digits.length <= 3) return digits;
+  if (digits.length <= 10) return `${digits.slice(0, 3)}-${digits.slice(3)}`;
+  return `${digits.slice(0, 3)}-${digits.slice(3, 10)}-${digits.slice(10)}`;
+}
+
 export function Patients() {
   const { t } = useTranslation();
   const [rows, setRows] = useState<Patient[]>([]);
@@ -75,6 +82,7 @@ export function Patients() {
     const body = {
       ...form,
       birth_date: form.birth_date || null,
+      cedula: form.cedula.replace(/\D/g, ""),
       ars: form.ars ? Number(form.ars) : null,
       ars_program: form.ars_program ? Number(form.ars_program) : null,
     };
@@ -95,7 +103,7 @@ export function Patients() {
     { key: "gender", header: t("patients.gender") },
     { key: "phone", header: t("patients.phone") },
     { key: "email", header: t("common.email") },
-    { key: "cedula", header: t("patients.cedula") },
+    { key: "cedula", header: t("patients.cedula"), render: (r) => (r.cedula ? formatCedula(r.cedula) : "") },
     { key: "nss", header: t("patients.nss") },
     { key: "ars_name", header: t("patients.ars") },
     { key: "ars_program_name", header: t("patients.arsProgram") },
@@ -165,26 +173,15 @@ export function Patients() {
             <input
               value={form.cedula}
               placeholder="000-0000000-0"
-              onChange={(e) => setForm({ ...form, cedula: e.target.value })}
+              inputMode="numeric"
+              maxLength={13}
+              onChange={(e) => setForm({ ...form, cedula: formatCedula(e.target.value) })}
             />
           </Field>
           <Field label={t("patients.nss")}>
             <input
               value={form.nss}
               onChange={(e) => setForm({ ...form, nss: e.target.value })}
-            />
-          </Field>
-          <Field label={t("patients.address")}>
-            <input
-              value={form.address}
-              onChange={(e) => setForm({ ...form, address: e.target.value })}
-            />
-          </Field>
-          <Field label={t("patients.email")}>
-            <input
-              type="email"
-              value={form.email}
-              onChange={(e) => setForm({ ...form, email: e.target.value })}
             />
           </Field>
           <Field label={t("patients.ars")}>
@@ -213,6 +210,19 @@ export function Patients() {
                 </option>
               ))}
             </select>
+          </Field>
+          <Field label={t("patients.address")}>
+            <input
+              value={form.address}
+              onChange={(e) => setForm({ ...form, address: e.target.value })}
+            />
+          </Field>
+          <Field label={t("patients.email")}>
+            <input
+              type="email"
+              value={form.email}
+              onChange={(e) => setForm({ ...form, email: e.target.value })}
+            />
           </Field>
         </FormModal>
       )}

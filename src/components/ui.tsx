@@ -1,3 +1,4 @@
+import { useRef } from "react";
 import type { ReactNode } from "react";
 
 export function Page({ title, actions, children }: {
@@ -23,9 +24,21 @@ export function FormModal({ title, onClose, onSubmit, children, submitLabel }: {
   submitLabel: string;
   children: ReactNode;
 }) {
+  const pressOnBackdrop = useRef(false);
   return (
-    <div className="modal-backdrop" onClick={onClose}>
-      <div className="modal" onClick={(e) => e.stopPropagation()}>
+    <div
+      className="modal-backdrop"
+      onPointerDown={(e) => {
+        pressOnBackdrop.current = e.target === e.currentTarget;
+      }}
+      onClick={(e) => {
+        if (pressOnBackdrop.current && e.target === e.currentTarget) {
+          pressOnBackdrop.current = false;
+          onClose();
+        }
+      }}
+    >
+      <div className="modal" onClick={(e) => e.stopPropagation()} onPointerDown={(e) => e.stopPropagation()}>
         <h3>{title}</h3>
         <form
           onSubmit={(e) => {

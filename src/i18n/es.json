@@ -66,7 +66,8 @@
     "cedula": "Cédula",
     "nss": "NSS",
     "ars": "ARS (aseguradora)",
-    "arsProgram": "Programa ARS"
+    "arsProgram": "Programa ARS",
+    "center": "Centro"
   },
   "doctors": {
     "title": "Médicos",

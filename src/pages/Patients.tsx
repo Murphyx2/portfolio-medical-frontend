@@ -3,7 +3,7 @@ import { useTranslation } from "react-i18next";
 
 import { Field, FormModal, Page, Spinner, Table, type Column } from "../components/ui";
 import { api } from "../services/api";
-import type { ARS, Paginated, Patient } from "../services/types";
+import type { ARS, MedicalCenter, Paginated, Patient } from "../services/types";
 
 const EMPTY = {
   first_name: "",
@@ -17,6 +17,7 @@ const EMPTY = {
   nss: "",
   ars: "",
   ars_program: "",
+  center: "",
 };
 
 function formatCedula(value: string): string {
@@ -30,6 +31,7 @@ export function Patients() {
   const { t } = useTranslation();
   const [rows, setRows] = useState<Patient[]>([]);
   const [arsList, setArsList] = useState<ARS[]>([]);
+  const [centersList, setCentersList] = useState<MedicalCenter[]>([]);
   const [loading, setLoading] = useState(true);
   const [modal, setModal] = useState(false);
   const [form, setForm] = useState(EMPTY);
@@ -49,6 +51,13 @@ export function Patients() {
     api
       .get<Paginated<ARS>>("/ars/?page_size=100")
       .then((r) => setArsList(r.results))
+      .catch(() => {});
+  }, []);
+
+  useEffect(() => {
+    api
+      .get<Paginated<MedicalCenter>>("/centers/?page_size=100")
+      .then((r) => setCentersList(r.results))
       .catch(() => {});
   }, []);
 
@@ -73,6 +82,7 @@ export function Patients() {
       nss: p.nss,
       ars: p.ars ? String(p.ars) : "",
       ars_program: p.ars_program ? String(p.ars_program) : "",
+      center: p.center ? String(p.center) : "",
     });
     setEditId(p.id);
     setModal(true);
@@ -85,6 +95,7 @@ export function Patients() {
       cedula: form.cedula.replace(/\D/g, ""),
       ars: form.ars ? Number(form.ars) : null,
       ars_program: form.ars_program ? Number(form.ars_program) : null,
+      center: form.center ? Number(form.center) : null,
     };
     if (editId) await api.patch(`/patients/${editId}/`, body);
     else await api.post("/patients/", body);
@@ -107,6 +118,7 @@ export function Patients() {
     { key: "nss", header: t("patients.nss") },
     { key: "ars_name", header: t("patients.ars") },
     { key: "ars_program_name", header: t("patients.arsProgram") },
+    { key: "center_name", header: t("patients.center"), render: (r) => r.center_name ?? "—" },
   ];
 
   return (
@@ -207,6 +219,19 @@ export function Patients() {
               {(selectedArs?.programs ?? []).map((p) => (
                 <option key={p.id} value={p.id}>
                   {p.name}
+                </option>
+              ))}
+            </select>
+          </Field>
+          <Field label={t("patients.center")}>
+            <select
+              value={form.center}
+              onChange={(e) => setForm({ ...form, center: e.target.value })}
+            >
+              <option value="">—</option>
+              {centersList.map((c) => (
+                <option key={c.id} value={c.id}>
+                  {c.name}
                 </option>
               ))}
             </select>

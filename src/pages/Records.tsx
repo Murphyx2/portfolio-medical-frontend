@@ -134,7 +134,14 @@ export function Records() {
             }
           }}
         >
-          <div className="modal wide" onClick={(e) => e.stopPropagation()} onPointerDown={(e) => e.stopPropagation()}>
+          <div
+            className="modal wide"
+            onClick={(e) => e.stopPropagation()}
+            onPointerDown={(e) => {
+              pressOnBackdrop.current = false;
+              e.stopPropagation();
+            }}
+          >
             <h3>
               {detail.title} — {detail.patient_info.full_name}
             </h3>

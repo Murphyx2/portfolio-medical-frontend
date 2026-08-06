@@ -69,6 +69,8 @@ export interface Patient {
   ars_name: string | null;
   ars_program: number | null;
   ars_program_name: string | null;
+  center: number | null;
+  center_name: string | null;
   created_at: string;
   updated_at: string;
 }

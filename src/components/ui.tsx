@@ -38,7 +38,14 @@ export function FormModal({ title, onClose, onSubmit, children, submitLabel }: {
         }
       }}
     >
-      <div className="modal" onClick={(e) => e.stopPropagation()} onPointerDown={(e) => e.stopPropagation()}>
+      <div
+        className="modal"
+        onClick={(e) => e.stopPropagation()}
+        onPointerDown={(e) => {
+          pressOnBackdrop.current = false;
+          e.stopPropagation();
+        }}
+      >
         <h3>{title}</h3>
         <form
           onSubmit={(e) => {

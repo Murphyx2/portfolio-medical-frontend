@@ -265,6 +265,10 @@ body {
   color: var(--mc-primary-dark);
 }
 
+.record-subtitle {
+  margin: -0.5rem 0 1rem;
+}
+
 .modal h4 {
   margin: 1.25rem 0 0.5rem;
   color: var(--mc-primary-dark);
@@ -278,6 +282,10 @@ body {
 }
 
 /* ---------- table ---------- */
+.table-scroll {
+  overflow-x: auto;
+}
+
 .data-table {
   width: 100%;
   border-collapse: collapse;
@@ -292,6 +300,7 @@ body {
   background: var(--mc-lightest);
   color: var(--mc-primary-dark);
   font-size: 0.8rem;
+  white-space: nowrap;
   text-transform: uppercase;
   letter-spacing: 0.04em;
   padding: 0.65rem 0.9rem;
@@ -301,6 +310,7 @@ body {
   padding: 0.6rem 0.9rem;
   border-top: 1px solid var(--mc-border);
   font-size: 0.9rem;
+  white-space: nowrap;
 }
 
 .data-table tr:hover td {
@@ -310,6 +320,26 @@ body {
 .row-actions {
   display: flex;
   gap: 0.4rem;
+}
+
+.row-link {
+  background: none;
+  border: none;
+  padding: 0;
+  font: inherit;
+  color: var(--mc-primary);
+  cursor: pointer;
+}
+
+.row-link:hover {
+  text-decoration: underline;
+}
+
+.field-error {
+  display: block;
+  color: var(--mc-danger);
+  font-size: 0.78rem;
+  margin-top: 0.25rem;
 }
 
 /* ---------- misc ---------- */

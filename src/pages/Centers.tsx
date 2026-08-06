@@ -5,6 +5,7 @@ import { Field, FormModal, Page, Spinner, Table, type Column } from "../componen
 import { api } from "../services/api";
 import type { MedicalCenter, Paginated } from "../services/types";
 import { useAuth } from "../store/auth";
+import { formatPhone, formatPhoneInput, isValidRequiredPhone } from "../utils/phone";
 
 const EMPTY = { name: "", code: "", address: "", phone: "", email: "" };
 
@@ -17,6 +18,7 @@ export function Centers() {
   const [modal, setModal] = useState(false);
   const [form, setForm] = useState(EMPTY);
   const [editId, setEditId] = useState<number | null>(null);
+  const [phoneError, setPhoneError] = useState("");
 
   const load = useCallback(() => {
     setLoading(true);
@@ -31,18 +33,25 @@ export function Centers() {
   function openNew() {
     setForm(EMPTY);
     setEditId(null);
+    setPhoneError("");
     setModal(true);
   }
 
   function openEdit(c: MedicalCenter) {
-    setForm({ name: c.name, code: c.code, address: c.address, phone: c.phone, email: c.email });
+    setForm({ name: c.name, code: c.code, address: c.address, phone: formatPhone(c.phone), email: c.email });
     setEditId(c.id);
+    setPhoneError("");
     setModal(true);
   }
 
   async function submit() {
-    if (editId) await api.patch(`/centers/${editId}/`, form);
-    else await api.post("/centers/", form);
+    if (!isValidRequiredPhone(form.phone)) {
+      setPhoneError(t("common.phoneInvalid"));
+      return;
+    }
+    const body = { ...form, phone: form.phone.replace(/\D/g, "") };
+    if (editId) await api.patch(`/centers/${editId}/`, body);
+    else await api.post("/centers/", body);
     setModal(false);
     load();
   }
@@ -56,7 +65,7 @@ export function Centers() {
     { key: "name", header: t("centers.name") },
     { key: "code", header: t("centers.code") },
     { key: "address", header: t("centers.address") },
-    { key: "phone", header: t("centers.phone") },
+    { key: "phone", header: t("centers.phone"), render: (r) => formatPhone(r.phone) },
     { key: "email", header: t("centers.email") },
     { key: "doctor_count", header: t("centers.doctorsCount") },
   ];
@@ -100,7 +109,19 @@ export function Centers() {
             <input value={form.address} onChange={(e) => setForm({ ...form, address: e.target.value })} required />
           </Field>
           <Field label={t("centers.phone")}>
-            <input value={form.phone} onChange={(e) => setForm({ ...form, phone: e.target.value })} required />
+            <input
+              type="tel"
+              inputMode="tel"
+              value={form.phone}
+              placeholder="(809) 555-1212"
+              maxLength={14}
+              onChange={(e) => {
+                setForm({ ...form, phone: formatPhoneInput(e.target.value) });
+                setPhoneError("");
+              }}
+              required
+            />
+            {phoneError && <span className="field-error">{phoneError}</span>}
           </Field>
           <Field label={t("centers.email")}>
             <input type="email" value={form.email} onChange={(e) => setForm({ ...form, email: e.target.value })} />

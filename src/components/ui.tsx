@@ -1,5 +1,6 @@
 import { useRef } from "react";
 import type { ReactNode } from "react";
+import { useTranslation } from "react-i18next";
 
 export function Page({ title, actions, children }: {
   title: string;
@@ -25,6 +26,7 @@ export function FormModal({ title, onClose, onSubmit, children, submitLabel }: {
   children: ReactNode;
 }) {
   const pressOnBackdrop = useRef(false);
+  const { t } = useTranslation();
   return (
     <div
       className="modal-backdrop"
@@ -56,7 +58,7 @@ export function FormModal({ title, onClose, onSubmit, children, submitLabel }: {
           {children}
           <div className="modal-actions">
             <button type="button" className="btn ghost" onClick={onClose}>
-              Cancel
+              {t("common.cancel")}
             </button>
             <button type="submit" className="btn primary">
               {submitLabel}
@@ -96,53 +98,57 @@ export function Table<T extends { id: number }>({
   onDelete?: (row: T) => void;
   emptyLabel?: string;
 }) {
+  const { t } = useTranslation();
   return (
-    <table className="data-table">
-      <thead>
-        <tr>
-          {columns.map((c) => (
-            <th key={c.key}>{c.header}</th>
-          ))}
-          {(onEdit || onDelete) && <th>Actions</th>}
-        </tr>
-      </thead>
-      <tbody>
-        {rows.length === 0 && (
+    <div className="table-scroll">
+      <table className="data-table">
+        <thead>
           <tr>
-            <td colSpan={columns.length + (onEdit || onDelete ? 1 : 0)} className="muted">
-              {emptyLabel ?? "No data"}
-            </td>
-          </tr>
-        )}
-        {rows.map((row) => (
-          <tr key={row.id}>
             {columns.map((c) => (
-              <td key={c.key}>{c.render ? c.render(row) : String((row as never)[c.key] ?? "")}</td>
+              <th key={c.key}>{c.header}</th>
             ))}
-            {(onEdit || onDelete) && (
-              <td className="row-actions">
-                {onEdit && (
-                  <button className="btn small" onClick={() => onEdit(row)}>
-                    Edit
-                  </button>
-                )}
-                {onDelete && (
-                  <button
-                    className="btn small danger"
-                    onClick={() => window.confirm("Delete this record?") && onDelete(row)}
-                  >
-                    Delete
-                  </button>
-                )}
-              </td>
-            )}
+            {(onEdit || onDelete) && <th>{t("common.actions")}</th>}
           </tr>
-        ))}
-      </tbody>
-    </table>
+        </thead>
+        <tbody>
+          {rows.length === 0 && (
+            <tr>
+              <td colSpan={columns.length + (onEdit || onDelete ? 1 : 0)} className="muted">
+                {emptyLabel ?? t("common.noData")}
+              </td>
+            </tr>
+          )}
+          {rows.map((row) => (
+            <tr key={row.id}>
+              {columns.map((c) => (
+                <td key={c.key}>{c.render ? c.render(row) : String((row as never)[c.key] ?? "")}</td>
+              ))}
+              {(onEdit || onDelete) && (
+                <td className="row-actions">
+                  {onEdit && (
+                    <button className="btn small" onClick={() => onEdit(row)}>
+                      {t("common.edit")}
+                    </button>
+                  )}
+                  {onDelete && (
+                    <button
+                      className="btn small danger"
+                      onClick={() => window.confirm(t("common.deleteConfirm")) && onDelete(row)}
+                    >
+                      {t("common.delete")}
+                    </button>
+                  )}
+                </td>
+              )}
+            </tr>
+          ))}
+        </tbody>
+      </table>
+    </div>
   );
 }
 
 export function Spinner() {
-  return <div className="page-center muted">Loading...</div>;
+  const { t } = useTranslation();
+  return <div className="page-center muted">{t("common.loading")}</div>;
 }

@@ -5,6 +5,7 @@ import { Field, FormModal, Page, Spinner, Table, type Column } from "../componen
 import { api } from "../services/api";
 import type { DoctorProfile, Paginated, User } from "../services/types";
 import { useAuth } from "../store/auth";
+import { formatPhone, formatPhoneInput, isValidRequiredPhone } from "../utils/phone";
 
 const EMPTY = { user: 0, specialty: "", license_number: "", contact_phone: "", contact_email: "", bio: "" };
 
@@ -18,6 +19,7 @@ export function Doctors() {
   const [modal, setModal] = useState(false);
   const [form, setForm] = useState(EMPTY);
   const [editId, setEditId] = useState<number | null>(null);
+  const [phoneError, setPhoneError] = useState("");
 
   const load = useCallback(() => {
     setLoading(true);
@@ -35,6 +37,7 @@ export function Doctors() {
   function openNew() {
     setForm(EMPTY);
     setEditId(null);
+    setPhoneError("");
     setModal(true);
   }
 
@@ -43,17 +46,23 @@ export function Doctors() {
       user: d.user_id,
       specialty: d.specialty,
       license_number: d.license_number,
-      contact_phone: d.contact_phone,
+      contact_phone: formatPhone(d.contact_phone),
       contact_email: d.contact_email,
       bio: d.bio,
     });
     setEditId(d.id);
+    setPhoneError("");
     setModal(true);
   }
 
   async function submit() {
-    if (editId) await api.patch(`/doctors/profiles/${editId}/`, form);
-    else await api.post("/doctors/profiles/", form);
+    if (!isValidRequiredPhone(form.contact_phone)) {
+      setPhoneError(t("common.phoneInvalid"));
+      return;
+    }
+    const body = { ...form, contact_phone: form.contact_phone.replace(/\D/g, "") };
+    if (editId) await api.patch(`/doctors/profiles/${editId}/`, body);
+    else await api.post("/doctors/profiles/", body);
     setModal(false);
     load();
   }
@@ -67,7 +76,7 @@ export function Doctors() {
     { key: "full_name", header: t("doctors.fullName") },
     { key: "specialty", header: t("doctors.specialty") },
     { key: "license_number", header: t("doctors.license") },
-    { key: "contact_phone", header: t("doctors.contactPhone") },
+    { key: "contact_phone", header: t("doctors.contactPhone"), render: (r) => formatPhone(r.contact_phone) },
     { key: "contact_email", header: t("doctors.contactEmail") },
   ];
 
@@ -132,10 +141,18 @@ export function Doctors() {
           </Field>
           <Field label={t("doctors.contactPhone")}>
             <input
+              type="tel"
+              inputMode="tel"
               value={form.contact_phone}
-              onChange={(e) => setForm({ ...form, contact_phone: e.target.value })}
+              placeholder="(809) 555-1212"
+              maxLength={14}
+              onChange={(e) => {
+                setForm({ ...form, contact_phone: formatPhoneInput(e.target.value) });
+                setPhoneError("");
+              }}
               required
             />
+            {phoneError && <span className="field-error">{phoneError}</span>}
           </Field>
           <Field label={t("doctors.contactEmail")}>
             <input

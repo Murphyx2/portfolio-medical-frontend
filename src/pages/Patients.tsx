@@ -4,6 +4,7 @@ import { useTranslation } from "react-i18next";
 import { Field, FormModal, Page, Spinner, Table, type Column } from "../components/ui";
 import { api } from "../services/api";
 import type { ARS, MedicalCenter, Paginated, Patient } from "../services/types";
+import { formatPhone, formatPhoneInput, isValidPhone } from "../utils/phone";
 
 const EMPTY = {
   first_name: "",
@@ -36,6 +37,7 @@ export function Patients() {
   const [modal, setModal] = useState(false);
   const [form, setForm] = useState(EMPTY);
   const [editId, setEditId] = useState<number | null>(null);
+  const [phoneError, setPhoneError] = useState("");
 
   const load = useCallback(() => {
     setLoading(true);
@@ -66,6 +68,7 @@ export function Patients() {
   function openNew() {
     setForm(EMPTY);
     setEditId(null);
+    setPhoneError("");
     setModal(true);
   }
 
@@ -75,7 +78,7 @@ export function Patients() {
       last_name: p.last_name,
       birth_date: p.birth_date ?? "",
       gender: p.gender,
-      phone: p.phone,
+      phone: formatPhone(p.phone),
       address: p.address,
       email: p.email,
       cedula: p.cedula,
@@ -85,13 +88,19 @@ export function Patients() {
       center: p.center ? String(p.center) : "",
     });
     setEditId(p.id);
+    setPhoneError("");
     setModal(true);
   }
 
   async function submit() {
+    if (!isValidPhone(form.phone)) {
+      setPhoneError(t("common.phoneInvalid"));
+      return;
+    }
     const body = {
       ...form,
       birth_date: form.birth_date || null,
+      phone: form.phone.replace(/\D/g, ""),
       cedula: form.cedula.replace(/\D/g, ""),
       ars: form.ars ? Number(form.ars) : null,
       ars_program: form.ars_program ? Number(form.ars_program) : null,
@@ -112,7 +121,7 @@ export function Patients() {
     { key: "full_name", header: t("common.name"), render: (r) => r.full_name },
     { key: "age", header: t("patients.age"), render: (r) => (r.age ?? "-") },
     { key: "gender", header: t("patients.gender") },
-    { key: "phone", header: t("patients.phone") },
+    { key: "phone", header: t("patients.phone"), render: (r) => formatPhone(r.phone) },
     { key: "email", header: t("common.email") },
     { key: "cedula", header: t("patients.cedula"), render: (r) => (r.cedula ? formatCedula(r.cedula) : "") },
     { key: "nss", header: t("patients.nss") },
@@ -157,6 +166,15 @@ export function Patients() {
               required
             />
           </Field>
+          <Field label={t("patients.cedula")}>
+            <input
+              value={form.cedula}
+              placeholder="000-0000000-0"
+              inputMode="numeric"
+              maxLength={13}
+              onChange={(e) => setForm({ ...form, cedula: formatCedula(e.target.value) })}
+            />
+          </Field>
           <Field label={t("patients.birthDate")}>
             <input
               type="date"
@@ -177,18 +195,17 @@ export function Patients() {
           </Field>
           <Field label={t("patients.phone")}>
             <input
+              type="tel"
+              inputMode="tel"
               value={form.phone}
-              onChange={(e) => setForm({ ...form, phone: e.target.value })}
+              placeholder="(809) 555-1212"
+              maxLength={14}
+              onChange={(e) => {
+                setForm({ ...form, phone: formatPhoneInput(e.target.value) });
+                setPhoneError("");
+              }}
             />
-          </Field>
-          <Field label={t("patients.cedula")}>
-            <input
-              value={form.cedula}
-              placeholder="000-0000000-0"
-              inputMode="numeric"
-              maxLength={13}
-              onChange={(e) => setForm({ ...form, cedula: formatCedula(e.target.value) })}
-            />
+            {phoneError && <span className="field-error">{phoneError}</span>}
           </Field>
           <Field label={t("patients.nss")}>
             <input

@@ -95,7 +95,15 @@ export function Records() {
   }
 
   const columns: Column<MedicalRecord>[] = [
-    { key: "patient", header: t("records.patient"), render: (r) => r.patient_info.full_name },
+    {
+      key: "patient",
+      header: t("records.patient"),
+      render: (r) => (
+        <button type="button" className="row-link" onClick={() => openDetail(r)}>
+          {r.patient_info.full_name}
+        </button>
+      ),
+    },
     { key: "title", header: t("records.title") },
     { key: "date", header: t("records.date"), render: (r) => new Date(r.date).toLocaleString() },
     { key: "created_by_name", header: t("records.doctor") },
@@ -118,7 +126,7 @@ export function Records() {
       {loading ? (
         <Spinner />
       ) : (
-        <Table columns={columns} rows={rows} onEdit={canCreate ? openDetail : undefined} />
+        <Table columns={columns} rows={rows} />
       )}
 
       {detail && (
@@ -143,8 +151,9 @@ export function Records() {
             }}
           >
             <h3>
-              {detail.title} — {detail.patient_info.full_name}
+              {t("records.title")} · {detail.patient_info.full_name}
             </h3>
+            <p className="muted record-subtitle">{detail.title}</p>
             <div className="kv-grid">
               <div><b>{t("records.diagnosis")}:</b> {detail.diagnosis || "—"}</div>
               <div><b>{t("records.treatment")}:</b> {detail.treatment || "—"}</div>
@@ -202,7 +211,7 @@ export function Records() {
               </form>
             )}
             <div className="modal-actions">
-              <button className="btn ghost" onClick={() => setDetail(null)}>{t("common.close") || "Close"}</button>
+              <button className="btn ghost" onClick={() => setDetail(null)}>{t("common.close")}</button>
             </div>
           </div>
         </div>

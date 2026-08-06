@@ -17,7 +17,7 @@
 import { fireEvent, render, screen } from "@testing-library/react";
 import { describe, expect, it, vi } from "vitest";
 
-import { FormModal } from "./ui";
+import { FormModal, Table } from "./ui";
 
 function renderModal(onClose = vi.fn()) {
   const utils = render(
@@ -63,7 +63,7 @@ describe("FormModal backdrop close", () => {
 
   it("closes via the Cancel button regardless of where the press started", () => {
     const { onClose } = renderModal();
-    fireEvent.click(screen.getByRole("button", { name: "Cancel" }));
+    fireEvent.click(screen.getByRole("button", { name: "Cancelar" }));
     expect(onClose).toHaveBeenCalledTimes(1);
   });
 
@@ -78,5 +78,28 @@ describe("FormModal backdrop close", () => {
     fireEvent.click(backdrop);
     // Spec: the press started inside the modal, so the modal must stay open.
     expect(onClose).not.toHaveBeenCalled();
+  });
+
+  it("translates the shared Table chrome (Actions header, Edit/Delete buttons, empty state)", () => {
+    const rows = [
+      { id: 1, name: "Ana" },
+      { id: 2, name: "Luis" },
+    ];
+    render(
+      <Table
+        columns={[{ key: "name", header: "Nombre" }]}
+        rows={rows}
+        onEdit={() => {}}
+        onDelete={() => {}}
+      />,
+    );
+    expect(screen.getByRole("columnheader", { name: "Acciones" })).toBeInTheDocument();
+    expect(screen.getAllByRole("button", { name: "Editar" })).toHaveLength(2);
+    expect(screen.getAllByRole("button", { name: "Eliminar" })).toHaveLength(2);
+  });
+
+  it("renders the empty-state label translated when no rows", () => {
+    render(<Table columns={[{ key: "name", header: "Nombre" }]} rows={[]} />);
+    expect(screen.getByText("No se encontraron datos")).toBeInTheDocument();
   });
 });

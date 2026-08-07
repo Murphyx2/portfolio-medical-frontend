@@ -38,6 +38,8 @@
     "create": "Crear",
     "new": "Nuevo",
     "search": "Buscar",
+    "searchPlaceholder": "Buscar (mín. 4 caracteres)",
+    "minChars": "Escribe al menos 4 caracteres",
     "actions": "Acciones",
     "loading": "Cargando...",
     "noData": "No se encontraron datos",
@@ -144,7 +146,7 @@
     "newRecord": "Nuevo expediente",
     "newLog": "Nuevo registro de consulta",
     "patient": "Paciente",
-    "title": "Título",
+    "recordTitle": "Título",
     "date": "Fecha",
     "diagnosis": "Diagnóstico",
     "treatment": "Tratamiento",
@@ -158,7 +160,8 @@
     "images": "Imágenes",
     "addImage": "Añadir imagen",
     "uploadImage": "Subir imagen",
-    "caption": "Título de la imagen"
+    "caption": "Título de la imagen",
+    "patientPickerPlaceholder": "Buscar paciente por nombre, cédula o NSS…"
   },
   "pagination": {
     "prev": "Anterior",

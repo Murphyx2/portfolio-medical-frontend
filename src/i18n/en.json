@@ -38,6 +38,8 @@
     "create": "Create",
     "new": "New",
     "search": "Search",
+    "searchPlaceholder": "Search (min 4 characters)",
+    "minChars": "Type at least 4 characters",
     "actions": "Actions",
     "loading": "Loading...",
     "noData": "No data found",
@@ -144,7 +146,7 @@
     "newRecord": "New record",
     "newLog": "New consultation log",
     "patient": "Patient",
-    "title": "Title",
+    "recordTitle": "Title",
     "date": "Date",
     "diagnosis": "Diagnosis",
     "treatment": "Treatment",
@@ -158,7 +160,8 @@
     "images": "Images",
     "addImage": "Add image",
     "uploadImage": "Upload image",
-    "caption": "Caption"
+    "caption": "Caption",
+    "patientPickerPlaceholder": "Search patient by name, cedula or NSS…"
   },
   "pagination": {
     "prev": "Previous",

@@ -103,10 +103,18 @@ export interface RecordImage {
   uploaded_by: number | null;
 }
 
+export interface PatientLite {
+  id: number;
+  full_name: string;
+  gender: string;
+  cedula: string;
+  nss: string;
+}
+
 export interface MedicalRecord {
   id: number;
   patient: number;
-  patient_info: { id: number; full_name: string; gender: string };
+  patient_info: PatientLite;
   created_by: number;
   created_by_name: string;
   center: number | null;
@@ -123,7 +131,7 @@ export interface MedicalRecord {
 export interface ConsultationLog {
   id: number;
   patient: number;
-  patient_info: { id: number; full_name: string; gender: string };
+  patient_info: PatientLite;
   doctor: number;
   doctor_name: string;
   center: number | null;

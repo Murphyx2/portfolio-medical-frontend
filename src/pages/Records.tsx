@@ -1,7 +1,8 @@
 import { useCallback, useEffect, useRef, useState, type FormEvent } from "react";
 import { useTranslation } from "react-i18next";
 
-import { Field, FormModal, Page, Pagination, Spinner, Table, type Column } from "../components/ui";
+import { Field, FormModal, Page, Pagination, SearchableSelect, SearchBar, Spinner, Table, type Column } from "../components/ui";
+import { useListControls } from "../hooks/useListControls";
 import { api, upload } from "../services/api";
 import type { ConsultationLog, MedicalRecord, Paginated, Patient } from "../services/types";
 import { useAuth } from "../store/auth";
@@ -24,6 +25,17 @@ const EMPTY_LOG = {
   notes: "",
 };
 
+function formatCedula(value: string): string {
+  const digits = value.replace(/\D/g, "").slice(0, 11);
+  if (digits.length <= 3) return digits;
+  if (digits.length <= 10) return `${digits.slice(0, 3)}-${digits.slice(3)}`;
+  return `${digits.slice(0, 3)}-${digits.slice(3, 10)}-${digits.slice(10)}`;
+}
+
+function recordTitleFor(patient: Patient): string {
+  return `${patient.full_name} — ${new Date().toLocaleDateString()}`;
+}
+
 export function Records() {
   const { t } = useTranslation();
   const { user } = useAuth();
@@ -36,17 +48,31 @@ export function Records() {
   const [logs, setLogs] = useState<ConsultationLog[]>([]);
   const [modal, setModal] = useState<"record" | "log" | null>(null);
   const [form, setForm] = useState(EMPTY_RECORD);
+  const [selectedPatient, setSelectedPatient] = useState<Patient | null>(null);
   const [logForm, setLogForm] = useState(EMPTY_LOG);
   const [imageFile, setImageFile] = useState<File | null>(null);
   const [caption, setCaption] = useState("");
-  const [page, setPage] = useState(1);
-  const [pageSize, setPageSize] = useState(50);
-  const [count, setCount] = useState(0);
+  const {
+    page,
+    setPage,
+    pageSize,
+    count,
+    setCount,
+    search,
+    setSearch,
+    sortKey,
+    sortDir,
+    handleSort,
+    changePageSize,
+    query,
+  } = useListControls({ key: "date", dir: "desc" });
+
+  const qs = query();
 
   const load = useCallback(() => {
     setLoading(true);
     api
-      .get<Paginated<MedicalRecord>>(`/medical-records/?ordering=-date&page=${page}&page_size=${pageSize}`)
+      .get<Paginated<MedicalRecord>>(`/medical-records/?${qs}`)
       .then((r) => {
         setRows(r.results);
         setCount(r.count);
@@ -54,17 +80,12 @@ export function Records() {
         if (total > 0 && page > total) setPage(total);
       })
       .finally(() => setLoading(false));
-  }, [page, pageSize]);
+  }, [qs, page, pageSize, setCount, setPage]);
 
   useEffect(() => {
     load();
     api.get<Paginated<Patient>>("/patients/?page_size=100").then((r) => setPatients(r.results)).catch(() => {});
   }, [load]);
-
-  function changePageSize(size: number) {
-    setPageSize(size);
-    setPage(1);
-  }
 
   async function openDetail(rec: MedicalRecord) {
     const full = await api.get<MedicalRecord>(`/medical-records/${rec.id}/`);
@@ -107,30 +128,71 @@ export function Records() {
     setDetail(full);
   }
 
+  const openDetailLink = (rec: MedicalRecord) => (
+    <button type="button" className="row-link" onClick={() => openDetail(rec)}>
+      {rec.patient_info.full_name}
+    </button>
+  );
+
   const columns: Column<MedicalRecord>[] = [
     {
-      key: "patient",
+      key: "full_name",
       header: t("records.patient"),
+      sortKey: "patient__search_name",
+      render: (r) => openDetailLink(r),
+    },
+    {
+      key: "cedula",
+      header: t("common.cedula"),
       render: (r) => (
         <button type="button" className="row-link" onClick={() => openDetail(r)}>
-          {r.patient_info.full_name}
+          {formatCedula(r.patient_info.cedula)}
         </button>
       ),
     },
-    { key: "title", header: t("records.title") },
-    { key: "date", header: t("records.date"), render: (r) => new Date(r.date).toLocaleString() },
-    { key: "created_by_name", header: t("records.doctor") },
+    {
+      key: "nss",
+      header: t("common.nss"),
+      render: (r) => (
+        <button type="button" className="row-link" onClick={() => openDetail(r)}>
+          {r.patient_info.nss || "—"}
+        </button>
+      ),
+    },
+    { key: "title", header: t("records.recordTitle"), sortKey: "title" },
+    { key: "date", header: t("records.date"), sortKey: "date", render: (r) => new Date(r.date).toLocaleString() },
+    { key: "created_by_name", header: t("records.doctor"), sortKey: "created_by__username" },
   ];
+
+  function openRecordForm() {
+    const initial = patients[0] ?? null;
+    setSelectedPatient(initial);
+    setForm({
+      ...EMPTY_RECORD,
+      patient: initial?.id ?? 0,
+      title: initial ? recordTitleFor(initial) : "",
+    });
+    setModal("record");
+  }
+
+  function pickPatient(p: Patient) {
+    setSelectedPatient(p);
+    setForm({ ...form, patient: p.id, title: recordTitleFor(p) });
+  }
+
+  const searchPatients = useCallback((q: string): Promise<Patient[]> => {
+    return api
+      .get<Paginated<Patient>>(`/patients/?page_size=20${q ? `&search=${encodeURIComponent(q)}` : ""}`)
+      .then((r) => r.results)
+      .catch(() => []);
+  }, []);
 
   return (
     <Page
       title={t("records.title")}
       actions={
         canCreate && (
-          <button
-            className="btn primary"
-            onClick={() => { setForm({ ...EMPTY_RECORD, patient: patients[0]?.id ?? 0 }); setModal("record"); }}
-          >
+          <button className="btn primary" onClick={openRecordForm}>
             + {t("records.newRecord")}
           </button>
         )
@@ -140,8 +202,22 @@ export function Records() {
         <Spinner />
       ) : (
         <>
+          <div className="list-toolbar">
+            <SearchBar
+              value={search}
+              onChange={setSearch}
+              placeholder={t("common.searchPlaceholder")}
+              label={t("common.search")}
+            />
+          </div>
           <Pagination page={page} count={count} pageSize={pageSize} onChange={setPage} onPageSizeChange={changePageSize} />
-          <Table columns={columns} rows={rows} />
+          <Table
+            columns={columns}
+            rows={rows}
+            sortKey={sortKey}
+            sortDir={sortDir}
+            onSort={handleSort}
+          />
           <Pagination page={page} count={count} pageSize={pageSize} onChange={setPage} onPageSizeChange={changePageSize} />
         </>
       )}
@@ -242,14 +318,16 @@ export function Records() {
           submitLabel={t("common.save")}
         >
           <Field label={t("records.patient")}>
-            <select value={form.patient} onChange={(e) => setForm({ ...form, patient: Number(e.target.value) })} required>
-              <option value={0} disabled>—</option>
-              {patients.map((p) => (
-                <option key={p.id} value={p.id}>{p.full_name}</option>
-              ))}
-            </select>
+            <SearchableSelect<Patient>
+              value={selectedPatient}
+              onSelect={pickPatient}
+              search={searchPatients}
+              placeholder={t("records.patientPickerPlaceholder")}
+              getLabel={(p) => p.full_name}
+              getSublabel={(p) => `${formatCedula(p.cedula)} · NSS ${p.nss || "—"}`}
+            />
           </Field>
-          <Field label={t("records.title")}>
+          <Field label={t("records.recordTitle")}>
             <input value={form.title} onChange={(e) => setForm({ ...form, title: e.target.value })} required />
           </Field>
           <Field label={t("records.diagnosis")}>

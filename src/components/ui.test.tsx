@@ -17,7 +17,7 @@
 import { fireEvent, render, screen } from "@testing-library/react";
 import { describe, expect, it, vi } from "vitest";
 
-import { FormModal, Pagination, Table } from "./ui";
+import { FormModal, Pagination, SearchableSelect, SearchBar, Table } from "./ui";
 
 function renderModal(onClose = vi.fn()) {
   const utils = render(
@@ -180,5 +180,133 @@ describe("Pagination", () => {
     expect(screen.getByRole("button", { name: "5" })).toBeInTheDocument();
     expect(screen.getByRole("button", { name: "8" })).toBeInTheDocument();
     expect(screen.getByText(/Página 4 de 8/)).toBeInTheDocument();
+  });
+});
+
+describe("Table sorting", () => {
+  const sortableColumns = [{ key: "name", header: "Nombre", sortKey: "name" }];
+
+  it("renders a sort button with the neutral arrow and aria-sort=none for sortable columns", () => {
+    render(<Table columns={sortableColumns} rows={[]} onSort={() => {}} />);
+    const th = screen.getByRole("columnheader", { name: /Nombre/ });
+    expect(th.getAttribute("aria-sort")).toBe("none");
+    expect(screen.getByText("↕")).toBeInTheDocument();
+  });
+
+  it("calls onSort with the column sortKey when the header is clicked", () => {
+    const onSort = vi.fn();
+    render(<Table columns={sortableColumns} rows={[]} onSort={onSort} />);
+    fireEvent.click(screen.getByRole("button", { name: /Nombre/ }));
+    expect(onSort).toHaveBeenCalledWith("name");
+  });
+
+  it("shows the ascending arrow and aria-sort=ascending when actively sorted asc", () => {
+    render(<Table columns={sortableColumns} rows={[]} sortKey="name" sortDir="asc" onSort={() => {}} />);
+    const th = screen.getByRole("columnheader", { name: /Nombre/ });
+    expect(th.getAttribute("aria-sort")).toBe("ascending");
+    expect(screen.getByText("▲")).toBeInTheDocument();
+  });
+
+  it("shows the descending arrow and aria-sort=descending when actively sorted desc", () => {
+    render(<Table columns={sortableColumns} rows={[]} sortKey="name" sortDir="desc" onSort={() => {}} />);
+    const th = screen.getByRole("columnheader", { name: /Nombre/ });
+    expect(th.getAttribute("aria-sort")).toBe("descending");
+    expect(screen.getByText("▼")).toBeInTheDocument();
+  });
+
+  it("does NOT render a sort button for a column without a sortKey (no onSort wiring either)", () => {
+    render(
+      <Table
+        columns={[
+          { key: "name", header: "Nombre" },
+          { key: "date", header: "Fecha", sortKey: "date" },
+        ]}
+        rows={[]}
+        onSort={() => {}}
+      />,
+    );
+    const plain = screen.getByRole("columnheader", { name: "Nombre" });
+    expect(plain.querySelector("button")).toBeNull();
+    expect(plain.getAttribute("aria-sort")).toBeNull();
+    expect(screen.getByRole("button", { name: /Fecha/ })).toBeInTheDocument();
+  });
+});
+
+describe("SearchBar", () => {
+  it("renders an input with placeholder and aria-label and forwards changes", () => {
+    const onChange = vi.fn();
+    render(
+      <SearchBar
+        value=""
+        onChange={onChange}
+        placeholder="Buscar (mín. 4 caracteres)"
+        label="Buscar"
+      />,
+    );
+    const input = screen.getByRole("searchbox", { name: "Buscar" });
+    expect(input).toHaveAttribute("placeholder", "Buscar (mín. 4 caracteres)");
+    fireEvent.change(input, { target: { value: "ana" } });
+    expect(onChange).toHaveBeenCalledWith("ana");
+  });
+});
+
+describe("SearchableSelect", () => {
+  const options = [
+    { id: 1, full_name: "Ana Perez", cedula: "001-0000000-0", nss: "12345678901" },
+    { id: 2, full_name: "Luis Perez", cedula: "002-0000000-0", nss: "98765432109" },
+  ];
+
+  function setup() {
+    const onSelect = vi.fn();
+    const search = vi.fn(async (q: string) =>
+      options.filter((o) => o.full_name.toLowerCase().includes(q.toLowerCase())),
+    );
+    const utils = render(
+      <SearchableSelect
+        value={options[0]}
+        onSelect={onSelect}
+        search={search}
+        placeholder="Buscar paciente"
+        getLabel={(p) => p.full_name}
+        getSublabel={(p) => `${p.cedula} · NSS ${p.nss}`}
+      />,
+    );
+    return { ...utils, onSelect, search };
+  }
+
+  it("shows the selected value with label and sublabel as a trigger", () => {
+    setup();
+    expect(screen.getByText("Ana Perez")).toBeInTheDocument();
+    expect(screen.getByText("001-0000000-0 · NSS 12345678901")).toBeInTheDocument();
+    expect(screen.getByRole("button")).toBeInTheDocument();
+  });
+
+  it("opens an input on click, searches from the 4th character and selects an option", async () => {
+    vi.useFakeTimers();
+    try {
+      const { onSelect, search } = setup();
+      fireEvent.click(screen.getByRole("button"));
+      const input = screen.getByRole("textbox");
+      fireEvent.change(input, { target: { value: "luis" } });
+      await vi.advanceTimersByTimeAsync(300);
+      expect(search).toHaveBeenCalledWith("luis");
+      fireEvent.click(screen.getByRole("button", { name: /Luis Perez/ }));
+      expect(onSelect).toHaveBeenCalledWith(options[1]);
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
+  it("shows the min-chars hint before reaching the 4th character", async () => {
+    vi.useFakeTimers();
+    try {
+      setup();
+      fireEvent.click(screen.getByRole("button"));
+      fireEvent.change(screen.getByRole("textbox"), { target: { value: "an" } });
+      await vi.advanceTimersByTimeAsync(300);
+      expect(screen.getByText("Escribe al menos 4 caracteres")).toBeInTheDocument();
+    } finally {
+      vi.useRealTimers();
+    }
   });
 });

@@ -1,7 +1,8 @@
 import { useCallback, useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 
-import { Field, FormModal, Page, Pagination, Spinner, Table, type Column } from "../components/ui";
+import { Field, FormModal, Page, Pagination, SearchBar, Spinner, Table, type Column } from "../components/ui";
+import { useListControls } from "../hooks/useListControls";
 import { api } from "../services/api";
 import type {
   Appointment,
@@ -25,14 +26,27 @@ export function Appointments() {
   const [loading, setLoading] = useState(true);
   const [modal, setModal] = useState(false);
   const [form, setForm] = useState(EMPTY);
-  const [page, setPage] = useState(1);
-  const [pageSize, setPageSize] = useState(50);
-  const [count, setCount] = useState(0);
+  const {
+    page,
+    setPage,
+    pageSize,
+    count,
+    setCount,
+    search,
+    setSearch,
+    sortKey,
+    sortDir,
+    handleSort,
+    changePageSize,
+    query,
+  } = useListControls({ key: "date_time", dir: "asc" });
+
+  const qs = query();
 
   const load = useCallback(() => {
     setLoading(true);
     api
-      .get<Paginated<Appointment>>(`/appointments/?ordering=date_time&page=${page}&page_size=${pageSize}`)
+      .get<Paginated<Appointment>>(`/appointments/?${qs}`)
       .then((r) => {
         setRows(r.results);
         setCount(r.count);
@@ -40,7 +54,7 @@ export function Appointments() {
         if (total > 0 && page > total) setPage(total);
       })
       .finally(() => setLoading(false));
-  }, [page, pageSize]);
+  }, [qs, page, pageSize, setCount, setPage]);
 
   useEffect(() => {
     load();
@@ -48,11 +62,6 @@ export function Appointments() {
     api.get<Paginated<DoctorProfile>>("/doctors/profiles/?page_size=100").then((r) => setDoctors(r.results)).catch(() => {});
     api.get<Paginated<MedicalCenter>>("/centers/?page_size=100").then((r) => setCenters(r.results)).catch(() => {});
   }, [load]);
-
-  function changePageSize(size: number) {
-    setPageSize(size);
-    setPage(1);
-  }
 
   async function submit() {
     await api.post("/appointments/", {
@@ -79,11 +88,11 @@ export function Appointments() {
   const statusLabel = (s: string) => t(`appointments.status${s[0]}${s.slice(1).toLowerCase()}`);
 
   const columns: Column<Appointment>[] = [
-    { key: "date_time", header: t("appointments.dateTime"), render: (r) => new Date(r.date_time).toLocaleString() },
-    { key: "patient", header: t("appointments.patient"), render: (r) => r.patient_info.full_name },
-    { key: "doctor", header: t("appointments.doctor"), render: (r) => r.doctor_info.full_name },
-    { key: "center", header: t("appointments.center"), render: (r) => r.center_name ?? "—" },
-    { key: "status", header: t("common.status"), render: (r) => <span className={`badge status-${r.status.toLowerCase()}`}>{statusLabel(r.status)}</span> },
+    { key: "date_time", header: t("appointments.dateTime"), sortKey: "date_time", render: (r) => new Date(r.date_time).toLocaleString() },
+    { key: "patient", header: t("appointments.patient"), sortKey: "patient__search_name", render: (r) => r.patient_info.full_name },
+    { key: "doctor", header: t("appointments.doctor"), sortKey: "doctor__user__last_name", render: (r) => r.doctor_info.full_name },
+    { key: "center", header: t("appointments.center"), sortKey: "center__name", render: (r) => r.center_name ?? "—" },
+    { key: "status", header: t("common.status"), sortKey: "status", render: (r) => <span className={`badge status-${r.status.toLowerCase()}`}>{statusLabel(r.status)}</span> },
     {
       key: "actions",
       header: t("common.actions"),
@@ -115,8 +124,22 @@ export function Appointments() {
         <Spinner />
       ) : (
         <>
+          <div className="list-toolbar">
+            <SearchBar
+              value={search}
+              onChange={setSearch}
+              placeholder={t("common.searchPlaceholder")}
+              label={t("common.search")}
+            />
+          </div>
           <Pagination page={page} count={count} pageSize={pageSize} onChange={setPage} onPageSizeChange={changePageSize} />
-          <Table columns={columns} rows={rows} />
+          <Table
+            columns={columns}
+            rows={rows}
+            sortKey={sortKey}
+            sortDir={sortDir}
+            onSort={handleSort}
+          />
           <Pagination page={page} count={count} pageSize={pageSize} onChange={setPage} onPageSizeChange={changePageSize} />
         </>
       )}

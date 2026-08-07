@@ -1,4 +1,4 @@
-import { useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 import type { ReactNode } from "react";
 import { useTranslation } from "react-i18next";
 
@@ -89,7 +89,10 @@ export interface Column<T> {
   key: string;
   header: string;
   render?: (row: T) => ReactNode;
+  sortKey?: string;
 }
+
+export type SortDir = "asc" | "desc";
 
 export function Table<T extends { id: number }>({
   columns,
@@ -97,12 +100,18 @@ export function Table<T extends { id: number }>({
   onEdit,
   onDelete,
   emptyLabel,
+  sortKey,
+  sortDir,
+  onSort,
 }: {
   columns: Column<T>[];
   rows: T[];
   onEdit?: (row: T) => void;
   onDelete?: (row: T) => void;
   emptyLabel?: string;
+  sortKey?: string | null;
+  sortDir?: SortDir | null;
+  onSort?: (key: string) => void;
 }) {
   const { t } = useTranslation();
   return (
@@ -110,9 +119,39 @@ export function Table<T extends { id: number }>({
       <table className="data-table">
         <thead>
           <tr>
-            {columns.map((c) => (
-              <th key={c.key}>{c.header}</th>
-            ))}
+            {columns.map((c) => {
+              const sortable = Boolean(c.sortKey && onSort);
+              const active = sortable && sortKey === c.sortKey && (sortDir === "asc" || sortDir === "desc");
+              return (
+                <th
+                  key={c.key}
+                  aria-sort={
+                    sortable
+                      ? active
+                        ? sortDir === "asc"
+                          ? "ascending"
+                          : "descending"
+                        : "none"
+                      : undefined
+                  }
+                >
+                  {sortable ? (
+                    <button
+                      type="button"
+                      className={`th-sort${active ? " active" : ""}`}
+                      onClick={() => onSort!(c.sortKey!)}
+                    >
+                      {c.header}
+                      <span className="sort-arrow">
+                        {active ? (sortDir === "asc" ? "▲" : "▼") : "↕"}
+                      </span>
+                    </button>
+                  ) : (
+                    c.header
+                  )}
+                </th>
+              );
+            })}
             {(onEdit || onDelete) && <th>{t("common.actions")}</th>}
           </tr>
         </thead>
@@ -157,6 +196,172 @@ export function Table<T extends { id: number }>({
 export function Spinner() {
   const { t } = useTranslation();
   return <div className="page-center muted">{t("common.loading")}</div>;
+}
+
+export function SearchBar({ value, onChange, placeholder, label }: {
+  value: string;
+  onChange: (value: string) => void;
+  placeholder?: string;
+  label?: string;
+}) {
+  return (
+    <div className="search-bar">
+      <input
+        type="search"
+        value={value}
+        aria-label={label}
+        placeholder={placeholder}
+        onChange={(e) => onChange(e.target.value)}
+      />
+    </div>
+  );
+}
+
+export function SearchableSelect<T extends { id: number }>({
+  value,
+  onSelect,
+  search,
+  placeholder,
+  getLabel,
+  getSublabel,
+  minChars = 4,
+}: {
+  value: T | null;
+  onSelect: (item: T) => void;
+  search: (query: string) => Promise<T[]>;
+  placeholder: string;
+  getLabel: (item: T) => string;
+  getSublabel?: (item: T) => string;
+  minChars?: number;
+}) {
+  const { t } = useTranslation();
+  const wrapRef = useRef<HTMLDivElement>(null);
+  const [editing, setEditing] = useState(false);
+  const [open, setOpen] = useState(false);
+  const [query, setQuery] = useState("");
+  const [items, setItems] = useState<T[]>([]);
+  const [loading, setLoading] = useState(false);
+  const below = query.trim().length > 0 && query.trim().length < minChars;
+
+  useEffect(() => {
+    if (!open) return;
+    let cancelled = false;
+    const id = setTimeout(async () => {
+      setLoading(true);
+      try {
+        const q = query.trim();
+        if (q.length >= minChars || q.length === 0) {
+          const results = await search(q);
+          if (!cancelled) setItems(results);
+        } else {
+          if (!cancelled) setItems([]);
+        }
+      } finally {
+        if (!cancelled) setLoading(false);
+      }
+    }, 250);
+    return () => {
+      cancelled = true;
+      clearTimeout(id);
+    };
+  }, [open, query, search, minChars]);
+
+  useEffect(() => {
+    if (!open) return;
+    function onDoc(e: MouseEvent) {
+      if (wrapRef.current && !wrapRef.current.contains(e.target as Node)) setOpen(false);
+    }
+    function onKey(e: KeyboardEvent) {
+      if (e.key === "Escape") {
+        setEditing(false);
+        setOpen(false);
+      }
+    }
+    document.addEventListener("mousedown", onDoc);
+    document.addEventListener("keydown", onKey);
+    return () => {
+      document.removeEventListener("mousedown", onDoc);
+      document.removeEventListener("keydown", onKey);
+    };
+  }, [open]);
+
+  function startEdit() {
+    setEditing(true);
+    setOpen(true);
+    setQuery("");
+  }
+
+  function pick(item: T) {
+    onSelect(item);
+    setEditing(false);
+    setOpen(false);
+    setQuery("");
+  }
+
+  return (
+    <div className="searchable-select" ref={wrapRef}>
+      {!editing && value ? (
+        <button type="button" className="searchable-select-trigger" onClick={startEdit}>
+          <span className="searchable-select-value">
+            <span className="searchable-select-label">{getLabel(value)}</span>
+            {getSublabel && (
+              <span className="searchable-select-sublabel">{getSublabel(value)}</span>
+            )}
+          </span>
+          <span className="searchable-select-caret" aria-hidden="true">
+            ▾
+          </span>
+        </button>
+      ) : (
+        <div className="searchable-select-input-wrap">
+          <input
+            className="searchable-select-input"
+            autoFocus
+            value={query}
+            placeholder={value ? getLabel(value) : placeholder}
+            onChange={(e) => setQuery(e.target.value)}
+            onFocus={() => {
+              setEditing(true);
+              setOpen(true);
+            }}
+            onKeyDown={(e) => {
+              if (e.key === "Escape") {
+                setEditing(false);
+                setOpen(false);
+              }
+            }}
+          />
+          {open && (
+            <ul className="searchable-select-list">
+              {below && <li className="muted">{t("common.minChars")}</li>}
+              {!below && loading && <li className="muted">{t("common.loading")}</li>}
+              {!below && !loading && items.length === 0 && (
+                <li className="muted">{t("common.noData")}</li>
+              )}
+              {!below &&
+                !loading &&
+                items.map((item) => (
+                  <li key={item.id}>
+                    <button
+                      type="button"
+                      className="searchable-select-option"
+                      onClick={() => pick(item)}
+                    >
+                      <span className="searchable-select-option-label">{getLabel(item)}</span>
+                      {getSublabel && (
+                        <span className="searchable-select-option-sublabel">
+                          {getSublabel(item)}
+                        </span>
+                      )}
+                    </button>
+                  </li>
+                ))}
+            </ul>
+          )}
+        </div>
+      )}
+    </div>
+  );
 }
 
 const PAGE_SIZE_OPTIONS = [50, 75, 100];

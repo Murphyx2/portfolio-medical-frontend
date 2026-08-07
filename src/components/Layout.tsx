@@ -34,7 +34,7 @@ export function Layout({ children }: { children: ReactNode }) {
 
   return (
     <div className="app-shell">
-      <header className="topbar">
+      <aside className="sidebar">
         <span className="brand">{t("app.name")}</span>
         <nav className="nav">
           {items.map((item) => (
@@ -48,18 +48,22 @@ export function Layout({ children }: { children: ReactNode }) {
             </NavLink>
           ))}
         </nav>
-        <div className="topbar-right">
-          <LanguageSwitcher />
-          <span className="user-chip">
-            {user?.full_name || user?.username}{" "}
-            <span className="role-badge">{user?.role}</span>
-          </span>
-          <button className="btn ghost" onClick={handleLogout}>
-            {t("auth.logout")}
-          </button>
-        </div>
-      </header>
-      <main className="content">{children}</main>
+      </aside>
+      <div className="main">
+        <header className="topbar">
+          <div className="topbar-right">
+            <LanguageSwitcher />
+            <span className="user-chip">
+              {user?.full_name || user?.username}{" "}
+              <span className="role-badge">{user?.role}</span>
+            </span>
+            <button className="btn ghost" onClick={handleLogout}>
+              {t("auth.logout")}
+            </button>
+          </div>
+        </header>
+        <main className="content">{children}</main>
+      </div>
     </div>
   );
 }

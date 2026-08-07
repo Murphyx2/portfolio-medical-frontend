@@ -1,7 +1,8 @@
 import { useCallback, useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 
-import { Field, FormModal, Page, Pagination, Spinner, Table, type Column } from "../components/ui";
+import { Field, FormModal, Page, Pagination, SearchBar, Spinner, Table, type Column } from "../components/ui";
+import { useListControls } from "../hooks/useListControls";
 import { api } from "../services/api";
 import type { DoctorProfile, Paginated, User } from "../services/types";
 import { useAuth } from "../store/auth";
@@ -20,14 +21,27 @@ export function Doctors() {
   const [form, setForm] = useState(EMPTY);
   const [editId, setEditId] = useState<number | null>(null);
   const [phoneError, setPhoneError] = useState("");
-  const [page, setPage] = useState(1);
-  const [pageSize, setPageSize] = useState(50);
-  const [count, setCount] = useState(0);
+  const {
+    page,
+    setPage,
+    pageSize,
+    count,
+    setCount,
+    search,
+    setSearch,
+    sortKey,
+    sortDir,
+    handleSort,
+    changePageSize,
+    query,
+  } = useListControls();
+
+  const qs = query();
 
   const load = useCallback(() => {
     setLoading(true);
     api
-      .get<Paginated<DoctorProfile>>(`/doctors/profiles/?page=${page}&page_size=${pageSize}`)
+      .get<Paginated<DoctorProfile>>(`/doctors/profiles/?${qs}`)
       .then((r) => {
         setRows(r.results);
         setCount(r.count);
@@ -35,17 +49,12 @@ export function Doctors() {
         if (total > 0 && page > total) setPage(total);
       })
       .finally(() => setLoading(false));
-  }, [page, pageSize]);
+  }, [qs, page, pageSize, setCount, setPage]);
 
   useEffect(() => {
     load();
     api.get<Paginated<User>>("/auth/users/?page_size=200").then((r) => setUserOptions(r.results)).catch(() => {});
   }, [load]);
-
-  function changePageSize(size: number) {
-    setPageSize(size);
-    setPage(1);
-  }
 
   function openNew() {
     setForm(EMPTY);
@@ -86,11 +95,11 @@ export function Doctors() {
   }
 
   const columns: Column<DoctorProfile>[] = [
-    { key: "full_name", header: t("doctors.fullName") },
-    { key: "specialty", header: t("doctors.specialty") },
-    { key: "license_number", header: t("doctors.license") },
-    { key: "contact_phone", header: t("doctors.contactPhone"), render: (r) => formatPhone(r.contact_phone) },
-    { key: "contact_email", header: t("doctors.contactEmail") },
+    { key: "full_name", header: t("doctors.fullName"), sortKey: "user__last_name" },
+    { key: "specialty", header: t("doctors.specialty"), sortKey: "specialty" },
+    { key: "license_number", header: t("doctors.license"), sortKey: "license_number" },
+    { key: "contact_phone", header: t("doctors.contactPhone"), sortKey: "contact_phone", render: (r) => formatPhone(r.contact_phone) },
+    { key: "contact_email", header: t("doctors.contactEmail"), sortKey: "contact_email" },
   ];
 
   return (
@@ -108,12 +117,23 @@ export function Doctors() {
         <Spinner />
       ) : (
         <>
+          <div className="list-toolbar">
+            <SearchBar
+              value={search}
+              onChange={setSearch}
+              placeholder={t("common.searchPlaceholder")}
+              label={t("common.search")}
+            />
+          </div>
           <Pagination page={page} count={count} pageSize={pageSize} onChange={setPage} onPageSizeChange={changePageSize} />
           <Table
             columns={columns}
             rows={rows}
             onEdit={canEdit ? openEdit : undefined}
             onDelete={canEdit ? remove : undefined}
+            sortKey={sortKey}
+            sortDir={sortDir}
+            onSort={handleSort}
           />
           <Pagination page={page} count={count} pageSize={pageSize} onChange={setPage} onPageSizeChange={changePageSize} />
         </>

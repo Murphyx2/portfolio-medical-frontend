@@ -1,8 +1,9 @@
 import { useCallback, useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 
-import { Field, FormModal, Page, Pagination, Spinner, Table, type Column } from "../components/ui";
+import { Field, FormModal, Page, Pagination, SearchBar, Spinner, Table, type Column } from "../components/ui";
 import { RoleGate } from "../components/guards";
+import { useListControls } from "../hooks/useListControls";
 import { api } from "../services/api";
 import type { Paginated, User } from "../services/types";
 
@@ -15,14 +16,27 @@ export function Users() {
   const [modal, setModal] = useState(false);
   const [form, setForm] = useState(EMPTY);
   const [roles, setRoles] = useState<{ value: string; label: string }[]>([]);
-  const [page, setPage] = useState(1);
-  const [pageSize, setPageSize] = useState(50);
-  const [count, setCount] = useState(0);
+  const {
+    page,
+    setPage,
+    pageSize,
+    count,
+    setCount,
+    search,
+    setSearch,
+    sortKey,
+    sortDir,
+    handleSort,
+    changePageSize,
+    query,
+  } = useListControls();
+
+  const qs = query();
 
   const load = useCallback(() => {
     setLoading(true);
     api
-      .get<Paginated<User>>(`/auth/users/?page=${page}&page_size=${pageSize}`)
+      .get<Paginated<User>>(`/auth/users/?${qs}`)
       .then((r) => {
         setRows(r.results);
         setCount(r.count);
@@ -30,17 +44,12 @@ export function Users() {
         if (total > 0 && page > total) setPage(total);
       })
       .finally(() => setLoading(false));
-  }, [page, pageSize]);
+  }, [qs, page, pageSize, setCount, setPage]);
 
   useEffect(() => {
     load();
     api.get<{ value: string; label: string }[]>("/auth/users/roles/").then(setRoles).catch(() => {});
   }, [load]);
-
-  function changePageSize(size: number) {
-    setPageSize(size);
-    setPage(1);
-  }
 
   async function submit() {
     await api.post("/auth/users/", form);
@@ -54,11 +63,11 @@ export function Users() {
   }
 
   const columns: Column<User>[] = [
-    { key: "username", header: t("users.username") },
-    { key: "full_name", header: t("common.name") },
-    { key: "email", header: t("users.email") },
-    { key: "role", header: t("users.role") },
-    { key: "is_active", header: t("users.active"), render: (r) => (r.is_active ? "✓" : "—") },
+    { key: "username", header: t("users.username"), sortKey: "username" },
+    { key: "full_name", header: t("common.name"), sortKey: "first_name" },
+    { key: "email", header: t("users.email"), sortKey: "email" },
+    { key: "role", header: t("users.role"), sortKey: "role" },
+    { key: "is_active", header: t("users.active"), sortKey: "is_active", render: (r) => (r.is_active ? "✓" : "—") },
   ];
 
   return (
@@ -75,8 +84,23 @@ export function Users() {
           <Spinner />
         ) : (
           <>
+            <div className="list-toolbar">
+              <SearchBar
+                value={search}
+                onChange={setSearch}
+                placeholder={t("common.searchPlaceholder")}
+                label={t("common.search")}
+              />
+            </div>
             <Pagination page={page} count={count} pageSize={pageSize} onChange={setPage} onPageSizeChange={changePageSize} />
-            <Table columns={columns} rows={rows} onDelete={remove} />
+            <Table
+              columns={columns}
+              rows={rows}
+              onDelete={remove}
+              sortKey={sortKey}
+              sortDir={sortDir}
+              onSort={handleSort}
+            />
             <Pagination page={page} count={count} pageSize={pageSize} onChange={setPage} onPageSizeChange={changePageSize} />
           </>
         )}

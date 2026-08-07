@@ -1,7 +1,8 @@
 import { useCallback, useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 
-import { Field, FormModal, Page, Pagination, Spinner, Table, type Column } from "../components/ui";
+import { Field, FormModal, Page, Pagination, SearchBar, Spinner, Table, type Column } from "../components/ui";
+import { useListControls } from "../hooks/useListControls";
 import { api, ApiError } from "../services/api";
 import type { ARS, MedicalCenter, Paginated, Patient } from "../services/types";
 import { formatPhone, formatPhoneInput, isValidPhone, stripToDigits } from "../utils/phone";
@@ -56,14 +57,27 @@ export function Patients() {
   const [editId, setEditId] = useState<number | null>(null);
   const [phoneError, setPhoneError] = useState("");
   const [formError, setFormError] = useState("");
-  const [page, setPage] = useState(1);
-  const [pageSize, setPageSize] = useState(50);
-  const [count, setCount] = useState(0);
+  const {
+    page,
+    setPage,
+    pageSize,
+    count,
+    setCount,
+    search,
+    setSearch,
+    sortKey,
+    sortDir,
+    handleSort,
+    changePageSize,
+    query,
+  } = useListControls();
+
+  const qs = query();
 
   const load = useCallback(() => {
     setLoading(true);
     api
-      .get<Paginated<Patient>>(`/patients/?page=${page}&page_size=${pageSize}`)
+      .get<Paginated<Patient>>(`/patients/?${qs}`)
       .then((r) => {
         setRows(r.results);
         setCount(r.count);
@@ -71,7 +85,7 @@ export function Patients() {
         if (total > 0 && page > total) setPage(total);
       })
       .finally(() => setLoading(false));
-  }, [page, pageSize]);
+  }, [qs, page, pageSize, setCount, setPage]);
 
   useEffect(load, [load]);
 
@@ -90,11 +104,6 @@ export function Patients() {
   }, []);
 
   const selectedArs = arsList.find((a) => String(a.id) === form.ars);
-
-  function changePageSize(size: number) {
-    setPageSize(size);
-    setPage(1);
-  }
 
   function openNew() {
     setForm(EMPTY);
@@ -156,16 +165,16 @@ export function Patients() {
   }
 
   const columns: Column<Patient>[] = [
-    { key: "full_name", header: t("common.name"), render: (r) => r.full_name },
-    { key: "age", header: t("patients.age"), render: (r) => (r.age ?? "-") },
-    { key: "gender", header: t("patients.gender") },
-    { key: "phone", header: t("patients.phone"), render: (r) => formatPhone(r.phone) },
-    { key: "email", header: t("common.email") },
-    { key: "cedula", header: t("patients.cedula"), render: (r) => (r.cedula ? formatCedula(r.cedula) : "") },
-    { key: "nss", header: t("patients.nss") },
-    { key: "ars_name", header: t("patients.ars") },
-    { key: "ars_program_name", header: t("patients.arsProgram") },
-    { key: "center_name", header: t("patients.center"), render: (r) => r.center_name ?? "—" },
+    { key: "full_name", header: t("common.name"), sortKey: "search_name", render: (r) => r.full_name },
+    { key: "age", header: t("patients.age"), sortKey: "age", render: (r) => (r.age ?? "-") },
+    { key: "gender", header: t("patients.gender"), sortKey: "gender" },
+    { key: "phone", header: t("patients.phone"), sortKey: "phone", render: (r) => formatPhone(r.phone) },
+    { key: "email", header: t("common.email"), sortKey: "email" },
+    { key: "cedula", header: t("patients.cedula"), sortKey: "cedula", render: (r) => (r.cedula ? formatCedula(r.cedula) : "") },
+    { key: "nss", header: t("patients.nss"), sortKey: "nss" },
+    { key: "ars_name", header: t("patients.ars"), sortKey: "ars__name" },
+    { key: "ars_program_name", header: t("patients.arsProgram"), sortKey: "ars_program__name" },
+    { key: "center_name", header: t("patients.center"), sortKey: "center__name", render: (r) => r.center_name ?? "—" },
   ];
 
   return (
@@ -181,8 +190,24 @@ export function Patients() {
         <Spinner />
       ) : (
         <>
+          <div className="list-toolbar">
+            <SearchBar
+              value={search}
+              onChange={setSearch}
+              placeholder={t("common.searchPlaceholder")}
+              label={t("common.search")}
+            />
+          </div>
           <Pagination page={page} count={count} pageSize={pageSize} onChange={setPage} onPageSizeChange={changePageSize} />
-          <Table columns={columns} rows={rows} onEdit={openEdit} onDelete={remove} />
+          <Table
+            columns={columns}
+            rows={rows}
+            onEdit={openEdit}
+            onDelete={remove}
+            sortKey={sortKey}
+            sortDir={sortDir}
+            onSort={handleSort}
+          />
           <Pagination page={page} count={count} pageSize={pageSize} onChange={setPage} onPageSizeChange={changePageSize} />
         </>
       )}

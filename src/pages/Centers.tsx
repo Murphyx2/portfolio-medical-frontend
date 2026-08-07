@@ -1,7 +1,8 @@
 import { useCallback, useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 
-import { Field, FormModal, Page, Pagination, Spinner, Table, type Column } from "../components/ui";
+import { Field, FormModal, Page, Pagination, SearchBar, Spinner, Table, type Column } from "../components/ui";
+import { useListControls } from "../hooks/useListControls";
 import { api } from "../services/api";
 import type { MedicalCenter, Paginated } from "../services/types";
 import { useAuth } from "../store/auth";
@@ -19,14 +20,27 @@ export function Centers() {
   const [form, setForm] = useState(EMPTY);
   const [editId, setEditId] = useState<number | null>(null);
   const [phoneError, setPhoneError] = useState("");
-  const [page, setPage] = useState(1);
-  const [pageSize, setPageSize] = useState(50);
-  const [count, setCount] = useState(0);
+  const {
+    page,
+    setPage,
+    pageSize,
+    count,
+    setCount,
+    search,
+    setSearch,
+    sortKey,
+    sortDir,
+    handleSort,
+    changePageSize,
+    query,
+  } = useListControls();
+
+  const qs = query();
 
   const load = useCallback(() => {
     setLoading(true);
     api
-      .get<Paginated<MedicalCenter>>(`/centers/?page=${page}&page_size=${pageSize}`)
+      .get<Paginated<MedicalCenter>>(`/centers/?${qs}`)
       .then((r) => {
         setRows(r.results);
         setCount(r.count);
@@ -34,14 +48,9 @@ export function Centers() {
         if (total > 0 && page > total) setPage(total);
       })
       .finally(() => setLoading(false));
-  }, [page, pageSize]);
+  }, [qs, page, pageSize, setCount, setPage]);
 
   useEffect(load, [load]);
-
-  function changePageSize(size: number) {
-    setPageSize(size);
-    setPage(1);
-  }
 
   function openNew() {
     setForm(EMPTY);
@@ -75,12 +84,12 @@ export function Centers() {
   }
 
   const columns: Column<MedicalCenter>[] = [
-    { key: "name", header: t("centers.name") },
-    { key: "code", header: t("centers.code") },
-    { key: "address", header: t("centers.address") },
-    { key: "phone", header: t("centers.phone"), render: (r) => formatPhone(r.phone) },
-    { key: "email", header: t("centers.email") },
-    { key: "doctor_count", header: t("centers.doctorsCount") },
+    { key: "name", header: t("centers.name"), sortKey: "name" },
+    { key: "code", header: t("centers.code"), sortKey: "code" },
+    { key: "address", header: t("centers.address"), sortKey: "address" },
+    { key: "phone", header: t("centers.phone"), sortKey: "phone", render: (r) => formatPhone(r.phone) },
+    { key: "email", header: t("centers.email"), sortKey: "email" },
+    { key: "doctor_count", header: t("centers.doctorsCount"), sortKey: "doctor_count" },
   ];
 
   return (
@@ -98,12 +107,23 @@ export function Centers() {
         <Spinner />
       ) : (
         <>
+          <div className="list-toolbar">
+            <SearchBar
+              value={search}
+              onChange={setSearch}
+              placeholder={t("common.searchPlaceholder")}
+              label={t("common.search")}
+            />
+          </div>
           <Pagination page={page} count={count} pageSize={pageSize} onChange={setPage} onPageSizeChange={changePageSize} />
           <Table
             columns={columns}
             rows={rows}
             onEdit={canEdit ? openEdit : undefined}
             onDelete={canEdit ? remove : undefined}
+            sortKey={sortKey}
+            sortDir={sortDir}
+            onSort={handleSort}
           />
           <Pagination page={page} count={count} pageSize={pageSize} onChange={setPage} onPageSizeChange={changePageSize} />
         </>

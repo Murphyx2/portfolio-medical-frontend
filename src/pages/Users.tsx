@@ -12,7 +12,6 @@ const EMPTY = { username: "", email: "", first_name: "", last_name: "", password
 export function Users() {
   const { t } = useTranslation();
   const [rows, setRows] = useState<User[]>([]);
-  const [loading, setLoading] = useState(true);
   const [modal, setModal] = useState(false);
   const [form, setForm] = useState(EMPTY);
   const [roles, setRoles] = useState<{ value: string; label: string }[]>([]);
@@ -24,27 +23,29 @@ export function Users() {
     setCount,
     search,
     setSearch,
+    searchSubmit,
     sortKey,
     sortDir,
     handleSort,
     changePageSize,
+    initialLoading,
+    runList,
     query,
   } = useListControls();
 
   const qs = query();
 
   const load = useCallback(() => {
-    setLoading(true);
-    api
-      .get<Paginated<User>>(`/auth/users/?${qs}`)
+    runList((signal) => api.get<Paginated<User>>(`/auth/users/?${qs}`, { signal }))
       .then((r) => {
+        if (!r) return;
         setRows(r.results);
         setCount(r.count);
         const total = Math.ceil(r.count / pageSize);
         if (total > 0 && page > total) setPage(total);
       })
-      .finally(() => setLoading(false));
-  }, [qs, page, pageSize, setCount, setPage]);
+      .catch(() => {});
+  }, [qs, page, pageSize, setCount, setPage, runList]);
 
   useEffect(() => {
     load();
@@ -80,7 +81,7 @@ export function Users() {
           </button>
         }
       >
-        {loading ? (
+        {initialLoading ? (
           <Spinner />
         ) : (
           <>
@@ -88,6 +89,7 @@ export function Users() {
               <SearchBar
                 value={search}
                 onChange={setSearch}
+                onSubmit={searchSubmit}
                 placeholder={t("common.searchPlaceholder")}
                 label={t("common.search")}
               />

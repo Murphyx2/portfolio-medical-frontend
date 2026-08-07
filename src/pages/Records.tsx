@@ -42,7 +42,6 @@ export function Records() {
   const canCreate = user?.role === "DOCTOR" || user?.role === "NURSE" || user?.role === "ADMIN";
   const [rows, setRows] = useState<MedicalRecord[]>([]);
   const [patients, setPatients] = useState<Patient[]>([]);
-  const [loading, setLoading] = useState(true);
   const [detail, setDetail] = useState<MedicalRecord | null>(null);
   const pressOnBackdrop = useRef(false);
   const [logs, setLogs] = useState<ConsultationLog[]>([]);
@@ -60,27 +59,29 @@ export function Records() {
     setCount,
     search,
     setSearch,
+    searchSubmit,
     sortKey,
     sortDir,
     handleSort,
     changePageSize,
+    initialLoading,
+    runList,
     query,
   } = useListControls({ key: "date", dir: "desc" });
 
   const qs = query();
 
   const load = useCallback(() => {
-    setLoading(true);
-    api
-      .get<Paginated<MedicalRecord>>(`/medical-records/?${qs}`)
+    runList((signal) => api.get<Paginated<MedicalRecord>>(`/medical-records/?${qs}`, { signal }))
       .then((r) => {
+        if (!r) return;
         setRows(r.results);
         setCount(r.count);
         const total = Math.ceil(r.count / pageSize);
         if (total > 0 && page > total) setPage(total);
       })
-      .finally(() => setLoading(false));
-  }, [qs, page, pageSize, setCount, setPage]);
+      .catch(() => {});
+  }, [qs, page, pageSize, setCount, setPage, runList]);
 
   useEffect(() => {
     load();
@@ -198,7 +199,7 @@ export function Records() {
         )
       }
     >
-      {loading ? (
+      {initialLoading ? (
         <Spinner />
       ) : (
         <>
@@ -206,6 +207,7 @@ export function Records() {
             <SearchBar
               value={search}
               onChange={setSearch}
+              onSubmit={searchSubmit}
               placeholder={t("common.searchPlaceholder")}
               label={t("common.search")}
             />

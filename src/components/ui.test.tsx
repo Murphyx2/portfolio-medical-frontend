@@ -239,14 +239,22 @@ describe("SearchBar", () => {
       <SearchBar
         value=""
         onChange={onChange}
-        placeholder="Buscar (mín. 4 caracteres)"
+        placeholder="Buscar (mín. 3 caracteres)"
         label="Buscar"
       />,
     );
     const input = screen.getByRole("searchbox", { name: "Buscar" });
-    expect(input).toHaveAttribute("placeholder", "Buscar (mín. 4 caracteres)");
+    expect(input).toHaveAttribute("placeholder", "Buscar (mín. 3 caracteres)");
     fireEvent.change(input, { target: { value: "ana" } });
     expect(onChange).toHaveBeenCalledWith("ana");
+  });
+
+  it("fires onSubmit when Enter is pressed", () => {
+    const onSubmit = vi.fn();
+    render(<SearchBar value="ana" onChange={() => {}} onSubmit={onSubmit} />);
+    const input = screen.getByRole("searchbox");
+    fireEvent.keyDown(input, { key: "Enter" });
+    expect(onSubmit).toHaveBeenCalledTimes(1);
   });
 });
 
@@ -304,7 +312,7 @@ describe("SearchableSelect", () => {
       fireEvent.click(screen.getByRole("button"));
       fireEvent.change(screen.getByRole("textbox"), { target: { value: "an" } });
       await vi.advanceTimersByTimeAsync(300);
-      expect(screen.getByText("Escribe al menos 4 caracteres")).toBeInTheDocument();
+      expect(screen.getByText("Escribe al menos 3 caracteres")).toBeInTheDocument();
     } finally {
       vi.useRealTimers();
     }

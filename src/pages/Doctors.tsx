@@ -16,7 +16,6 @@ export function Doctors() {
   const canEdit = user?.role === "ADMIN" || user?.role === "IT";
   const [rows, setRows] = useState<DoctorProfile[]>([]);
   const [userOptions, setUserOptions] = useState<User[]>([]);
-  const [loading, setLoading] = useState(true);
   const [modal, setModal] = useState(false);
   const [form, setForm] = useState(EMPTY);
   const [editId, setEditId] = useState<number | null>(null);
@@ -29,27 +28,29 @@ export function Doctors() {
     setCount,
     search,
     setSearch,
+    searchSubmit,
     sortKey,
     sortDir,
     handleSort,
     changePageSize,
+    initialLoading,
+    runList,
     query,
   } = useListControls();
 
   const qs = query();
 
   const load = useCallback(() => {
-    setLoading(true);
-    api
-      .get<Paginated<DoctorProfile>>(`/doctors/profiles/?${qs}`)
+    runList((signal) => api.get<Paginated<DoctorProfile>>(`/doctors/profiles/?${qs}`, { signal }))
       .then((r) => {
+        if (!r) return;
         setRows(r.results);
         setCount(r.count);
         const total = Math.ceil(r.count / pageSize);
         if (total > 0 && page > total) setPage(total);
       })
-      .finally(() => setLoading(false));
-  }, [qs, page, pageSize, setCount, setPage]);
+      .catch(() => {});
+  }, [qs, page, pageSize, setCount, setPage, runList]);
 
   useEffect(() => {
     load();
@@ -113,7 +114,7 @@ export function Doctors() {
         )
       }
     >
-      {loading ? (
+      {initialLoading ? (
         <Spinner />
       ) : (
         <>
@@ -121,6 +122,7 @@ export function Doctors() {
             <SearchBar
               value={search}
               onChange={setSearch}
+              onSubmit={searchSubmit}
               placeholder={t("common.searchPlaceholder")}
               label={t("common.search")}
             />

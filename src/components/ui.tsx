@@ -2,6 +2,8 @@ import { useEffect, useRef, useState } from "react";
 import type { ReactNode } from "react";
 import { useTranslation } from "react-i18next";
 
+import { MIN_SEARCH_CHARS } from "../hooks/useListControls";
+
 export function Page({ title, actions, children }: {
   title: string;
   actions?: ReactNode;
@@ -198,11 +200,12 @@ export function Spinner() {
   return <div className="page-center muted">{t("common.loading")}</div>;
 }
 
-export function SearchBar({ value, onChange, placeholder, label }: {
+export function SearchBar({ value, onChange, placeholder, label, onSubmit }: {
   value: string;
   onChange: (value: string) => void;
   placeholder?: string;
   label?: string;
+  onSubmit?: () => void;
 }) {
   return (
     <div className="search-bar">
@@ -212,6 +215,12 @@ export function SearchBar({ value, onChange, placeholder, label }: {
         aria-label={label}
         placeholder={placeholder}
         onChange={(e) => onChange(e.target.value)}
+        onKeyDown={(e) => {
+          if (e.key === "Enter") {
+            e.preventDefault();
+            onSubmit?.();
+          }
+        }}
       />
     </div>
   );
@@ -224,7 +233,7 @@ export function SearchableSelect<T extends { id: number }>({
   placeholder,
   getLabel,
   getSublabel,
-  minChars = 4,
+  minChars = MIN_SEARCH_CHARS,
 }: {
   value: T | null;
   onSelect: (item: T) => void;

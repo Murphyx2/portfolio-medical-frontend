@@ -14,7 +14,6 @@ export function Medicines() {
   const { user } = useAuth();
   const canEdit = user?.role === "ADMIN" || user?.role === "IT";
   const [rows, setRows] = useState<Medicine[]>([]);
-  const [loading, setLoading] = useState(true);
   const [modal, setModal] = useState(false);
   const [form, setForm] = useState(EMPTY);
   const [editId, setEditId] = useState<number | null>(null);
@@ -26,27 +25,29 @@ export function Medicines() {
     setCount,
     search,
     setSearch,
+    searchSubmit,
     sortKey,
     sortDir,
     handleSort,
     changePageSize,
+    initialLoading,
+    runList,
     query,
   } = useListControls();
 
   const qs = query();
 
   const load = useCallback(() => {
-    setLoading(true);
-    api
-      .get<Paginated<Medicine>>(`/medicines/?${qs}`)
+    runList((signal) => api.get<Paginated<Medicine>>(`/medicines/?${qs}`, { signal }))
       .then((r) => {
+        if (!r) return;
         setRows(r.results);
         setCount(r.count);
         const total = Math.ceil(r.count / pageSize);
         if (total > 0 && page > total) setPage(total);
       })
-      .finally(() => setLoading(false));
-  }, [qs, page, pageSize, setCount, setPage]);
+      .catch(() => {});
+  }, [qs, page, pageSize, setCount, setPage, runList]);
 
   useEffect(load, [load]);
 
@@ -91,7 +92,7 @@ export function Medicines() {
         )
       }
     >
-      {loading ? (
+      {initialLoading ? (
         <Spinner />
       ) : (
         <>
@@ -99,6 +100,7 @@ export function Medicines() {
             <SearchBar
               value={search}
               onChange={setSearch}
+              onSubmit={searchSubmit}
               placeholder={t("common.searchPlaceholder")}
               label={t("common.search")}
             />

@@ -6,8 +6,6 @@ import { api, ApiError } from "../services/api";
 import type { ARS, MedicalCenter, Paginated, Patient } from "../services/types";
 import { formatPhone, formatPhoneInput, isValidPhone, stripToDigits } from "../utils/phone";
 
-const PAGE_SIZE = 100;
-
 const EMPTY = {
   first_name: "",
   last_name: "",
@@ -59,20 +57,21 @@ export function Patients() {
   const [phoneError, setPhoneError] = useState("");
   const [formError, setFormError] = useState("");
   const [page, setPage] = useState(1);
+  const [pageSize, setPageSize] = useState(50);
   const [count, setCount] = useState(0);
 
   const load = useCallback(() => {
     setLoading(true);
     api
-      .get<Paginated<Patient>>(`/patients/?page=${page}&page_size=${PAGE_SIZE}`)
+      .get<Paginated<Patient>>(`/patients/?page=${page}&page_size=${pageSize}`)
       .then((r) => {
         setRows(r.results);
         setCount(r.count);
-        const total = Math.ceil(r.count / PAGE_SIZE);
+        const total = Math.ceil(r.count / pageSize);
         if (total > 0 && page > total) setPage(total);
       })
       .finally(() => setLoading(false));
-  }, [page]);
+  }, [page, pageSize]);
 
   useEffect(load, [load]);
 
@@ -91,6 +90,11 @@ export function Patients() {
   }, []);
 
   const selectedArs = arsList.find((a) => String(a.id) === form.ars);
+
+  function changePageSize(size: number) {
+    setPageSize(size);
+    setPage(1);
+  }
 
   function openNew() {
     setForm(EMPTY);
@@ -177,9 +181,9 @@ export function Patients() {
         <Spinner />
       ) : (
         <>
-          <Pagination page={page} count={count} pageSize={PAGE_SIZE} onChange={setPage} />
+          <Pagination page={page} count={count} pageSize={pageSize} onChange={setPage} onPageSizeChange={changePageSize} />
           <Table columns={columns} rows={rows} onEdit={openEdit} onDelete={remove} />
-          <Pagination page={page} count={count} pageSize={PAGE_SIZE} onChange={setPage} />
+          <Pagination page={page} count={count} pageSize={pageSize} onChange={setPage} onPageSizeChange={changePageSize} />
         </>
       )}
 

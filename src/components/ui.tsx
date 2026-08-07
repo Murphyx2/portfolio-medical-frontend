@@ -159,6 +159,8 @@ export function Spinner() {
   return <div className="page-center muted">{t("common.loading")}</div>;
 }
 
+const PAGE_SIZE_OPTIONS = [50, 75, 100];
+
 function pageItems(current: number, total: number): (number | "...")[] {
   if (total <= 7) {
     return Array.from({ length: total }, (_, i) => i + 1);
@@ -177,53 +179,72 @@ function pageItems(current: number, total: number): (number | "...")[] {
   return items;
 }
 
-export function Pagination({ page, count, pageSize, onChange }: {
+export function Pagination({ page, count, pageSize, onChange, onPageSizeChange }: {
   page: number;
   count: number;
   pageSize: number;
   onChange: (page: number) => void;
+  onPageSizeChange?: (pageSize: number) => void;
 }) {
   const { t } = useTranslation();
   const total = Math.ceil(count / pageSize);
-  if (total <= 1) return null;
+  const multi = total > 1;
   return (
-    <nav className="pagination" aria-label={t("pagination.nav")}>
-      <button
-        type="button"
-        className="btn small"
-        disabled={page <= 1}
-        onClick={() => onChange(page - 1)}
-      >
-        {t("pagination.prev")}
-      </button>
-      {pageItems(page, total).map((item, i) =>
-        item === "..." ? (
-          <span key={`ellipsis-${i}`} className="pagination-ellipsis">
-            …
-          </span>
-        ) : (
+    <div className="pagination">
+      {multi && (
+        <nav className="pagination-nav" aria-label={t("pagination.nav")}>
           <button
-            key={item}
             type="button"
-            className={`btn small${item === page ? " primary" : ""}`}
-            disabled={item === page}
-            onClick={() => onChange(item)}
+            className="btn small"
+            disabled={page <= 1}
+            onClick={() => onChange(page - 1)}
           >
-            {item}
+            {t("pagination.prev")}
           </button>
-        ),
+          {pageItems(page, total).map((item, i) =>
+            item === "..." ? (
+              <span key={`ellipsis-${i}`} className="pagination-ellipsis">
+                …
+              </span>
+            ) : (
+              <button
+                key={item}
+                type="button"
+                className={`btn small${item === page ? " primary" : ""}`}
+                disabled={item === page}
+                onClick={() => onChange(item)}
+              >
+                {item}
+              </button>
+            ),
+          )}
+          <button
+            type="button"
+            className="btn small"
+            disabled={page >= total}
+            onClick={() => onChange(page + 1)}
+          >
+            {t("pagination.next")}
+          </button>
+        </nav>
       )}
-      <button
-        type="button"
-        className="btn small"
-        disabled={page >= total}
-        onClick={() => onChange(page + 1)}
+      <select
+        className="pagination-size"
+        aria-label={t("pagination.perPageLabel")}
+        value={pageSize}
+        onChange={(e) => onPageSizeChange?.(Number(e.target.value))}
       >
-        {t("pagination.next")}
-      </button>
-      <span className="pagination-info">
-        {t("pagination.pageOf", { page, total })} · {t("pagination.records", { count })}
-      </span>
-    </nav>
+        {PAGE_SIZE_OPTIONS.map((n) => (
+          <option key={n} value={n}>
+            {t("pagination.perPage", { size: n })}
+          </option>
+        ))}
+      </select>
+      {multi && (
+        <span className="pagination-info">
+          {t("pagination.pageOf", { page, total })} · {t("pagination.records", { count })}
+        </span>
+      )}
+    </div>
   );
 }

@@ -6,8 +6,6 @@ import { api, upload } from "../services/api";
 import type { ConsultationLog, MedicalRecord, Paginated, Patient } from "../services/types";
 import { useAuth } from "../store/auth";
 
-const PAGE_SIZE = 100;
-
 const EMPTY_RECORD = {
   patient: 0,
   title: "",
@@ -42,25 +40,31 @@ export function Records() {
   const [imageFile, setImageFile] = useState<File | null>(null);
   const [caption, setCaption] = useState("");
   const [page, setPage] = useState(1);
+  const [pageSize, setPageSize] = useState(50);
   const [count, setCount] = useState(0);
 
   const load = useCallback(() => {
     setLoading(true);
     api
-      .get<Paginated<MedicalRecord>>(`/medical-records/?ordering=-date&page=${page}&page_size=${PAGE_SIZE}`)
+      .get<Paginated<MedicalRecord>>(`/medical-records/?ordering=-date&page=${page}&page_size=${pageSize}`)
       .then((r) => {
         setRows(r.results);
         setCount(r.count);
-        const total = Math.ceil(r.count / PAGE_SIZE);
+        const total = Math.ceil(r.count / pageSize);
         if (total > 0 && page > total) setPage(total);
       })
       .finally(() => setLoading(false));
-  }, [page]);
+  }, [page, pageSize]);
 
   useEffect(() => {
     load();
     api.get<Paginated<Patient>>("/patients/?page_size=100").then((r) => setPatients(r.results)).catch(() => {});
   }, [load]);
+
+  function changePageSize(size: number) {
+    setPageSize(size);
+    setPage(1);
+  }
 
   async function openDetail(rec: MedicalRecord) {
     const full = await api.get<MedicalRecord>(`/medical-records/${rec.id}/`);
@@ -136,9 +140,9 @@ export function Records() {
         <Spinner />
       ) : (
         <>
-          <Pagination page={page} count={count} pageSize={PAGE_SIZE} onChange={setPage} />
+          <Pagination page={page} count={count} pageSize={pageSize} onChange={setPage} onPageSizeChange={changePageSize} />
           <Table columns={columns} rows={rows} />
-          <Pagination page={page} count={count} pageSize={PAGE_SIZE} onChange={setPage} />
+          <Pagination page={page} count={count} pageSize={pageSize} onChange={setPage} onPageSizeChange={changePageSize} />
         </>
       )}
 

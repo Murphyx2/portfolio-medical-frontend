@@ -165,6 +165,8 @@
     "next": "Next",
     "pageOf": "Page {{page}} of {{total}}",
     "records": "{{count}} records",
-    "nav": "Pagination"
+    "nav": "Pagination",
+    "perPage": "{{size}} per page",
+    "perPageLabel": "Items per page"
   }
 }

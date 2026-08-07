@@ -8,7 +8,6 @@ import { useAuth } from "../store/auth";
 import { formatPhone, formatPhoneInput, isValidRequiredPhone } from "../utils/phone";
 
 const EMPTY = { name: "", code: "", address: "", phone: "", email: "" };
-const PAGE_SIZE = 100;
 
 export function Centers() {
   const { t } = useTranslation();
@@ -21,22 +20,28 @@ export function Centers() {
   const [editId, setEditId] = useState<number | null>(null);
   const [phoneError, setPhoneError] = useState("");
   const [page, setPage] = useState(1);
+  const [pageSize, setPageSize] = useState(50);
   const [count, setCount] = useState(0);
 
   const load = useCallback(() => {
     setLoading(true);
     api
-      .get<Paginated<MedicalCenter>>(`/centers/?page=${page}&page_size=${PAGE_SIZE}`)
+      .get<Paginated<MedicalCenter>>(`/centers/?page=${page}&page_size=${pageSize}`)
       .then((r) => {
         setRows(r.results);
         setCount(r.count);
-        const total = Math.ceil(r.count / PAGE_SIZE);
+        const total = Math.ceil(r.count / pageSize);
         if (total > 0 && page > total) setPage(total);
       })
       .finally(() => setLoading(false));
-  }, [page]);
+  }, [page, pageSize]);
 
   useEffect(load, [load]);
+
+  function changePageSize(size: number) {
+    setPageSize(size);
+    setPage(1);
+  }
 
   function openNew() {
     setForm(EMPTY);
@@ -93,14 +98,14 @@ export function Centers() {
         <Spinner />
       ) : (
         <>
-          <Pagination page={page} count={count} pageSize={PAGE_SIZE} onChange={setPage} />
+          <Pagination page={page} count={count} pageSize={pageSize} onChange={setPage} onPageSizeChange={changePageSize} />
           <Table
             columns={columns}
             rows={rows}
             onEdit={canEdit ? openEdit : undefined}
             onDelete={canEdit ? remove : undefined}
           />
-          <Pagination page={page} count={count} pageSize={PAGE_SIZE} onChange={setPage} />
+          <Pagination page={page} count={count} pageSize={pageSize} onChange={setPage} onPageSizeChange={changePageSize} />
         </>
       )}
 

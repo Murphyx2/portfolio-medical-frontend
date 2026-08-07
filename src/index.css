@@ -360,6 +360,19 @@ body {
   margin: 0.75rem 0;
 }
 
+.pagination-nav {
+  display: contents;
+}
+
+.pagination-size {
+  padding: 0.25rem 0.4rem;
+  border: 1px solid var(--mc-border);
+  border-radius: 6px;
+  font-size: 0.8rem;
+  background: var(--mc-white);
+  color: var(--mc-text);
+}
+
 .pagination .btn {
   min-width: 2.3rem;
 }

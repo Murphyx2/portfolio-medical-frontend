@@ -13,7 +13,6 @@ import type {
 import { useAuth } from "../store/auth";
 
 const EMPTY = { patient: 0, doctor: 0, center: 0, date_time: "", duration_minutes: 30, notes: "" };
-const PAGE_SIZE = 100;
 
 export function Appointments() {
   const { t } = useTranslation();
@@ -27,20 +26,21 @@ export function Appointments() {
   const [modal, setModal] = useState(false);
   const [form, setForm] = useState(EMPTY);
   const [page, setPage] = useState(1);
+  const [pageSize, setPageSize] = useState(50);
   const [count, setCount] = useState(0);
 
   const load = useCallback(() => {
     setLoading(true);
     api
-      .get<Paginated<Appointment>>(`/appointments/?ordering=date_time&page=${page}&page_size=${PAGE_SIZE}`)
+      .get<Paginated<Appointment>>(`/appointments/?ordering=date_time&page=${page}&page_size=${pageSize}`)
       .then((r) => {
         setRows(r.results);
         setCount(r.count);
-        const total = Math.ceil(r.count / PAGE_SIZE);
+        const total = Math.ceil(r.count / pageSize);
         if (total > 0 && page > total) setPage(total);
       })
       .finally(() => setLoading(false));
-  }, [page]);
+  }, [page, pageSize]);
 
   useEffect(() => {
     load();
@@ -48,6 +48,11 @@ export function Appointments() {
     api.get<Paginated<DoctorProfile>>("/doctors/profiles/?page_size=100").then((r) => setDoctors(r.results)).catch(() => {});
     api.get<Paginated<MedicalCenter>>("/centers/?page_size=100").then((r) => setCenters(r.results)).catch(() => {});
   }, [load]);
+
+  function changePageSize(size: number) {
+    setPageSize(size);
+    setPage(1);
+  }
 
   async function submit() {
     await api.post("/appointments/", {
@@ -110,9 +115,9 @@ export function Appointments() {
         <Spinner />
       ) : (
         <>
-          <Pagination page={page} count={count} pageSize={PAGE_SIZE} onChange={setPage} />
+          <Pagination page={page} count={count} pageSize={pageSize} onChange={setPage} onPageSizeChange={changePageSize} />
           <Table columns={columns} rows={rows} />
-          <Pagination page={page} count={count} pageSize={PAGE_SIZE} onChange={setPage} />
+          <Pagination page={page} count={count} pageSize={pageSize} onChange={setPage} onPageSizeChange={changePageSize} />
         </>
       )}
 

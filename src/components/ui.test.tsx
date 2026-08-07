@@ -120,11 +120,33 @@ describe("FormModal backdrop close", () => {
 });
 
 describe("Pagination", () => {
-  it("renders nothing when there is a single page", () => {
+  it("shows only the page-size selector when there is a single page", () => {
     const { container } = render(
       <Pagination page={1} count={50} pageSize={100} onChange={() => {}} />,
     );
-    expect(container.querySelector(".pagination")).toBeNull();
+    expect(container.querySelector(".pagination")).not.toBeNull();
+    expect(screen.getByRole("combobox", { name: "Elementos por página" })).toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: "Anterior" })).toBeNull();
+    expect(screen.queryByRole("button", { name: "Siguiente" })).toBeNull();
+  });
+
+  it("defaults to 50 items per page and offers 50/75/100", () => {
+    render(<Pagination page={1} count={150} pageSize={50} onChange={() => {}} />);
+    const select = screen.getByRole("combobox", { name: "Elementos por página" }) as HTMLSelectElement;
+    expect(select.value).toBe("50");
+    expect(Array.from(select.options).map((o) => o.value)).toEqual(["50", "75", "100"]);
+    expect(screen.getByText("50 por página")).toBeInTheDocument();
+    expect(screen.getByText("75 por página")).toBeInTheDocument();
+    expect(screen.getByText("100 por página")).toBeInTheDocument();
+  });
+
+  it("calls onPageSizeChange with the chosen page size", () => {
+    const onPageSizeChange = vi.fn();
+    render(<Pagination page={1} count={150} pageSize={50} onChange={() => {}} onPageSizeChange={onPageSizeChange} />);
+    fireEvent.change(screen.getByRole("combobox", { name: "Elementos por página" }), {
+      target: { value: "75" },
+    });
+    expect(onPageSizeChange).toHaveBeenCalledWith(75);
   });
 
   it("shows prev/next, page numbers and the page info when multiple pages", () => {

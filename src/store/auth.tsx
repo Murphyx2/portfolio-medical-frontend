@@ -6,7 +6,7 @@ import {
   type ReactNode,
 } from "react";
 
-import { api, clearTokens, getAccessToken, getRefreshToken, setTokens } from "../services/api";
+import { api, setAccessToken, tryRefresh } from "../services/api";
 import type { LoginResponse, User } from "../services/types";
 
 interface AuthState {
@@ -24,34 +24,41 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    const access = getAccessToken();
-    if (!access) {
-      setLoading(false);
-      return;
-    }
-    api
-      .get<User>("/auth/me/")
-      .then(setUser)
-      .catch(() => clearTokens())
-      .finally(() => setLoading(false));
+    let cancelled = false;
+    (async () => {
+      const refreshed = await tryRefresh();
+      if (cancelled) return;
+      if (!refreshed) {
+        setLoading(false);
+        return;
+      }
+      try {
+        const me = await api.get<User>("/auth/me/");
+        if (!cancelled) setUser(me);
+      } catch {
+        setAccessToken(null);
+      } finally {
+        if (!cancelled) setLoading(false);
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
   }, []);
 
   async function login(username: string, password: string) {
     const data = await api.post<LoginResponse>("/auth/login/", { username, password });
-    setTokens(data.access, data.refresh);
+    setAccessToken(data.access);
     setUser(data.user);
   }
 
   async function logout() {
     try {
-      const refresh = getRefreshToken();
-      if (refresh) {
-        await api.post("/auth/logout/", { refresh });
-      }
+      await api.post("/auth/logout/", {});
     } catch {
-      // Token may already be invalid/expired; still clear local state.
+      // Cookie may already be invalid/expired; still clear local state.
     } finally {
-      clearTokens();
+      setAccessToken(null);
       setUser(null);
     }
   }

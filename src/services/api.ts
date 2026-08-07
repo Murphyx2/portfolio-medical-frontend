@@ -1,7 +1,6 @@
 const apiBase = import.meta.env.VITE_API_BASE_URL ?? "/api";
 
-const TOKEN_KEY = "mc_access";
-const REFRESH_KEY = "mc_refresh";
+let accessToken: string | null = null;
 
 export class ApiError extends Error {
   status: number;
@@ -13,21 +12,11 @@ export class ApiError extends Error {
 }
 
 export function getAccessToken(): string | null {
-  return localStorage.getItem(TOKEN_KEY);
+  return accessToken;
 }
 
-export function getRefreshToken(): string | null {
-  return localStorage.getItem(REFRESH_KEY);
-}
-
-export function setTokens(access: string, refresh: string): void {
-  localStorage.setItem(TOKEN_KEY, access);
-  localStorage.setItem(REFRESH_KEY, refresh);
-}
-
-export function clearTokens(): void {
-  localStorage.removeItem(TOKEN_KEY);
-  localStorage.removeItem(REFRESH_KEY);
+export function setAccessToken(access: string | null): void {
+  accessToken = access;
 }
 
 async function request<T>(
@@ -40,7 +29,11 @@ async function request<T>(
   const token = getAccessToken();
   if (token) headers.set("Authorization", `Bearer ${token}`);
 
-  const res = await fetch(`${apiBase}${path}`, { ...options, headers });
+  const res = await fetch(`${apiBase}${path}`, {
+    ...options,
+    headers,
+    credentials: "include",
+  });
 
   if (res.status === 401 && retry) {
     const refreshed = await tryRefresh();
@@ -63,20 +56,18 @@ async function request<T>(
 }
 
 async function doRefresh(): Promise<boolean> {
-  const refresh = getRefreshToken();
-  if (!refresh) return false;
   try {
     const res = await fetch(`${apiBase}/auth/token/refresh/`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ refresh }),
+      credentials: "include",
     });
     if (!res.ok) {
-      clearTokens();
+      setAccessToken(null);
       return false;
     }
-    const data = (await res.json()) as { access: string; refresh?: string };
-    setTokens(data.access, data.refresh ?? refresh);
+    const data = (await res.json()) as { access: string };
+    setAccessToken(data.access);
     return true;
   } catch {
     return false;
@@ -86,13 +77,13 @@ async function doRefresh(): Promise<boolean> {
 let refreshPromise: Promise<boolean> | null = null;
 
 /**
- * Single-flight token refresh. The access token expires every 15 min and the
- * refresh token is single-use (SimpleJWT ROTATE_REFRESH_TOKENS +
- * BLACKLIST_AFTER_ROTATION), so when an access token expires several concurrent
- * requests 401 at once. All of them share this ONE refresh call (the rotation
- * happens exactly once); each waiting request then retries with the new token.
+ * Single-flight token refresh. The access token is held in memory and the
+ * refresh token lives in an httpOnly cookie (H-03). When an access token
+ * expires several concurrent requests 401 at once; they all share this ONE
+ * refresh call (the server rotates the cookie exactly once); each waiting
+ * request then retries with the new in-memory access token.
  */
-function tryRefresh(): Promise<boolean> {
+export function tryRefresh(): Promise<boolean> {
   if (!refreshPromise) {
     refreshPromise = doRefresh().finally(() => {
       refreshPromise = null;
@@ -120,6 +111,7 @@ export async function upload<T>(path: string, formData: FormData): Promise<T> {
     method: "POST",
     headers,
     body: formData,
+    credentials: "include",
   });
   if (!res.ok) throw new ApiError(res.statusText, res.status);
   return (await res.json()) as T;

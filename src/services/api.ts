@@ -62,7 +62,7 @@ async function request<T>(
   return (await res.json()) as T;
 }
 
-async function tryRefresh(): Promise<boolean> {
+async function doRefresh(): Promise<boolean> {
   const refresh = getRefreshToken();
   if (!refresh) return false;
   try {
@@ -76,12 +76,29 @@ async function tryRefresh(): Promise<boolean> {
       return false;
     }
     const data = (await res.json()) as { access: string; refresh?: string };
-    localStorage.setItem(TOKEN_KEY, data.access);
-    if (data.refresh) localStorage.setItem(REFRESH_KEY, data.refresh);
+    setTokens(data.access, data.refresh ?? refresh);
     return true;
   } catch {
     return false;
   }
+}
+
+let refreshPromise: Promise<boolean> | null = null;
+
+/**
+ * Single-flight token refresh. The access token expires every 15 min and the
+ * refresh token is single-use (SimpleJWT ROTATE_REFRESH_TOKENS +
+ * BLACKLIST_AFTER_ROTATION), so when an access token expires several concurrent
+ * requests 401 at once. All of them share this ONE refresh call (the rotation
+ * happens exactly once); each waiting request then retries with the new token.
+ */
+function tryRefresh(): Promise<boolean> {
+  if (!refreshPromise) {
+    refreshPromise = doRefresh().finally(() => {
+      refreshPromise = null;
+    });
+  }
+  return refreshPromise;
 }
 
 export const api = {

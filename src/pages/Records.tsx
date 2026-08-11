@@ -173,7 +173,7 @@ export function Records() {
     },
     {
       key: "cedula",
-      header: t("common.cedula"),
+      header: t("patients.cedula"),
       render: (r) => (
         <button type="button" className="row-link" onClick={() => openDetail(r)}>
           <MaskedValue
@@ -190,7 +190,7 @@ export function Records() {
     },
     {
       key: "nss",
-      header: t("common.nss"),
+      header: t("patients.nss"),
       render: (r) => (
         <button type="button" className="row-link" onClick={() => openDetail(r)}>
           <MaskedValue value={r.patient_info.nss} />
@@ -360,7 +360,7 @@ export function Records() {
               search={searchPatients}
               placeholder={t("records.patientPickerPlaceholder")}
               getLabel={(p) => p.full_name}
-              getSublabel={(p) => `${formatCedula(p.cedula)} · NSS ${p.nss || "—"}`}
+              getSublabel={(p) => formatCedula(p.cedula)}
             />
           </Field>
           <Field label={t("records.recordTitle")}>

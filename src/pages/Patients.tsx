@@ -210,8 +210,6 @@ export function Patients() {
     { key: "full_name", header: t("common.name"), sortKey: "search_name", render: (r) => <MaskedValue value={r.full_name} /> },
     { key: "age", header: t("patients.age"), sortKey: "age", render: (r) => (r.age ?? "-") },
     { key: "gender", header: t("patients.gender"), sortKey: "gender" },
-    { key: "phone", header: t("patients.phone"), sortKey: "phone", render: (r) => <MaskedValue value={formatPhone(r.phone)} /> },
-    { key: "email", header: t("common.email"), sortKey: "email", render: (r) => <MaskedValue value={r.email} /> },
     {
       key: "cedula",
       header: t("patients.cedula"),
@@ -219,8 +217,10 @@ export function Patients() {
       render: (r) => <MaskedValue value={r.cedula ? (r.cedula.includes("•") ? r.cedula : formatCedula(r.cedula)) : ""} />,
     },
     { key: "nss", header: t("patients.nss"), sortKey: "nss", render: (r) => <MaskedValue value={r.nss} /> },
+    { key: "phone", header: t("patients.phone"), sortKey: "phone", render: (r) => <MaskedValue value={formatPhone(r.phone)} /> },
     { key: "ars_name", header: t("patients.ars"), sortKey: "ars__name" },
     { key: "ars_program_name", header: t("patients.arsProgram"), sortKey: "ars_program__name" },
+    { key: "email", header: t("common.email"), sortKey: "email", render: (r) => <MaskedValue value={r.email} /> },
     { key: "center_name", header: t("patients.center"), sortKey: "center__name", render: (r) => r.center_name ?? "—" },
   ];
 
@@ -288,6 +288,7 @@ export function Patients() {
               placeholder="000-0000000-0"
               inputMode="numeric"
               maxLength={13}
+              required={editId === null}
               onChange={(e) => setForm({ ...form, cedula: formatCedula(e.target.value) })}
             />
           </Field>

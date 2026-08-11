@@ -1,10 +1,10 @@
 :root {
-  --mc-primary: #66bb6a;
+  --mc-primary: #2e7d32;
   --mc-primary-dark: #1b5e20;
   --mc-light: #a5d6a7;
   --mc-lightest: #e8f5e9;
   --mc-text: #0d2137;
-  --mc-muted: #5b7a99;
+  --mc-muted: #4f6f92;
   --mc-border: #d3e4f7;
   --mc-danger: #d32f2f;
   --mc-white: #ffffff;
@@ -282,7 +282,8 @@ body {
 .field input:focus,
 .field select:focus,
 .field textarea:focus {
-  outline: 2px solid var(--mc-light);
+  outline: 2px solid var(--mc-primary);
+  outline-offset: 1px;
   border-color: var(--mc-primary);
 }
 

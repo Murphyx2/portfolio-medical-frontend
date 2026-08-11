@@ -17,7 +17,7 @@
 import { fireEvent, render, screen } from "@testing-library/react";
 import { describe, expect, it, vi } from "vitest";
 
-import { FormModal, MaskedValue, Pagination, SearchableSelect, SearchBar, Table } from "./ui";
+import { Dialog, FormModal, MaskedValue, Pagination, SearchableSelect, SearchBar, Table } from "./ui";
 
 function renderModal(onClose = vi.fn()) {
   const utils = render(
@@ -116,6 +116,62 @@ describe("FormModal backdrop close", () => {
   it("renders the empty-state label translated when no rows", () => {
     render(<Table columns={[{ key: "name", header: "Nombre" }]} rows={[]} />);
     expect(screen.getByText("No se encontraron datos")).toBeInTheDocument();
+  });
+});
+
+describe("Dialog focus trap", () => {
+  it("wraps Tab from the last focusable element back to the first", () => {
+    render(
+      <FormModal title="Test modal" onClose={() => {}} onSubmit={() => {}} submitLabel="Save">
+        <input placeholder="first field" />
+      </FormModal>,
+    );
+    const saveBtn = screen.getByRole("button", { name: "Save" });
+    saveBtn.focus();
+    expect(document.activeElement).toBe(saveBtn);
+    fireEvent.keyDown(document, { key: "Tab" });
+    expect(document.activeElement).toBe(screen.getByPlaceholderText("first field"));
+  });
+
+  it("wraps Shift+Tab from the first focusable element back to the last", () => {
+    render(
+      <FormModal title="Test modal" onClose={() => {}} onSubmit={() => {}} submitLabel="Save">
+        <input placeholder="first field" />
+      </FormModal>,
+    );
+    const firstField = screen.getByPlaceholderText("first field");
+    firstField.focus();
+    fireEvent.keyDown(document, { key: "Tab", shiftKey: true });
+    expect(document.activeElement).toBe(screen.getByRole("button", { name: "Save" }));
+  });
+
+  it("ignores Escape while a submit is in flight (preventClose)", async () => {
+    const onClose = vi.fn();
+    let resolveSubmit: () => void = () => {};
+    const onSubmit = () =>
+      new Promise<void>((resolve) => {
+        resolveSubmit = resolve;
+      });
+    render(
+      <FormModal title="Test modal" onClose={onClose} onSubmit={onSubmit} submitLabel="Save">
+        <input placeholder="first field" />
+      </FormModal>,
+    );
+    fireEvent.click(screen.getByRole("button", { name: "Save" }));
+    await screen.findByRole("button", { name: "Guardando..." });
+    fireEvent.keyDown(document, { key: "Escape" });
+    expect(onClose).not.toHaveBeenCalled();
+    resolveSubmit();
+  });
+
+  it("uses Dialog directly (not FormModal's submit/cancel shape) with the same role and focus-trap behavior", () => {
+    render(
+      <Dialog title="Detail view" onClose={() => {}}>
+        <button type="button">only action</button>
+      </Dialog>,
+    );
+    expect(screen.getByRole("dialog", { name: "Detail view" })).toBeInTheDocument();
+    expect(document.activeElement).toBe(screen.getByRole("button", { name: "only action" }));
   });
 });
 

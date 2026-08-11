@@ -20,26 +20,32 @@ export function Page({ title, actions, children }: {
   );
 }
 
-export function FormModal({ title, onClose, onSubmit, children, submitLabel, error }: {
-  title: string;
+const DIALOG_FOCUSABLE_SELECTOR =
+  "input, select, textarea, button:not(:disabled), [href], [tabindex]:not([tabindex='-1'])";
+
+/**
+ * Shared dialog shell: drag-release-safe backdrop close, role="dialog" +
+ * aria-modal + aria-labelledby, initial focus + focus-restore-on-close, a
+ * Tab/Shift+Tab focus trap, and Escape-to-close. `preventClose` suppresses
+ * Escape/backdrop-close (e.g. while a submit is in flight) without touching
+ * the focus trap. Composed by FormModal; also used directly by dialogs that
+ * don't fit the single-submit/cancel shape (e.g. Records' detail view).
+ */
+export function Dialog({ title, onClose, children, wide, preventClose }: {
+  title: ReactNode;
   onClose: () => void;
-  onSubmit: () => void | Promise<void>;
-  submitLabel: string;
-  error?: string;
   children: ReactNode;
+  wide?: boolean;
+  preventClose?: boolean;
 }) {
   const pressOnBackdrop = useRef(false);
   const modalRef = useRef<HTMLDivElement>(null);
-  const [submitting, setSubmitting] = useState(false);
   const titleId = useId();
-  const { t } = useTranslation();
 
   useEffect(() => {
     const previouslyFocused = document.activeElement as HTMLElement | null;
     const modal = modalRef.current;
-    const focusable = modal?.querySelector<HTMLElement>(
-      "input, select, textarea, button, [href], [tabindex]:not([tabindex='-1'])"
-    );
+    const focusable = modal?.querySelector<HTMLElement>(DIALOG_FOCUSABLE_SELECTOR);
     (focusable ?? modal)?.focus();
     return () => {
       previouslyFocused?.focus();
@@ -48,13 +54,73 @@ export function FormModal({ title, onClose, onSubmit, children, submitLabel, err
 
   useEffect(() => {
     function handleKeyDown(e: KeyboardEvent) {
-      if (e.key === "Escape" && !submitting) {
+      if (preventClose) return;
+      if (e.key === "Escape") {
         onClose();
+        return;
+      }
+      if (e.key !== "Tab") return;
+      const modal = modalRef.current;
+      if (!modal) return;
+      const focusables = Array.from(modal.querySelectorAll<HTMLElement>(DIALOG_FOCUSABLE_SELECTOR));
+      if (focusables.length === 0) return;
+      const first = focusables[0];
+      const last = focusables[focusables.length - 1];
+      if (e.shiftKey && document.activeElement === first) {
+        e.preventDefault();
+        last.focus();
+      } else if (!e.shiftKey && document.activeElement === last) {
+        e.preventDefault();
+        first.focus();
       }
     }
     document.addEventListener("keydown", handleKeyDown);
     return () => document.removeEventListener("keydown", handleKeyDown);
-  }, [onClose, submitting]);
+  }, [onClose, preventClose]);
+
+  return (
+    <div
+      className="modal-backdrop"
+      onPointerDown={(e) => {
+        pressOnBackdrop.current = e.target === e.currentTarget;
+      }}
+      onClick={(e) => {
+        if (pressOnBackdrop.current && e.target === e.currentTarget && !preventClose) {
+          pressOnBackdrop.current = false;
+          onClose();
+        }
+      }}
+    >
+      <div
+        ref={modalRef}
+        className={wide ? "modal wide" : "modal"}
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby={titleId}
+        tabIndex={-1}
+        onClick={(e) => e.stopPropagation()}
+        onPointerDown={(e) => {
+          pressOnBackdrop.current = false;
+          e.stopPropagation();
+        }}
+      >
+        <h3 id={titleId}>{title}</h3>
+        {children}
+      </div>
+    </div>
+  );
+}
+
+export function FormModal({ title, onClose, onSubmit, children, submitLabel, error }: {
+  title: string;
+  onClose: () => void;
+  onSubmit: () => void | Promise<void>;
+  submitLabel: string;
+  error?: string;
+  children: ReactNode;
+}) {
+  const [submitting, setSubmitting] = useState(false);
+  const { t } = useTranslation();
 
   async function handleSubmit(e: FormEvent) {
     e.preventDefault();
@@ -68,50 +134,24 @@ export function FormModal({ title, onClose, onSubmit, children, submitLabel, err
   }
 
   return (
-    <div
-      className="modal-backdrop"
-      onPointerDown={(e) => {
-        pressOnBackdrop.current = e.target === e.currentTarget;
-      }}
-      onClick={(e) => {
-        if (pressOnBackdrop.current && e.target === e.currentTarget && !submitting) {
-          pressOnBackdrop.current = false;
-          onClose();
-        }
-      }}
-    >
-      <div
-        ref={modalRef}
-        className="modal"
-        role="dialog"
-        aria-modal="true"
-        aria-labelledby={titleId}
-        tabIndex={-1}
-        onClick={(e) => e.stopPropagation()}
-        onPointerDown={(e) => {
-          pressOnBackdrop.current = false;
-          e.stopPropagation();
-        }}
-      >
-        <h3 id={titleId}>{title}</h3>
-        <form onSubmit={handleSubmit}>
-          {children}
-          {error && (
-            <p className="form-error" role="alert">
-              {error}
-            </p>
-          )}
-          <div className="modal-actions">
-            <button type="button" className="btn ghost" onClick={onClose} disabled={submitting}>
-              {t("common.cancel")}
-            </button>
-            <button type="submit" className="btn primary" disabled={submitting}>
-              {submitting ? t("common.saving") : submitLabel}
-            </button>
-          </div>
-        </form>
-      </div>
-    </div>
+    <Dialog title={title} onClose={onClose} preventClose={submitting}>
+      <form onSubmit={handleSubmit}>
+        {children}
+        {error && (
+          <p className="form-error" role="alert">
+            {error}
+          </p>
+        )}
+        <div className="modal-actions">
+          <button type="button" className="btn ghost" onClick={onClose} disabled={submitting}>
+            {t("common.cancel")}
+          </button>
+          <button type="submit" className="btn primary" disabled={submitting}>
+            {submitting ? t("common.saving") : submitLabel}
+          </button>
+        </div>
+      </form>
+    </Dialog>
   );
 }
 

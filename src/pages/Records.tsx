@@ -1,7 +1,7 @@
-import { useCallback, useEffect, useRef, useState, type FormEvent } from "react";
+import { useCallback, useEffect, useState, type FormEvent } from "react";
 import { useTranslation } from "react-i18next";
 
-import { Field, FormModal, MaskedValue, Page, Pagination, SearchableSelect, SearchBar, Spinner, Table, type Column } from "../components/ui";
+import { Dialog, Field, FormModal, MaskedValue, Page, Pagination, SearchableSelect, SearchBar, Spinner, Table, type Column } from "../components/ui";
 import { useListControls } from "../hooks/useListControls";
 import { api, ApiError, upload } from "../services/api";
 import type { ConsultationLog, MedicalRecord, Paginated, Patient } from "../services/types";
@@ -44,7 +44,6 @@ export function Records() {
   const [rows, setRows] = useState<MedicalRecord[]>([]);
   const [patients, setPatients] = useState<Patient[]>([]);
   const [detail, setDetail] = useState<MedicalRecord | null>(null);
-  const pressOnBackdrop = useRef(false);
   const [logs, setLogs] = useState<ConsultationLog[]>([]);
   const [modal, setModal] = useState<"record" | "log" | null>(null);
   const [form, setForm] = useState(EMPTY_RECORD);
@@ -264,101 +263,86 @@ export function Records() {
       )}
 
       {detail && (
-        <div
-          className="modal-backdrop"
-          onPointerDown={(e) => {
-            pressOnBackdrop.current = e.target === e.currentTarget;
-          }}
-          onClick={(e) => {
-            if (pressOnBackdrop.current && e.target === e.currentTarget) {
-              pressOnBackdrop.current = false;
-              setDetail(null);
-            }
-          }}
-        >
-          <div
-            className="modal wide"
-            onClick={(e) => e.stopPropagation()}
-            onPointerDown={(e) => {
-              pressOnBackdrop.current = false;
-              e.stopPropagation();
-            }}
-          >
-            <h3>
+        <Dialog
+          title={
+            <>
               {t("records.title")} · <MaskedValue value={detail.patient_info.full_name} />
-            </h3>
-            <p className="muted record-subtitle">{detail.title}</p>
-            <div className="kv-grid">
-              <div><b>{t("records.diagnosis")}:</b> {detail.diagnosis || "—"}</div>
-              <div><b>{t("records.treatment")}:</b> {detail.treatment || "—"}</div>
-              <div><b>{t("records.medicineAndDoses")}:</b> {detail.medicine_and_doses || "—"}</div>
-              <div><b>{t("records.notes")}:</b> {detail.notes || "—"}</div>
-            </div>
+            </>
+          }
+          onClose={() => setDetail(null)}
+          wide
+        >
+          <p className="muted record-subtitle">{detail.title}</p>
+          <div className="kv-grid">
+            <div><b>{t("records.diagnosis")}:</b> {detail.diagnosis || "—"}</div>
+            <div><b>{t("records.treatment")}:</b> {detail.treatment || "—"}</div>
+            <div><b>{t("records.medicineAndDoses")}:</b> {detail.medicine_and_doses || "—"}</div>
+            <div><b>{t("records.notes")}:</b> {detail.notes || "—"}</div>
+          </div>
 
-            <h4>{t("records.images")}</h4>
-            <div className="image-grid">
-              {detail.images.map((img) => (
-                <a key={img.id} href={img.image_url ?? "#"} target="_blank" rel="noreferrer">
-                  <img src={img.image_url ?? ""} alt={img.caption} loading="lazy" />
-                </a>
+          <h4>{t("records.images")}</h4>
+          <div className="image-grid">
+            {detail.images.map((img) => (
+              <a key={img.id} href={img.image_url ?? "#"} target="_blank" rel="noreferrer">
+                <img src={img.image_url ?? ""} alt={img.caption} loading="lazy" />
+              </a>
+            ))}
+          </div>
+          {canCreate && (
+            <div className="upload-row">
+              <input type="file" accept="image/*" onChange={(e) => setImageFile(e.target.files?.[0] ?? null)} />
+              <input placeholder={t("records.caption")} value={caption} onChange={(e) => setCaption(e.target.value)} />
+              <button className="btn primary" onClick={uploadImage} disabled={!imageFile}>
+                {t("records.uploadImage")}
+              </button>
+            </div>
+          )}
+          {imageError && (
+            <p className="form-error" role="alert">
+              {imageError}
+            </p>
+          )}
+
+          <h4>{t("records.newLog")}</h4>
+          {logs.length > 0 && (
+            <div className="log-list">
+              {logs.map((log) => (
+                <div key={log.id} className="log-entry">
+                  <b>{log.doctor_name} · {new Date(log.date).toLocaleString()}</b>
+                  <div><b>S:</b> {log.subjective}</div>
+                  <div><b>O:</b> {log.objective}</div>
+                  <div><b>A:</b> {log.assessment}</div>
+                  <div><b>P:</b> {log.plan}</div>
+                </div>
               ))}
             </div>
-            {canCreate && (
-              <div className="upload-row">
-                <input type="file" accept="image/*" onChange={(e) => setImageFile(e.target.files?.[0] ?? null)} />
-                <input placeholder={t("records.caption")} value={caption} onChange={(e) => setCaption(e.target.value)} />
-                <button className="btn primary" onClick={uploadImage} disabled={!imageFile}>
-                  {t("records.uploadImage")}
-                </button>
-              </div>
-            )}
-            {imageError && (
-              <p className="form-error" role="alert">
-                {imageError}
-              </p>
-            )}
-
-            <h4>{t("records.newLog")}</h4>
-            {logs.length > 0 && (
-              <div className="log-list">
-                {logs.map((log) => (
-                  <div key={log.id} className="log-entry">
-                    <b>{log.doctor_name} · {new Date(log.date).toLocaleString()}</b>
-                    <div><b>S:</b> {log.subjective}</div>
-                    <div><b>O:</b> {log.objective}</div>
-                    <div><b>A:</b> {log.assessment}</div>
-                    <div><b>P:</b> {log.plan}</div>
-                  </div>
-                ))}
-              </div>
-            )}
-            {canCreate && (
-              <form className="log-form" onSubmit={createLog}>
-                <Field label={t("records.subjective")}>
-                  <textarea value={logForm.subjective} onChange={(e) => setLogForm({ ...logForm, subjective: e.target.value })} />
-                </Field>
-                <Field label={t("records.objective")}>
-                  <textarea value={logForm.objective} onChange={(e) => setLogForm({ ...logForm, objective: e.target.value })} />
-                </Field>
-                <Field label={t("records.assessment")}>
-                  <textarea value={logForm.assessment} onChange={(e) => setLogForm({ ...logForm, assessment: e.target.value })} />
-                </Field>
-                <Field label={t("records.plan")}>
-                  <textarea value={logForm.plan} onChange={(e) => setLogForm({ ...logForm, plan: e.target.value })} />
-                </Field>
-                {logFormError && (
-                  <p className="form-error" role="alert">
-                    {logFormError}
-                  </p>
-                )}
-                <button type="submit" className="btn primary">{t("common.save")}</button>
-              </form>
-            )}
-            <div className="modal-actions">
-              <button className="btn ghost" onClick={() => setDetail(null)}>{t("common.close")}</button>
-            </div>
+          )}
+          {canCreate && (
+            <form className="log-form" onSubmit={createLog}>
+              <Field label={t("records.subjective")}>
+                <textarea value={logForm.subjective} onChange={(e) => setLogForm({ ...logForm, subjective: e.target.value })} />
+              </Field>
+              <Field label={t("records.objective")}>
+                <textarea value={logForm.objective} onChange={(e) => setLogForm({ ...logForm, objective: e.target.value })} />
+              </Field>
+              <Field label={t("records.assessment")}>
+                <textarea value={logForm.assessment} onChange={(e) => setLogForm({ ...logForm, assessment: e.target.value })} />
+              </Field>
+              <Field label={t("records.plan")}>
+                <textarea value={logForm.plan} onChange={(e) => setLogForm({ ...logForm, plan: e.target.value })} />
+              </Field>
+              {logFormError && (
+                <p className="form-error" role="alert">
+                  {logFormError}
+                </p>
+              )}
+              <button type="submit" className="btn primary">{t("common.save")}</button>
+            </form>
+          )}
+          <div className="modal-actions">
+            <button className="btn ghost" onClick={() => setDetail(null)}>{t("common.close")}</button>
           </div>
-        </div>
+        </Dialog>
       )}
 
       {modal === "record" && (

@@ -83,19 +83,27 @@ export function Records() {
       .catch(() => {});
   }, [qs, page, pageSize, setCount, setPage, runList]);
 
+  useEffect(load, [load]);
+
   useEffect(() => {
-    load();
+    // Patient options for the "new record" picker: fetched once, not on
+    // every page/sort/search change (unlike `load`, which re-runs then).
     api.get<Paginated<Patient>>("/patients/?page_size=100").then((r) => setPatients(r.results)).catch(() => {});
-  }, [load]);
+  }, []);
 
   async function openDetail(rec: MedicalRecord) {
-    const full = await api.get<MedicalRecord>(`/medical-records/${rec.id}/`);
-    setDetail(full);
-    api
-      .get<Paginated<ConsultationLog>>(`/consultation-logs/?patient=${rec.patient}&page_size=20`)
-      .then((r) => setLogs(r.results))
-      .catch(() => setLogs([]));
     setLogForm({ ...EMPTY_LOG, patient: rec.patient });
+    // Independent requests (neither depends on the other's result): fire
+    // them concurrently instead of waiting for the record detail before
+    // starting the logs fetch.
+    const [full, logsResult] = await Promise.all([
+      api.get<MedicalRecord>(`/medical-records/${rec.id}/`),
+      api
+        .get<Paginated<ConsultationLog>>(`/consultation-logs/?patient=${rec.patient}&page_size=20`)
+        .catch(() => ({ results: [] as ConsultationLog[] })),
+    ]);
+    setDetail(full);
+    setLogs(logsResult.results);
   }
 
   async function createRecord() {
@@ -260,7 +268,7 @@ export function Records() {
             <div className="image-grid">
               {detail.images.map((img) => (
                 <a key={img.id} href={img.image_url ?? "#"} target="_blank" rel="noreferrer">
-                  <img src={img.image_url ?? ""} alt={img.caption} />
+                  <img src={img.image_url ?? ""} alt={img.caption} loading="lazy" />
                 </a>
               ))}
             </div>

@@ -28,7 +28,7 @@
     "appointmentsToday": "Citas de hoy",
     "patientsTotal": "Total de pacientes",
     "doctorsTotal": "Total de médicos",
-    "recentAppointments": "Citas recientes"
+    "appointmentsTotal": "Total de citas"
   },
   "common": {
     "save": "Guardar",
@@ -162,7 +162,6 @@
     "plan": "Plan",
     "doctor": "Médico",
     "images": "Imágenes",
-    "addImage": "Añadir imagen",
     "uploadImage": "Subir imagen",
     "caption": "Título de la imagen",
     "patientPickerPlaceholder": "Buscar paciente por nombre, cédula o NSS…"

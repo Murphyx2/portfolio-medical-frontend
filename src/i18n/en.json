@@ -28,7 +28,7 @@
     "appointmentsToday": "Appointments today",
     "patientsTotal": "Total patients",
     "doctorsTotal": "Total doctors",
-    "recentAppointments": "Recent appointments"
+    "appointmentsTotal": "Total appointments"
   },
   "common": {
     "save": "Save",
@@ -162,7 +162,6 @@
     "plan": "Plan",
     "doctor": "Doctor",
     "images": "Images",
-    "addImage": "Add image",
     "uploadImage": "Upload image",
     "caption": "Caption",
     "patientPickerPlaceholder": "Search patient by name, cedula or NSS…"

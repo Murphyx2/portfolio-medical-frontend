@@ -8,6 +8,7 @@
   --mc-border: #d3e4f7;
   --mc-danger: #d32f2f;
   --mc-white: #ffffff;
+  --mc-topbar-height: 3.25rem;
 }
 
 * {
@@ -89,6 +90,7 @@ body {
   align-items: center;
   justify-content: flex-end;
   gap: 1.5rem;
+  min-height: var(--mc-topbar-height);
   padding: 0.6rem 1.5rem;
   background: var(--mc-white);
   color: var(--mc-text);
@@ -355,6 +357,9 @@ body {
   text-transform: uppercase;
   letter-spacing: 0.04em;
   padding: 0.65rem 0.9rem;
+  position: sticky;
+  top: var(--mc-topbar-height);
+  z-index: 2;
 }
 
 .data-table td {
@@ -630,7 +635,6 @@ body {
   background: var(--mc-white);
   border-radius: 12px;
   padding: 1.25rem;
-  border-left: 4px solid var(--mc-primary);
   box-shadow: 0 2px 10px rgba(27, 94, 32, 0.08);
 }
 
@@ -710,7 +714,6 @@ body {
 }
 
 .log-entry {
-  border-left: 3px solid var(--mc-light);
   background: var(--mc-lightest);
   border-radius: 8px;
   padding: 0.6rem 0.9rem;

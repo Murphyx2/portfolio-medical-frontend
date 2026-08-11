@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useRef, useState, type FormEvent } from "react";
 import { useTranslation } from "react-i18next";
 
-import { Field, FormModal, Page, Pagination, SearchableSelect, SearchBar, Spinner, Table, type Column } from "../components/ui";
+import { Field, FormModal, MaskedValue, Page, Pagination, SearchableSelect, SearchBar, Spinner, Table, type Column } from "../components/ui";
 import { useListControls } from "../hooks/useListControls";
 import { api, ApiError, upload } from "../services/api";
 import type { ConsultationLog, MedicalRecord, Paginated, Patient } from "../services/types";
@@ -161,7 +161,7 @@ export function Records() {
 
   const openDetailLink = (rec: MedicalRecord) => (
     <button type="button" className="row-link" onClick={() => openDetail(rec)}>
-      {rec.patient_info.full_name}
+      <MaskedValue value={rec.patient_info.full_name} />
     </button>
   );
 
@@ -177,7 +177,15 @@ export function Records() {
       header: t("common.cedula"),
       render: (r) => (
         <button type="button" className="row-link" onClick={() => openDetail(r)}>
-          {formatCedula(r.patient_info.cedula)}
+          <MaskedValue
+            value={
+              r.patient_info.cedula
+                ? r.patient_info.cedula.includes("•")
+                  ? r.patient_info.cedula
+                  : formatCedula(r.patient_info.cedula)
+                : ""
+            }
+          />
         </button>
       ),
     },
@@ -186,7 +194,7 @@ export function Records() {
       header: t("common.nss"),
       render: (r) => (
         <button type="button" className="row-link" onClick={() => openDetail(r)}>
-          {r.patient_info.nss || "—"}
+          <MaskedValue value={r.patient_info.nss} />
         </button>
       ),
     },
@@ -277,7 +285,7 @@ export function Records() {
             }}
           >
             <h3>
-              {t("records.title")} · {detail.patient_info.full_name}
+              {t("records.title")} · <MaskedValue value={detail.patient_info.full_name} />
             </h3>
             <p className="muted record-subtitle">{detail.title}</p>
             <div className="kv-grid">

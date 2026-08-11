@@ -3,9 +3,10 @@ import { useTranslation } from "react-i18next";
 
 import { Field, FormModal, Page, Pagination, SearchBar, Spinner, Table, type Column } from "../components/ui";
 import { useListControls } from "../hooks/useListControls";
-import { api } from "../services/api";
+import { api, ApiError } from "../services/api";
 import type { DoctorProfile, Paginated, User } from "../services/types";
 import { useAuth } from "../store/auth";
+import { flattenError } from "../utils/errors";
 import { formatPhone, formatPhoneInput, isValidRequiredPhone } from "../utils/phone";
 
 const EMPTY = { user: 0, specialty: "", license_number: "", contact_phone: "", contact_email: "", bio: "" };
@@ -20,6 +21,7 @@ export function Doctors() {
   const [form, setForm] = useState(EMPTY);
   const [editId, setEditId] = useState<number | null>(null);
   const [phoneError, setPhoneError] = useState("");
+  const [formError, setFormError] = useState("");
   const {
     page,
     setPage,
@@ -64,6 +66,7 @@ export function Doctors() {
     setForm(EMPTY);
     setEditId(null);
     setPhoneError("");
+    setFormError("");
     setModal(true);
   }
 
@@ -78,6 +81,7 @@ export function Doctors() {
     });
     setEditId(d.id);
     setPhoneError("");
+    setFormError("");
     setModal(true);
   }
 
@@ -86,11 +90,16 @@ export function Doctors() {
       setPhoneError(t("common.phoneInvalid"));
       return;
     }
+    setFormError("");
     const body = { ...form, contact_phone: form.contact_phone.replace(/\D/g, "") };
-    if (editId) await api.patch(`/doctors/profiles/${editId}/`, body);
-    else await api.post("/doctors/profiles/", body);
-    setModal(false);
-    load();
+    try {
+      if (editId) await api.patch(`/doctors/profiles/${editId}/`, body);
+      else await api.post("/doctors/profiles/", body);
+      setModal(false);
+      load();
+    } catch (err) {
+      setFormError(err instanceof ApiError ? flattenError(err.message) : String(err));
+    }
   }
 
   async function remove(d: DoctorProfile) {
@@ -150,6 +159,7 @@ export function Doctors() {
           onClose={() => setModal(false)}
           onSubmit={submit}
           submitLabel={t("common.save")}
+          error={formError}
         >
           <Field label={t("doctors.user")}>
             <select

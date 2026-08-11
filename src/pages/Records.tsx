@@ -3,9 +3,10 @@ import { useTranslation } from "react-i18next";
 
 import { Field, FormModal, Page, Pagination, SearchableSelect, SearchBar, Spinner, Table, type Column } from "../components/ui";
 import { useListControls } from "../hooks/useListControls";
-import { api, upload } from "../services/api";
+import { api, ApiError, upload } from "../services/api";
 import type { ConsultationLog, MedicalRecord, Paginated, Patient } from "../services/types";
 import { useAuth } from "../store/auth";
+import { flattenError } from "../utils/errors";
 
 const EMPTY_RECORD = {
   patient: 0,
@@ -51,6 +52,9 @@ export function Records() {
   const [logForm, setLogForm] = useState(EMPTY_LOG);
   const [imageFile, setImageFile] = useState<File | null>(null);
   const [caption, setCaption] = useState("");
+  const [recordFormError, setRecordFormError] = useState("");
+  const [logFormError, setLogFormError] = useState("");
+  const [imageError, setImageError] = useState("");
   const {
     page,
     setPage,
@@ -93,6 +97,8 @@ export function Records() {
 
   async function openDetail(rec: MedicalRecord) {
     setLogForm({ ...EMPTY_LOG, patient: rec.patient });
+    setLogFormError("");
+    setImageError("");
     // Independent requests (neither depends on the other's result): fire
     // them concurrently instead of waiting for the record detail before
     // starting the logs fetch.
@@ -107,34 +113,50 @@ export function Records() {
   }
 
   async function createRecord() {
-    await api.post("/medical-records/", {
-      ...form,
-      patient: Number(form.patient),
-    });
-    setModal(null);
-    load();
+    setRecordFormError("");
+    try {
+      await api.post("/medical-records/", {
+        ...form,
+        patient: Number(form.patient),
+      });
+      setModal(null);
+      load();
+    } catch (err) {
+      setRecordFormError(err instanceof ApiError ? flattenError(err.message) : String(err));
+    }
   }
 
   async function createLog(e: FormEvent) {
     e.preventDefault();
-    await api.post("/consultation-logs/", { ...logForm, patient: Number(logForm.patient) });
-    setModal(null);
-    if (detail) {
-      api.get<Paginated<ConsultationLog>>(`/consultation-logs/?patient=${detail.patient}&page_size=20`).then((r) => setLogs(r.results));
+    setLogFormError("");
+    try {
+      await api.post("/consultation-logs/", { ...logForm, patient: Number(logForm.patient) });
+      setLogForm({ ...EMPTY_LOG, patient: logForm.patient });
+      if (detail) {
+        const r = await api.get<Paginated<ConsultationLog>>(`/consultation-logs/?patient=${detail.patient}&page_size=20`);
+        setLogs(r.results);
+      }
+    } catch (err) {
+      setLogFormError(err instanceof ApiError ? flattenError(err.message) : String(err));
     }
   }
 
   async function uploadImage() {
     if (!detail || !imageFile) return;
-    const fd = new FormData();
-    fd.append("record", String(detail.id));
-    fd.append("image", imageFile);
-    fd.append("caption", caption);
-    await upload("/images/", fd);
-    setImageFile(null);
-    setCaption("");
-    const full = await api.get<MedicalRecord>(`/medical-records/${detail.id}/`);
-    setDetail(full);
+    setImageError("");
+    try {
+      const fd = new FormData();
+      fd.append("record", String(detail.id));
+      fd.append("image", imageFile);
+      fd.append("caption", caption);
+      await upload("/images/", fd);
+      setImageFile(null);
+      setCaption("");
+      const full = await api.get<MedicalRecord>(`/medical-records/${detail.id}/`);
+      setDetail(full);
+    } catch (err) {
+      setImageError(err instanceof ApiError ? flattenError(err.message) : String(err));
+    }
   }
 
   const openDetailLink = (rec: MedicalRecord) => (
@@ -181,6 +203,7 @@ export function Records() {
       patient: initial?.id ?? 0,
       title: initial ? recordTitleFor(initial) : "",
     });
+    setRecordFormError("");
     setModal("record");
   }
 
@@ -281,6 +304,11 @@ export function Records() {
                 </button>
               </div>
             )}
+            {imageError && (
+              <p className="form-error" role="alert">
+                {imageError}
+              </p>
+            )}
 
             <h4>{t("records.newLog")}</h4>
             {logs.length > 0 && (
@@ -310,6 +338,11 @@ export function Records() {
                 <Field label={t("records.plan")}>
                   <textarea value={logForm.plan} onChange={(e) => setLogForm({ ...logForm, plan: e.target.value })} />
                 </Field>
+                {logFormError && (
+                  <p className="form-error" role="alert">
+                    {logFormError}
+                  </p>
+                )}
                 <button type="submit" className="btn primary">{t("common.save")}</button>
               </form>
             )}
@@ -326,6 +359,7 @@ export function Records() {
           onClose={() => setModal(null)}
           onSubmit={createRecord}
           submitLabel={t("common.save")}
+          error={recordFormError}
         >
           <Field label={t("records.patient")}>
             <SearchableSelect<Patient>

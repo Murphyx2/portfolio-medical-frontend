@@ -140,7 +140,9 @@
     "statusNoShow": "No asistió",
     "cancel": "Cancelar cita",
     "complete": "Completar",
-    "createdBy": "Creada por"
+    "createdBy": "Creada por",
+    "cancelConfirm": "¿Cancelar la cita de {{patient}} el {{time}}?",
+    "completeConfirm": "¿Marcar como completada la cita de {{patient}} el {{time}}?"
   },
   "records": {
     "title": "Expedientes Médicos",

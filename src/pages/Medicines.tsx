@@ -3,9 +3,10 @@ import { useTranslation } from "react-i18next";
 
 import { Field, FormModal, Page, Pagination, SearchBar, Spinner, Table, type Column } from "../components/ui";
 import { useListControls } from "../hooks/useListControls";
-import { api } from "../services/api";
+import { api, ApiError } from "../services/api";
 import type { Medicine, Paginated } from "../services/types";
 import { useAuth } from "../store/auth";
+import { flattenError } from "../utils/errors";
 
 const EMPTY = { generic_name: "", commercial_name: "", concentration: "" };
 
@@ -17,6 +18,7 @@ export function Medicines() {
   const [modal, setModal] = useState(false);
   const [form, setForm] = useState(EMPTY);
   const [editId, setEditId] = useState<number | null>(null);
+  const [formError, setFormError] = useState("");
   const {
     page,
     setPage,
@@ -54,20 +56,27 @@ export function Medicines() {
   function openNew() {
     setForm(EMPTY);
     setEditId(null);
+    setFormError("");
     setModal(true);
   }
 
   function openEdit(m: Medicine) {
     setForm({ generic_name: m.generic_name, commercial_name: m.commercial_name, concentration: m.concentration });
     setEditId(m.id);
+    setFormError("");
     setModal(true);
   }
 
   async function submit() {
-    if (editId) await api.patch(`/medicines/${editId}/`, form);
-    else await api.post("/medicines/", form);
-    setModal(false);
-    load();
+    setFormError("");
+    try {
+      if (editId) await api.patch(`/medicines/${editId}/`, form);
+      else await api.post("/medicines/", form);
+      setModal(false);
+      load();
+    } catch (err) {
+      setFormError(err instanceof ApiError ? flattenError(err.message) : String(err));
+    }
   }
 
   async function remove(m: Medicine) {
@@ -125,6 +134,7 @@ export function Medicines() {
           onClose={() => setModal(false)}
           onSubmit={submit}
           submitLabel={t("common.save")}
+          error={formError}
         >
           <Field label={t("medicines.genericName")}>
             <input value={form.generic_name} onChange={(e) => setForm({ ...form, generic_name: e.target.value })} required />

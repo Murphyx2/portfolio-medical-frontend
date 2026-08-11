@@ -3,9 +3,10 @@ import { useTranslation } from "react-i18next";
 
 import { Field, FormModal, Page, Pagination, SearchBar, Spinner, Table, type Column } from "../components/ui";
 import { useListControls } from "../hooks/useListControls";
-import { api } from "../services/api";
+import { api, ApiError } from "../services/api";
 import type { MedicalCenter, Paginated } from "../services/types";
 import { useAuth } from "../store/auth";
+import { flattenError } from "../utils/errors";
 import { formatPhone, formatPhoneInput, isValidRequiredPhone } from "../utils/phone";
 
 const EMPTY = { name: "", code: "", address: "", phone: "", email: "" };
@@ -19,6 +20,7 @@ export function Centers() {
   const [form, setForm] = useState(EMPTY);
   const [editId, setEditId] = useState<number | null>(null);
   const [phoneError, setPhoneError] = useState("");
+  const [formError, setFormError] = useState("");
   const {
     page,
     setPage,
@@ -57,6 +59,7 @@ export function Centers() {
     setForm(EMPTY);
     setEditId(null);
     setPhoneError("");
+    setFormError("");
     setModal(true);
   }
 
@@ -64,6 +67,7 @@ export function Centers() {
     setForm({ name: c.name, code: c.code, address: c.address, phone: formatPhone(c.phone), email: c.email });
     setEditId(c.id);
     setPhoneError("");
+    setFormError("");
     setModal(true);
   }
 
@@ -72,11 +76,16 @@ export function Centers() {
       setPhoneError(t("common.phoneInvalid"));
       return;
     }
+    setFormError("");
     const body = { ...form, phone: form.phone.replace(/\D/g, "") };
-    if (editId) await api.patch(`/centers/${editId}/`, body);
-    else await api.post("/centers/", body);
-    setModal(false);
-    load();
+    try {
+      if (editId) await api.patch(`/centers/${editId}/`, body);
+      else await api.post("/centers/", body);
+      setModal(false);
+      load();
+    } catch (err) {
+      setFormError(err instanceof ApiError ? flattenError(err.message) : String(err));
+    }
   }
 
   async function remove(c: MedicalCenter) {
@@ -137,6 +146,7 @@ export function Centers() {
           onClose={() => setModal(false)}
           onSubmit={submit}
           submitLabel={t("common.save")}
+          error={formError}
         >
           <Field label={t("centers.name")}>
             <input value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} required />

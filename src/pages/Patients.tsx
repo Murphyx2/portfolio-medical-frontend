@@ -5,6 +5,7 @@ import { Field, FormModal, Page, Pagination, SearchBar, Spinner, Table, type Col
 import { useListControls } from "../hooks/useListControls";
 import { api, ApiError } from "../services/api";
 import type { ARS, MedicalCenter, Paginated, Patient } from "../services/types";
+import { flattenError } from "../utils/errors";
 import { formatPhone, formatPhoneInput, isValidPhone, stripToDigits } from "../utils/phone";
 
 const EMPTY = {
@@ -27,23 +28,6 @@ function formatCedula(value: string): string {
   if (digits.length <= 3) return digits;
   if (digits.length <= 10) return `${digits.slice(0, 3)}-${digits.slice(3)}`;
   return `${digits.slice(0, 3)}-${digits.slice(3, 10)}-${digits.slice(10)}`;
-}
-
-function flattenError(message: string): string {
-  try {
-    const parsed = JSON.parse(message) as unknown;
-    if (typeof parsed === "string") return parsed;
-    if (parsed && typeof parsed === "object") {
-      const lines: string[] = [];
-      for (const [key, value] of Object.entries(parsed as Record<string, unknown>)) {
-        lines.push(`${key}: ${Array.isArray(value) ? value.join(" ") : String(value)}`);
-      }
-      return lines.join("\n");
-    }
-  } catch {
-    /* not JSON */
-  }
-  return message;
 }
 
 export function Patients() {

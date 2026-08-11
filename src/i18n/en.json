@@ -140,7 +140,9 @@
     "statusNoShow": "No show",
     "cancel": "Cancel appointment",
     "complete": "Complete",
-    "createdBy": "Created by"
+    "createdBy": "Created by",
+    "cancelConfirm": "Cancel {{patient}}'s appointment on {{time}}?",
+    "completeConfirm": "Mark {{patient}}'s appointment on {{time}} as completed?"
   },
   "records": {
     "title": "Medical Records",

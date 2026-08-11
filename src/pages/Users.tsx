@@ -47,10 +47,13 @@ export function Users() {
       .catch(() => {});
   }, [qs, page, pageSize, setCount, setPage, runList]);
 
+  useEffect(load, [load]);
+
   useEffect(() => {
-    load();
+    // Role choices for the "new user" form: fetched once, not on every
+    // page/sort/search change (unlike `load`, which re-runs then).
     api.get<{ value: string; label: string }[]>("/auth/users/roles/").then(setRoles).catch(() => {});
-  }, [load]);
+  }, []);
 
   async function submit() {
     await api.post("/auth/users/", form);

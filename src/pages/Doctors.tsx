@@ -52,10 +52,13 @@ export function Doctors() {
       .catch(() => {});
   }, [qs, page, pageSize, setCount, setPage, runList]);
 
+  useEffect(load, [load]);
+
   useEffect(() => {
-    load();
+    // User options for the "assign profile" picker: fetched once, not on
+    // every page/sort/search change (unlike `load`, which re-runs then).
     api.get<Paginated<User>>("/auth/users/?page_size=200").then((r) => setUserOptions(r.results)).catch(() => {});
-  }, [load]);
+  }, []);
 
   function openNew() {
     setForm(EMPTY);

@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 
-import { Field, FormModal, Page, Pagination, SearchBar, Spinner, Table, type Column } from "../components/ui";
+import { Field, FormModal, Page, Pagination, SearchableSelect, SearchBar, Spinner, Table, type Column } from "../components/ui";
 import { useListControls } from "../hooks/useListControls";
 import { api } from "../services/api";
 import type {
@@ -15,12 +15,19 @@ import { useAuth } from "../store/auth";
 
 const EMPTY = { patient: 0, doctor: 0, center: 0, date_time: "", duration_minutes: 30, notes: "" };
 
+function formatCedula(value: string): string {
+  const digits = value.replace(/\D/g, "").slice(0, 11);
+  if (digits.length <= 3) return digits;
+  if (digits.length <= 10) return `${digits.slice(0, 3)}-${digits.slice(3)}`;
+  return `${digits.slice(0, 3)}-${digits.slice(3, 10)}-${digits.slice(10)}`;
+}
+
 export function Appointments() {
   const { t } = useTranslation();
   const { user } = useAuth();
   const canManage = user?.role === "DOCTOR" || user?.role === "RECEPTIONIST" || user?.role === "ADMIN";
   const [rows, setRows] = useState<Appointment[]>([]);
-  const [patients, setPatients] = useState<Patient[]>([]);
+  const [selectedPatient, setSelectedPatient] = useState<Patient | null>(null);
   const [doctors, setDoctors] = useState<DoctorProfile[]>([]);
   const [centers, setCenters] = useState<MedicalCenter[]>([]);
   const [modal, setModal] = useState(false);
@@ -57,12 +64,27 @@ export function Appointments() {
       .catch(() => {});
   }, [qs, page, pageSize, setCount, setPage, runList]);
 
+  useEffect(load, [load]);
+
   useEffect(() => {
-    load();
-    api.get<Paginated<Patient>>("/patients/?page_size=100").then((r) => setPatients(r.results)).catch(() => {});
+    // Form-picker options: fetched once, not on every page/sort/search
+    // change (unlike `load`, which re-runs then). Patients are looked up
+    // on demand instead (SearchableSelect), not preloaded in bulk.
     api.get<Paginated<DoctorProfile>>("/doctors/profiles/?page_size=100").then((r) => setDoctors(r.results)).catch(() => {});
     api.get<Paginated<MedicalCenter>>("/centers/?page_size=100").then((r) => setCenters(r.results)).catch(() => {});
-  }, [load]);
+  }, []);
+
+  const searchPatients = useCallback((q: string): Promise<Patient[]> => {
+    return api
+      .get<Paginated<Patient>>(`/patients/?page_size=20${q ? `&search=${encodeURIComponent(q)}` : ""}`)
+      .then((r) => r.results)
+      .catch(() => []);
+  }, []);
+
+  function pickPatient(p: Patient) {
+    setSelectedPatient(p);
+    setForm({ ...form, patient: p.id });
+  }
 
   async function submit() {
     await api.post("/appointments/", {
@@ -115,7 +137,7 @@ export function Appointments() {
       title={t("appointments.title")}
       actions={
         canManage && (
-          <button className="btn primary" onClick={() => { setForm(EMPTY); setModal(true); }}>
+          <button className="btn primary" onClick={() => { setForm(EMPTY); setSelectedPatient(null); setModal(true); }}>
             + {t("appointments.new")}
           </button>
         )
@@ -154,12 +176,14 @@ export function Appointments() {
           submitLabel={t("common.save")}
         >
           <Field label={t("appointments.patient")}>
-            <select value={form.patient} onChange={(e) => setForm({ ...form, patient: Number(e.target.value) })} required>
-              <option value={0} disabled>—</option>
-              {patients.map((p) => (
-                <option key={p.id} value={p.id}>{p.full_name}</option>
-              ))}
-            </select>
+            <SearchableSelect<Patient>
+              value={selectedPatient}
+              onSelect={pickPatient}
+              search={searchPatients}
+              placeholder={t("records.patientPickerPlaceholder")}
+              getLabel={(p) => p.full_name}
+              getSublabel={(p) => `${formatCedula(p.cedula)} · NSS ${p.nss || "—"}`}
+            />
           </Field>
           <Field label={t("appointments.doctor")}>
             <select value={form.doctor} onChange={(e) => setForm({ ...form, doctor: Number(e.target.value) })} required>

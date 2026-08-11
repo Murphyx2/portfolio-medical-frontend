@@ -1,7 +1,7 @@
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
 
-import { Field, FormModal, Page, Pagination, SearchBar, Spinner, Table, type Column } from "../components/ui";
+import { Field, FormModal, Page, Pagination, SearchBar, Spinner, Table, type Column, type SortDir } from "../components/ui";
 import { useListControls } from "../hooks/useListControls";
 import { api, ApiError } from "../services/api";
 import type { ARS, MedicalCenter, Paginated, Patient } from "../services/types";
@@ -106,6 +106,59 @@ export function Patients() {
 
   const selectedArs = arsList.find((a) => String(a.id) === form.ars);
 
+  // cedula/nss/phone/email/age are encrypted at rest: the backend can't sort
+  // them in SQL and simply ignores an `?ordering=` request for them (falls
+  // back to default ordering). Sort those columns client-side, on the
+  // currently-loaded page only, instead of routing the click through the
+  // server-driven sort in useListControls.
+  const CLIENT_SORT_KEYS = new Set(["phone", "email", "cedula", "nss", "age"]);
+  const [clientSort, setClientSort] = useState<{ key: string; dir: SortDir } | null>(null);
+
+  function handleColumnSort(key: string) {
+    if (CLIENT_SORT_KEYS.has(key)) {
+      setClientSort((prev) => {
+        if (!prev || prev.key !== key) return { key, dir: "asc" };
+        if (prev.dir === "asc") return { key, dir: "desc" };
+        return null;
+      });
+      return;
+    }
+    setClientSort(null);
+    handleSort(key);
+  }
+
+  function clientSortValue(p: Patient, key: string): string | number | null {
+    switch (key) {
+      case "age":
+        return p.age ?? null;
+      case "phone":
+        return p.phone || null;
+      case "email":
+        return p.email || null;
+      case "cedula":
+        return p.cedula || null;
+      case "nss":
+        return p.nss || null;
+      default:
+        return null;
+    }
+  }
+
+  const displayRows = useMemo(() => {
+    if (!clientSort) return rows;
+    const { key, dir } = clientSort;
+    return [...rows].sort((a, b) => {
+      const av = clientSortValue(a, key);
+      const bv = clientSortValue(b, key);
+      if (av == null && bv == null) return 0;
+      if (av == null) return 1;
+      if (bv == null) return -1;
+      if (av < bv) return dir === "asc" ? -1 : 1;
+      if (av > bv) return dir === "asc" ? 1 : -1;
+      return 0;
+    });
+  }, [rows, clientSort]);
+
   function openNew() {
     setForm(EMPTY);
     setEditId(null);
@@ -203,12 +256,12 @@ export function Patients() {
           <Pagination page={page} count={count} pageSize={pageSize} onChange={setPage} onPageSizeChange={changePageSize} />
           <Table
             columns={columns}
-            rows={rows}
+            rows={displayRows}
             onEdit={openEdit}
             onDelete={remove}
-            sortKey={sortKey}
-            sortDir={sortDir}
-            onSort={handleSort}
+            sortKey={clientSort?.key ?? sortKey}
+            sortDir={clientSort?.dir ?? sortDir}
+            onSort={handleColumnSort}
           />
           <Pagination page={page} count={count} pageSize={pageSize} onChange={setPage} onPageSizeChange={changePageSize} />
         </>

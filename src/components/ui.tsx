@@ -1,5 +1,5 @@
-import { useEffect, useRef, useState } from "react";
-import type { ReactNode } from "react";
+import { useEffect, useId, useRef, useState } from "react";
+import type { FormEvent, ReactNode } from "react";
 import { useTranslation } from "react-i18next";
 
 import { MIN_SEARCH_CHARS } from "../hooks/useListControls";
@@ -23,13 +23,50 @@ export function Page({ title, actions, children }: {
 export function FormModal({ title, onClose, onSubmit, children, submitLabel, error }: {
   title: string;
   onClose: () => void;
-  onSubmit: () => void;
+  onSubmit: () => void | Promise<void>;
   submitLabel: string;
   error?: string;
   children: ReactNode;
 }) {
   const pressOnBackdrop = useRef(false);
+  const modalRef = useRef<HTMLDivElement>(null);
+  const [submitting, setSubmitting] = useState(false);
+  const titleId = useId();
   const { t } = useTranslation();
+
+  useEffect(() => {
+    const previouslyFocused = document.activeElement as HTMLElement | null;
+    const modal = modalRef.current;
+    const focusable = modal?.querySelector<HTMLElement>(
+      "input, select, textarea, button, [href], [tabindex]:not([tabindex='-1'])"
+    );
+    (focusable ?? modal)?.focus();
+    return () => {
+      previouslyFocused?.focus();
+    };
+  }, []);
+
+  useEffect(() => {
+    function handleKeyDown(e: KeyboardEvent) {
+      if (e.key === "Escape" && !submitting) {
+        onClose();
+      }
+    }
+    document.addEventListener("keydown", handleKeyDown);
+    return () => document.removeEventListener("keydown", handleKeyDown);
+  }, [onClose, submitting]);
+
+  async function handleSubmit(e: FormEvent) {
+    e.preventDefault();
+    if (submitting) return;
+    setSubmitting(true);
+    try {
+      await onSubmit();
+    } finally {
+      setSubmitting(false);
+    }
+  }
+
   return (
     <div
       className="modal-backdrop"
@@ -37,27 +74,27 @@ export function FormModal({ title, onClose, onSubmit, children, submitLabel, err
         pressOnBackdrop.current = e.target === e.currentTarget;
       }}
       onClick={(e) => {
-        if (pressOnBackdrop.current && e.target === e.currentTarget) {
+        if (pressOnBackdrop.current && e.target === e.currentTarget && !submitting) {
           pressOnBackdrop.current = false;
           onClose();
         }
       }}
     >
       <div
+        ref={modalRef}
         className="modal"
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby={titleId}
+        tabIndex={-1}
         onClick={(e) => e.stopPropagation()}
         onPointerDown={(e) => {
           pressOnBackdrop.current = false;
           e.stopPropagation();
         }}
       >
-        <h3>{title}</h3>
-        <form
-          onSubmit={(e) => {
-            e.preventDefault();
-            onSubmit();
-          }}
-        >
+        <h3 id={titleId}>{title}</h3>
+        <form onSubmit={handleSubmit}>
           {children}
           {error && (
             <p className="form-error" role="alert">
@@ -65,11 +102,11 @@ export function FormModal({ title, onClose, onSubmit, children, submitLabel, err
             </p>
           )}
           <div className="modal-actions">
-            <button type="button" className="btn ghost" onClick={onClose}>
+            <button type="button" className="btn ghost" onClick={onClose} disabled={submitting}>
               {t("common.cancel")}
             </button>
-            <button type="submit" className="btn primary">
-              {submitLabel}
+            <button type="submit" className="btn primary" disabled={submitting}>
+              {submitting ? t("common.saving") : submitLabel}
             </button>
           </div>
         </form>

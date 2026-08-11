@@ -358,9 +358,6 @@ body {
   text-transform: uppercase;
   letter-spacing: 0.04em;
   padding: 0.65rem 0.9rem;
-  position: sticky;
-  top: var(--mc-topbar-height);
-  z-index: 2;
 }
 
 .data-table td {

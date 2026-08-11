@@ -136,6 +136,14 @@ describe("MaskedValue", () => {
     render(<MaskedValue value={null} />);
     expect(screen.getByText("—")).toBeInTheDocument();
   });
+
+  it("keeps the masked value as the accessible name (no aria-label override) so screen readers read it, not just the tooltip", () => {
+    render(<MaskedValue value="80••••00" />);
+    expect(screen.getByText("Oculto para tu rol:", { exact: false })).toHaveClass("sr-only");
+    const wrapper = screen.getByTitle("Oculto para tu rol");
+    expect(wrapper).not.toHaveAttribute("aria-label");
+    expect(wrapper).toHaveTextContent("80••••00");
+  });
 });
 
 describe("Pagination", () => {

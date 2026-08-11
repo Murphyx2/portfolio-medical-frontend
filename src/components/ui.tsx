@@ -243,7 +243,7 @@ export function MaskedValue({ value }: { value?: string | null }) {
   if (!value.includes("•")) return <>{value}</>;
   const label = t("common.maskedTooltip");
   return (
-    <span className="masked-value" title={label} aria-label={label}>
+    <span className="masked-value" title={label}>
       <svg
         className="masked-value-icon"
         width="12"
@@ -257,6 +257,7 @@ export function MaskedValue({ value }: { value?: string | null }) {
         <rect x="3.5" y="7" width="9" height="6.5" rx="1.25" />
         <path d="M5.5 7V4.75a2.5 2.5 0 0 1 5 0V7" />
       </svg>
+      <span className="sr-only">{label}: </span>
       {value}
     </span>
   );

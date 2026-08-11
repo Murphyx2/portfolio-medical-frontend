@@ -46,6 +46,7 @@
     "noData": "No se encontraron datos",
     "back": "Volver",
     "close": "Cerrar",
+    "maskedTooltip": "Oculto para tu rol",
     "view": "Ver",
     "deleteConfirm": "¿Eliminar este registro?",
     "phoneInvalid": "El teléfono debe tener exactamente 10 dígitos.",

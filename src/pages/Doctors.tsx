@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 
-import { Field, FormModal, Page, Pagination, SearchBar, Spinner, Table, type Column } from "../components/ui";
+import { Field, FormModal, MaskedValue, Page, Pagination, SearchBar, Spinner, Table, type Column } from "../components/ui";
 import { useListControls } from "../hooks/useListControls";
 import { api, ApiError } from "../services/api";
 import type { DoctorProfile, Paginated, User } from "../services/types";
@@ -110,8 +110,8 @@ export function Doctors() {
   const columns: Column<DoctorProfile>[] = [
     { key: "full_name", header: t("doctors.fullName"), sortKey: "user__last_name" },
     { key: "specialty", header: t("doctors.specialty"), sortKey: "specialty" },
-    { key: "license_number", header: t("doctors.license"), sortKey: "license_number" },
-    { key: "contact_phone", header: t("doctors.contactPhone"), sortKey: "contact_phone", render: (r) => formatPhone(r.contact_phone) },
+    { key: "license_number", header: t("doctors.license"), sortKey: "license_number", render: (r) => <MaskedValue value={r.license_number} /> },
+    { key: "contact_phone", header: t("doctors.contactPhone"), sortKey: "contact_phone", render: (r) => <MaskedValue value={formatPhone(r.contact_phone)} /> },
     { key: "contact_email", header: t("doctors.contactEmail"), sortKey: "contact_email" },
   ];
 

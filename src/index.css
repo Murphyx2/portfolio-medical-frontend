@@ -540,6 +540,18 @@ body {
 }
 
 
+.masked-value {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+  color: var(--mc-muted);
+  cursor: help;
+}
+
+.masked-value-icon {
+  flex-shrink: 0;
+}
+
 .field-error {
   display: block;
   color: var(--mc-danger);

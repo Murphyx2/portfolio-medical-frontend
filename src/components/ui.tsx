@@ -237,6 +237,31 @@ export function Spinner() {
   return <div className="page-center muted">{t("common.loading")}</div>;
 }
 
+export function MaskedValue({ value }: { value?: string | null }) {
+  const { t } = useTranslation();
+  if (!value) return <>{"—"}</>;
+  if (!value.includes("•")) return <>{value}</>;
+  const label = t("common.maskedTooltip");
+  return (
+    <span className="masked-value" title={label} aria-label={label}>
+      <svg
+        className="masked-value-icon"
+        width="12"
+        height="12"
+        viewBox="0 0 16 16"
+        fill="none"
+        stroke="currentColor"
+        strokeWidth="1.5"
+        aria-hidden="true"
+      >
+        <rect x="3.5" y="7" width="9" height="6.5" rx="1.25" />
+        <path d="M5.5 7V4.75a2.5 2.5 0 0 1 5 0V7" />
+      </svg>
+      {value}
+    </span>
+  );
+}
+
 export function SearchBar({ value, onChange, placeholder, label, onSubmit }: {
   value: string;
   onChange: (value: string) => void;

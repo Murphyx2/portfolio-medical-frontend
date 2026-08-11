@@ -46,6 +46,7 @@
     "noData": "No data found",
     "back": "Back",
     "close": "Close",
+    "maskedTooltip": "Hidden for your role",
     "view": "View",
     "deleteConfirm": "Delete this record?",
     "phoneInvalid": "Phone must contain exactly 10 digits.",

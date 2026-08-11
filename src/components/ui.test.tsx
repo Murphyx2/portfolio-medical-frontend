@@ -17,7 +17,7 @@
 import { fireEvent, render, screen } from "@testing-library/react";
 import { describe, expect, it, vi } from "vitest";
 
-import { FormModal, Pagination, SearchableSelect, SearchBar, Table } from "./ui";
+import { FormModal, MaskedValue, Pagination, SearchableSelect, SearchBar, Table } from "./ui";
 
 function renderModal(onClose = vi.fn()) {
   const utils = render(
@@ -116,6 +116,25 @@ describe("FormModal backdrop close", () => {
   it("renders the empty-state label translated when no rows", () => {
     render(<Table columns={[{ key: "name", header: "Nombre" }]} rows={[]} />);
     expect(screen.getByText("No se encontraron datos")).toBeInTheDocument();
+  });
+});
+
+describe("MaskedValue", () => {
+  it("renders a plain (unmasked) value with no icon or tooltip", () => {
+    render(<MaskedValue value="(809) 555-1212" />);
+    expect(screen.getByText("(809) 555-1212")).toBeInTheDocument();
+    expect(screen.queryByTitle("Oculto para tu rol")).not.toBeInTheDocument();
+  });
+
+  it("renders a lock affordance with a role-explanation tooltip for masked values", () => {
+    render(<MaskedValue value="80••••00" />);
+    expect(screen.getByText("80••••00")).toBeInTheDocument();
+    expect(screen.getByTitle("Oculto para tu rol")).toBeInTheDocument();
+  });
+
+  it("renders an em dash for empty/null values", () => {
+    render(<MaskedValue value={null} />);
+    expect(screen.getByText("—")).toBeInTheDocument();
   });
 });
 

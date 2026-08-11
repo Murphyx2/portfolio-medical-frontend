@@ -1,5 +1,5 @@
-import { useEffect, useRef, useState } from "react";
-import type { ReactNode } from "react";
+import { useEffect, useId, useRef, useState } from "react";
+import type { FormEvent, ReactNode } from "react";
 import { useTranslation } from "react-i18next";
 
 import { MIN_SEARCH_CHARS } from "../hooks/useListControls";
@@ -20,16 +20,64 @@ export function Page({ title, actions, children }: {
   );
 }
 
-export function FormModal({ title, onClose, onSubmit, children, submitLabel, error }: {
-  title: string;
+const DIALOG_FOCUSABLE_SELECTOR =
+  "input, select, textarea, button:not(:disabled), [href], [tabindex]:not([tabindex='-1'])";
+
+/**
+ * Shared dialog shell: drag-release-safe backdrop close, role="dialog" +
+ * aria-modal + aria-labelledby, initial focus + focus-restore-on-close, a
+ * Tab/Shift+Tab focus trap, and Escape-to-close. `preventClose` suppresses
+ * Escape/backdrop-close (e.g. while a submit is in flight) without touching
+ * the focus trap. Composed by FormModal; also used directly by dialogs that
+ * don't fit the single-submit/cancel shape (e.g. Records' detail view).
+ */
+export function Dialog({ title, onClose, children, wide, preventClose }: {
+  title: ReactNode;
   onClose: () => void;
-  onSubmit: () => void;
-  submitLabel: string;
-  error?: string;
   children: ReactNode;
+  wide?: boolean;
+  preventClose?: boolean;
 }) {
   const pressOnBackdrop = useRef(false);
-  const { t } = useTranslation();
+  const modalRef = useRef<HTMLDivElement>(null);
+  const titleId = useId();
+
+  useEffect(() => {
+    const previouslyFocused = document.activeElement as HTMLElement | null;
+    const modal = modalRef.current;
+    const focusable = modal?.querySelector<HTMLElement>(DIALOG_FOCUSABLE_SELECTOR);
+    (focusable ?? modal)?.focus();
+    return () => {
+      previouslyFocused?.focus();
+    };
+  }, []);
+
+  useEffect(() => {
+    function handleKeyDown(e: KeyboardEvent) {
+      if (preventClose) return;
+      if (e.key === "Escape") {
+        onClose();
+        return;
+      }
+      if (e.key !== "Tab") return;
+      const modal = modalRef.current;
+      if (!modal) return;
+      const focusables = Array.from(modal.querySelectorAll<HTMLElement>(DIALOG_FOCUSABLE_SELECTOR));
+      if (focusables.length === 0) return;
+      const first = focusables[0];
+      const last = focusables[focusables.length - 1];
+      if (e.shiftKey && document.activeElement === first) {
+        e.preventDefault();
+        last.focus();
+      } else if (!e.shiftKey && document.activeElement === last) {
+        e.preventDefault();
+        first.focus();
+      }
+    }
+    document.addEventListener("keydown", handleKeyDown);
+    return () => document.removeEventListener("keydown", handleKeyDown);
+  }, [onClose, preventClose]);
+
   return (
     <div
       className="modal-backdrop"
@@ -37,44 +85,73 @@ export function FormModal({ title, onClose, onSubmit, children, submitLabel, err
         pressOnBackdrop.current = e.target === e.currentTarget;
       }}
       onClick={(e) => {
-        if (pressOnBackdrop.current && e.target === e.currentTarget) {
+        if (pressOnBackdrop.current && e.target === e.currentTarget && !preventClose) {
           pressOnBackdrop.current = false;
           onClose();
         }
       }}
     >
       <div
-        className="modal"
+        ref={modalRef}
+        className={wide ? "modal wide" : "modal"}
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby={titleId}
+        tabIndex={-1}
         onClick={(e) => e.stopPropagation()}
         onPointerDown={(e) => {
           pressOnBackdrop.current = false;
           e.stopPropagation();
         }}
       >
-        <h3>{title}</h3>
-        <form
-          onSubmit={(e) => {
-            e.preventDefault();
-            onSubmit();
-          }}
-        >
-          {children}
-          {error && (
-            <p className="form-error" role="alert">
-              {error}
-            </p>
-          )}
-          <div className="modal-actions">
-            <button type="button" className="btn ghost" onClick={onClose}>
-              {t("common.cancel")}
-            </button>
-            <button type="submit" className="btn primary">
-              {submitLabel}
-            </button>
-          </div>
-        </form>
+        <h3 id={titleId}>{title}</h3>
+        {children}
       </div>
     </div>
+  );
+}
+
+export function FormModal({ title, onClose, onSubmit, children, submitLabel, error }: {
+  title: string;
+  onClose: () => void;
+  onSubmit: () => void | Promise<void>;
+  submitLabel: string;
+  error?: string;
+  children: ReactNode;
+}) {
+  const [submitting, setSubmitting] = useState(false);
+  const { t } = useTranslation();
+
+  async function handleSubmit(e: FormEvent) {
+    e.preventDefault();
+    if (submitting) return;
+    setSubmitting(true);
+    try {
+      await onSubmit();
+    } finally {
+      setSubmitting(false);
+    }
+  }
+
+  return (
+    <Dialog title={title} onClose={onClose} preventClose={submitting}>
+      <form onSubmit={handleSubmit}>
+        {children}
+        {error && (
+          <p className="form-error" role="alert">
+            {error}
+          </p>
+        )}
+        <div className="modal-actions">
+          <button type="button" className="btn ghost" onClick={onClose} disabled={submitting}>
+            {t("common.cancel")}
+          </button>
+          <button type="submit" className="btn primary" disabled={submitting}>
+            {submitting ? t("common.saving") : submitLabel}
+          </button>
+        </div>
+      </form>
+    </Dialog>
   );
 }
 
@@ -198,6 +275,32 @@ export function Table<T extends { id: number }>({
 export function Spinner() {
   const { t } = useTranslation();
   return <div className="page-center muted">{t("common.loading")}</div>;
+}
+
+export function MaskedValue({ value }: { value?: string | null }) {
+  const { t } = useTranslation();
+  if (!value) return <>{"—"}</>;
+  if (!value.includes("•")) return <>{value}</>;
+  const label = t("common.maskedTooltip");
+  return (
+    <span className="masked-value" title={label}>
+      <svg
+        className="masked-value-icon"
+        width="12"
+        height="12"
+        viewBox="0 0 16 16"
+        fill="none"
+        stroke="currentColor"
+        strokeWidth="1.5"
+        aria-hidden="true"
+      >
+        <rect x="3.5" y="7" width="9" height="6.5" rx="1.25" />
+        <path d="M5.5 7V4.75a2.5 2.5 0 0 1 5 0V7" />
+      </svg>
+      <span className="sr-only">{label}: </span>
+      {value}
+    </span>
+  );
 }
 
 export function SearchBar({ value, onChange, placeholder, label, onSubmit }: {

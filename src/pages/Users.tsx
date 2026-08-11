@@ -4,8 +4,9 @@ import { useTranslation } from "react-i18next";
 import { Field, FormModal, Page, Pagination, SearchBar, Spinner, Table, type Column } from "../components/ui";
 import { RoleGate } from "../components/guards";
 import { useListControls } from "../hooks/useListControls";
-import { api } from "../services/api";
+import { api, ApiError } from "../services/api";
 import type { Paginated, User } from "../services/types";
+import { flattenError } from "../utils/errors";
 
 const EMPTY = { username: "", email: "", first_name: "", last_name: "", password: "", role: "RECEPTIONIST" };
 
@@ -15,6 +16,7 @@ export function Users() {
   const [modal, setModal] = useState(false);
   const [form, setForm] = useState(EMPTY);
   const [roles, setRoles] = useState<{ value: string; label: string }[]>([]);
+  const [formError, setFormError] = useState("");
   const {
     page,
     setPage,
@@ -56,14 +58,23 @@ export function Users() {
   }, []);
 
   async function submit() {
-    await api.post("/auth/users/", form);
-    setModal(false);
-    load();
+    setFormError("");
+    try {
+      await api.post("/auth/users/", form);
+      setModal(false);
+      load();
+    } catch (err) {
+      setFormError(err instanceof ApiError ? flattenError(err.message) : String(err));
+    }
   }
 
   async function remove(u: User) {
-    await api.delete(`/auth/users/${u.id}/`);
-    load();
+    try {
+      await api.delete(`/auth/users/${u.id}/`);
+      load();
+    } catch (err) {
+      window.alert(err instanceof ApiError ? flattenError(err.message) : String(err));
+    }
   }
 
   const columns: Column<User>[] = [
@@ -79,7 +90,7 @@ export function Users() {
       <Page
         title={t("users.title")}
         actions={
-          <button className="btn primary" onClick={() => { setForm(EMPTY); setModal(true); }}>
+          <button className="btn primary" onClick={() => { setForm(EMPTY); setFormError(""); setModal(true); }}>
             + {t("users.new")}
           </button>
         }
@@ -116,6 +127,7 @@ export function Users() {
             onClose={() => setModal(false)}
             onSubmit={submit}
             submitLabel={t("common.save")}
+            error={formError}
           >
             <Field label={t("users.username")}>
               <input value={form.username} onChange={(e) => setForm({ ...form, username: e.target.value })} required />

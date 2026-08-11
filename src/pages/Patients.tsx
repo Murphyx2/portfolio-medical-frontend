@@ -1,10 +1,11 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
 
-import { Field, FormModal, Page, Pagination, SearchBar, Spinner, Table, type Column, type SortDir } from "../components/ui";
+import { Field, FormModal, MaskedValue, Page, Pagination, SearchBar, Spinner, Table, type Column, type SortDir } from "../components/ui";
 import { useListControls } from "../hooks/useListControls";
 import { api, ApiError } from "../services/api";
 import type { ARS, MedicalCenter, Paginated, Patient } from "../services/types";
+import { flattenError } from "../utils/errors";
 import { formatPhone, formatPhoneInput, isValidPhone, stripToDigits } from "../utils/phone";
 
 const EMPTY = {
@@ -27,23 +28,6 @@ function formatCedula(value: string): string {
   if (digits.length <= 3) return digits;
   if (digits.length <= 10) return `${digits.slice(0, 3)}-${digits.slice(3)}`;
   return `${digits.slice(0, 3)}-${digits.slice(3, 10)}-${digits.slice(10)}`;
-}
-
-function flattenError(message: string): string {
-  try {
-    const parsed = JSON.parse(message) as unknown;
-    if (typeof parsed === "string") return parsed;
-    if (parsed && typeof parsed === "object") {
-      const lines: string[] = [];
-      for (const [key, value] of Object.entries(parsed as Record<string, unknown>)) {
-        lines.push(`${key}: ${Array.isArray(value) ? value.join(" ") : String(value)}`);
-      }
-      return lines.join("\n");
-    }
-  } catch {
-    /* not JSON */
-  }
-  return message;
 }
 
 export function Patients() {
@@ -214,18 +198,27 @@ export function Patients() {
   }
 
   async function remove(p: Patient) {
-    await api.delete(`/patients/${p.id}/`);
-    load();
+    try {
+      await api.delete(`/patients/${p.id}/`);
+      load();
+    } catch (err) {
+      window.alert(err instanceof ApiError ? flattenError(err.message) : String(err));
+    }
   }
 
   const columns: Column<Patient>[] = [
-    { key: "full_name", header: t("common.name"), sortKey: "search_name", render: (r) => r.full_name },
+    { key: "full_name", header: t("common.name"), sortKey: "search_name", render: (r) => <MaskedValue value={r.full_name} /> },
     { key: "age", header: t("patients.age"), sortKey: "age", render: (r) => (r.age ?? "-") },
     { key: "gender", header: t("patients.gender"), sortKey: "gender" },
-    { key: "phone", header: t("patients.phone"), sortKey: "phone", render: (r) => formatPhone(r.phone) },
-    { key: "email", header: t("common.email"), sortKey: "email" },
-    { key: "cedula", header: t("patients.cedula"), sortKey: "cedula", render: (r) => (r.cedula ? formatCedula(r.cedula) : "") },
-    { key: "nss", header: t("patients.nss"), sortKey: "nss" },
+    { key: "phone", header: t("patients.phone"), sortKey: "phone", render: (r) => <MaskedValue value={formatPhone(r.phone)} /> },
+    { key: "email", header: t("common.email"), sortKey: "email", render: (r) => <MaskedValue value={r.email} /> },
+    {
+      key: "cedula",
+      header: t("patients.cedula"),
+      sortKey: "cedula",
+      render: (r) => <MaskedValue value={r.cedula ? (r.cedula.includes("•") ? r.cedula : formatCedula(r.cedula)) : ""} />,
+    },
+    { key: "nss", header: t("patients.nss"), sortKey: "nss", render: (r) => <MaskedValue value={r.nss} /> },
     { key: "ars_name", header: t("patients.ars"), sortKey: "ars__name" },
     { key: "ars_program_name", header: t("patients.arsProgram"), sortKey: "ars_program__name" },
     { key: "center_name", header: t("patients.center"), sortKey: "center__name", render: (r) => r.center_name ?? "—" },

@@ -1,11 +1,12 @@
-import { useCallback, useEffect, useRef, useState, type FormEvent } from "react";
+import { useCallback, useEffect, useState, type FormEvent } from "react";
 import { useTranslation } from "react-i18next";
 
-import { Field, FormModal, Page, Pagination, SearchableSelect, SearchBar, Spinner, Table, type Column } from "../components/ui";
+import { Dialog, Field, FormModal, MaskedValue, Page, Pagination, SearchableSelect, SearchBar, Spinner, Table, type Column } from "../components/ui";
 import { useListControls } from "../hooks/useListControls";
-import { api, upload } from "../services/api";
+import { api, ApiError, upload } from "../services/api";
 import type { ConsultationLog, MedicalRecord, Paginated, Patient } from "../services/types";
 import { useAuth } from "../store/auth";
+import { flattenError } from "../utils/errors";
 
 const EMPTY_RECORD = {
   patient: 0,
@@ -43,7 +44,6 @@ export function Records() {
   const [rows, setRows] = useState<MedicalRecord[]>([]);
   const [patients, setPatients] = useState<Patient[]>([]);
   const [detail, setDetail] = useState<MedicalRecord | null>(null);
-  const pressOnBackdrop = useRef(false);
   const [logs, setLogs] = useState<ConsultationLog[]>([]);
   const [modal, setModal] = useState<"record" | "log" | null>(null);
   const [form, setForm] = useState(EMPTY_RECORD);
@@ -51,6 +51,9 @@ export function Records() {
   const [logForm, setLogForm] = useState(EMPTY_LOG);
   const [imageFile, setImageFile] = useState<File | null>(null);
   const [caption, setCaption] = useState("");
+  const [recordFormError, setRecordFormError] = useState("");
+  const [logFormError, setLogFormError] = useState("");
+  const [imageError, setImageError] = useState("");
   const {
     page,
     setPage,
@@ -93,6 +96,8 @@ export function Records() {
 
   async function openDetail(rec: MedicalRecord) {
     setLogForm({ ...EMPTY_LOG, patient: rec.patient });
+    setLogFormError("");
+    setImageError("");
     // Independent requests (neither depends on the other's result): fire
     // them concurrently instead of waiting for the record detail before
     // starting the logs fetch.
@@ -107,39 +112,55 @@ export function Records() {
   }
 
   async function createRecord() {
-    await api.post("/medical-records/", {
-      ...form,
-      patient: Number(form.patient),
-    });
-    setModal(null);
-    load();
+    setRecordFormError("");
+    try {
+      await api.post("/medical-records/", {
+        ...form,
+        patient: Number(form.patient),
+      });
+      setModal(null);
+      load();
+    } catch (err) {
+      setRecordFormError(err instanceof ApiError ? flattenError(err.message) : String(err));
+    }
   }
 
   async function createLog(e: FormEvent) {
     e.preventDefault();
-    await api.post("/consultation-logs/", { ...logForm, patient: Number(logForm.patient) });
-    setModal(null);
-    if (detail) {
-      api.get<Paginated<ConsultationLog>>(`/consultation-logs/?patient=${detail.patient}&page_size=20`).then((r) => setLogs(r.results));
+    setLogFormError("");
+    try {
+      await api.post("/consultation-logs/", { ...logForm, patient: Number(logForm.patient) });
+      setLogForm({ ...EMPTY_LOG, patient: logForm.patient });
+      if (detail) {
+        const r = await api.get<Paginated<ConsultationLog>>(`/consultation-logs/?patient=${detail.patient}&page_size=20`);
+        setLogs(r.results);
+      }
+    } catch (err) {
+      setLogFormError(err instanceof ApiError ? flattenError(err.message) : String(err));
     }
   }
 
   async function uploadImage() {
     if (!detail || !imageFile) return;
-    const fd = new FormData();
-    fd.append("record", String(detail.id));
-    fd.append("image", imageFile);
-    fd.append("caption", caption);
-    await upload("/images/", fd);
-    setImageFile(null);
-    setCaption("");
-    const full = await api.get<MedicalRecord>(`/medical-records/${detail.id}/`);
-    setDetail(full);
+    setImageError("");
+    try {
+      const fd = new FormData();
+      fd.append("record", String(detail.id));
+      fd.append("image", imageFile);
+      fd.append("caption", caption);
+      await upload("/images/", fd);
+      setImageFile(null);
+      setCaption("");
+      const full = await api.get<MedicalRecord>(`/medical-records/${detail.id}/`);
+      setDetail(full);
+    } catch (err) {
+      setImageError(err instanceof ApiError ? flattenError(err.message) : String(err));
+    }
   }
 
   const openDetailLink = (rec: MedicalRecord) => (
     <button type="button" className="row-link" onClick={() => openDetail(rec)}>
-      {rec.patient_info.full_name}
+      <MaskedValue value={rec.patient_info.full_name} />
     </button>
   );
 
@@ -155,7 +176,15 @@ export function Records() {
       header: t("common.cedula"),
       render: (r) => (
         <button type="button" className="row-link" onClick={() => openDetail(r)}>
-          {formatCedula(r.patient_info.cedula)}
+          <MaskedValue
+            value={
+              r.patient_info.cedula
+                ? r.patient_info.cedula.includes("•")
+                  ? r.patient_info.cedula
+                  : formatCedula(r.patient_info.cedula)
+                : ""
+            }
+          />
         </button>
       ),
     },
@@ -164,7 +193,7 @@ export function Records() {
       header: t("common.nss"),
       render: (r) => (
         <button type="button" className="row-link" onClick={() => openDetail(r)}>
-          {r.patient_info.nss || "—"}
+          <MaskedValue value={r.patient_info.nss} />
         </button>
       ),
     },
@@ -181,6 +210,7 @@ export function Records() {
       patient: initial?.id ?? 0,
       title: initial ? recordTitleFor(initial) : "",
     });
+    setRecordFormError("");
     setModal("record");
   }
 
@@ -233,91 +263,86 @@ export function Records() {
       )}
 
       {detail && (
-        <div
-          className="modal-backdrop"
-          onPointerDown={(e) => {
-            pressOnBackdrop.current = e.target === e.currentTarget;
-          }}
-          onClick={(e) => {
-            if (pressOnBackdrop.current && e.target === e.currentTarget) {
-              pressOnBackdrop.current = false;
-              setDetail(null);
-            }
-          }}
+        <Dialog
+          title={
+            <>
+              {t("records.title")} · <MaskedValue value={detail.patient_info.full_name} />
+            </>
+          }
+          onClose={() => setDetail(null)}
+          wide
         >
-          <div
-            className="modal wide"
-            onClick={(e) => e.stopPropagation()}
-            onPointerDown={(e) => {
-              pressOnBackdrop.current = false;
-              e.stopPropagation();
-            }}
-          >
-            <h3>
-              {t("records.title")} · {detail.patient_info.full_name}
-            </h3>
-            <p className="muted record-subtitle">{detail.title}</p>
-            <div className="kv-grid">
-              <div><b>{t("records.diagnosis")}:</b> {detail.diagnosis || "—"}</div>
-              <div><b>{t("records.treatment")}:</b> {detail.treatment || "—"}</div>
-              <div><b>{t("records.medicineAndDoses")}:</b> {detail.medicine_and_doses || "—"}</div>
-              <div><b>{t("records.notes")}:</b> {detail.notes || "—"}</div>
-            </div>
+          <p className="muted record-subtitle">{detail.title}</p>
+          <div className="kv-grid">
+            <div><b>{t("records.diagnosis")}:</b> {detail.diagnosis || "—"}</div>
+            <div><b>{t("records.treatment")}:</b> {detail.treatment || "—"}</div>
+            <div><b>{t("records.medicineAndDoses")}:</b> {detail.medicine_and_doses || "—"}</div>
+            <div><b>{t("records.notes")}:</b> {detail.notes || "—"}</div>
+          </div>
 
-            <h4>{t("records.images")}</h4>
-            <div className="image-grid">
-              {detail.images.map((img) => (
-                <a key={img.id} href={img.image_url ?? "#"} target="_blank" rel="noreferrer">
-                  <img src={img.image_url ?? ""} alt={img.caption} loading="lazy" />
-                </a>
+          <h4>{t("records.images")}</h4>
+          <div className="image-grid">
+            {detail.images.map((img) => (
+              <a key={img.id} href={img.image_url ?? "#"} target="_blank" rel="noreferrer">
+                <img src={img.image_url ?? ""} alt={img.caption} loading="lazy" />
+              </a>
+            ))}
+          </div>
+          {canCreate && (
+            <div className="upload-row">
+              <input type="file" accept="image/*" onChange={(e) => setImageFile(e.target.files?.[0] ?? null)} />
+              <input placeholder={t("records.caption")} value={caption} onChange={(e) => setCaption(e.target.value)} />
+              <button className="btn primary" onClick={uploadImage} disabled={!imageFile}>
+                {t("records.uploadImage")}
+              </button>
+            </div>
+          )}
+          {imageError && (
+            <p className="form-error" role="alert">
+              {imageError}
+            </p>
+          )}
+
+          <h4>{t("records.newLog")}</h4>
+          {logs.length > 0 && (
+            <div className="log-list">
+              {logs.map((log) => (
+                <div key={log.id} className="log-entry">
+                  <b>{log.doctor_name} · {new Date(log.date).toLocaleString()}</b>
+                  <div><b>S:</b> {log.subjective}</div>
+                  <div><b>O:</b> {log.objective}</div>
+                  <div><b>A:</b> {log.assessment}</div>
+                  <div><b>P:</b> {log.plan}</div>
+                </div>
               ))}
             </div>
-            {canCreate && (
-              <div className="upload-row">
-                <input type="file" accept="image/*" onChange={(e) => setImageFile(e.target.files?.[0] ?? null)} />
-                <input placeholder={t("records.caption")} value={caption} onChange={(e) => setCaption(e.target.value)} />
-                <button className="btn primary" onClick={uploadImage} disabled={!imageFile}>
-                  {t("records.uploadImage")}
-                </button>
-              </div>
-            )}
-
-            <h4>{t("records.newLog")}</h4>
-            {logs.length > 0 && (
-              <div className="log-list">
-                {logs.map((log) => (
-                  <div key={log.id} className="log-entry">
-                    <b>{log.doctor_name} · {new Date(log.date).toLocaleString()}</b>
-                    <div><b>S:</b> {log.subjective}</div>
-                    <div><b>O:</b> {log.objective}</div>
-                    <div><b>A:</b> {log.assessment}</div>
-                    <div><b>P:</b> {log.plan}</div>
-                  </div>
-                ))}
-              </div>
-            )}
-            {canCreate && (
-              <form className="log-form" onSubmit={createLog}>
-                <Field label={t("records.subjective")}>
-                  <textarea value={logForm.subjective} onChange={(e) => setLogForm({ ...logForm, subjective: e.target.value })} />
-                </Field>
-                <Field label={t("records.objective")}>
-                  <textarea value={logForm.objective} onChange={(e) => setLogForm({ ...logForm, objective: e.target.value })} />
-                </Field>
-                <Field label={t("records.assessment")}>
-                  <textarea value={logForm.assessment} onChange={(e) => setLogForm({ ...logForm, assessment: e.target.value })} />
-                </Field>
-                <Field label={t("records.plan")}>
-                  <textarea value={logForm.plan} onChange={(e) => setLogForm({ ...logForm, plan: e.target.value })} />
-                </Field>
-                <button type="submit" className="btn primary">{t("common.save")}</button>
-              </form>
-            )}
-            <div className="modal-actions">
-              <button className="btn ghost" onClick={() => setDetail(null)}>{t("common.close")}</button>
-            </div>
+          )}
+          {canCreate && (
+            <form className="log-form" onSubmit={createLog}>
+              <Field label={t("records.subjective")}>
+                <textarea value={logForm.subjective} onChange={(e) => setLogForm({ ...logForm, subjective: e.target.value })} />
+              </Field>
+              <Field label={t("records.objective")}>
+                <textarea value={logForm.objective} onChange={(e) => setLogForm({ ...logForm, objective: e.target.value })} />
+              </Field>
+              <Field label={t("records.assessment")}>
+                <textarea value={logForm.assessment} onChange={(e) => setLogForm({ ...logForm, assessment: e.target.value })} />
+              </Field>
+              <Field label={t("records.plan")}>
+                <textarea value={logForm.plan} onChange={(e) => setLogForm({ ...logForm, plan: e.target.value })} />
+              </Field>
+              {logFormError && (
+                <p className="form-error" role="alert">
+                  {logFormError}
+                </p>
+              )}
+              <button type="submit" className="btn primary">{t("common.save")}</button>
+            </form>
+          )}
+          <div className="modal-actions">
+            <button className="btn ghost" onClick={() => setDetail(null)}>{t("common.close")}</button>
           </div>
-        </div>
+        </Dialog>
       )}
 
       {modal === "record" && (
@@ -326,6 +351,7 @@ export function Records() {
           onClose={() => setModal(null)}
           onSubmit={createRecord}
           submitLabel={t("common.save")}
+          error={recordFormError}
         >
           <Field label={t("records.patient")}>
             <SearchableSelect<Patient>

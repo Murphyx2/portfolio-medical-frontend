@@ -3,7 +3,7 @@ import { useTranslation } from "react-i18next";
 
 import { Field, FormModal, Page, Pagination, SearchableSelect, SearchBar, Spinner, Table, type Column } from "../components/ui";
 import { useListControls } from "../hooks/useListControls";
-import { api } from "../services/api";
+import { api, ApiError } from "../services/api";
 import type {
   Appointment,
   DoctorProfile,
@@ -12,6 +12,7 @@ import type {
   Patient,
 } from "../services/types";
 import { useAuth } from "../store/auth";
+import { flattenError } from "../utils/errors";
 
 const EMPTY = { patient: 0, doctor: 0, center: 0, date_time: "", duration_minutes: 30, notes: "" };
 
@@ -32,6 +33,8 @@ export function Appointments() {
   const [centers, setCenters] = useState<MedicalCenter[]>([]);
   const [modal, setModal] = useState(false);
   const [form, setForm] = useState(EMPTY);
+  const [formError, setFormError] = useState("");
+  const [actioningId, setActioningId] = useState<number | null>(null);
   const {
     page,
     setPage,
@@ -87,25 +90,48 @@ export function Appointments() {
   }
 
   async function submit() {
-    await api.post("/appointments/", {
-      ...form,
-      patient: Number(form.patient),
-      doctor: Number(form.doctor),
-      center: Number(form.center) || null,
-      date_time: new Date(form.date_time).toISOString(),
-    });
-    setModal(false);
-    load();
+    setFormError("");
+    try {
+      await api.post("/appointments/", {
+        ...form,
+        patient: Number(form.patient),
+        doctor: Number(form.doctor),
+        center: Number(form.center) || null,
+        date_time: new Date(form.date_time).toISOString(),
+      });
+      setModal(false);
+      load();
+    } catch (err) {
+      setFormError(err instanceof ApiError ? flattenError(err.message) : String(err));
+    }
   }
 
   async function cancel(a: Appointment) {
-    await api.post(`/appointments/${a.id}/cancel/`, {});
-    load();
+    const time = new Date(a.date_time).toLocaleString();
+    if (!window.confirm(t("appointments.cancelConfirm", { patient: a.patient_info.full_name, time }))) return;
+    setActioningId(a.id);
+    try {
+      await api.post(`/appointments/${a.id}/cancel/`, {});
+      load();
+    } catch (err) {
+      window.alert(err instanceof ApiError ? flattenError(err.message) : String(err));
+    } finally {
+      setActioningId(null);
+    }
   }
 
   async function complete(a: Appointment) {
-    await api.post(`/appointments/${a.id}/complete/`, {});
-    load();
+    const time = new Date(a.date_time).toLocaleString();
+    if (!window.confirm(t("appointments.completeConfirm", { patient: a.patient_info.full_name, time }))) return;
+    setActioningId(a.id);
+    try {
+      await api.post(`/appointments/${a.id}/complete/`, {});
+      load();
+    } catch (err) {
+      window.alert(err instanceof ApiError ? flattenError(err.message) : String(err));
+    } finally {
+      setActioningId(null);
+    }
   }
 
   const statusLabel = (s: string) => t(`appointments.status${s[0]}${s.slice(1).toLowerCase()}`);
@@ -115,6 +141,7 @@ export function Appointments() {
     { key: "patient", header: t("appointments.patient"), sortKey: "patient__search_name", render: (r) => r.patient_info.full_name },
     { key: "doctor", header: t("appointments.doctor"), sortKey: "doctor__user__last_name", render: (r) => r.doctor_info.full_name },
     { key: "center", header: t("appointments.center"), sortKey: "center__name", render: (r) => r.center_name ?? "—" },
+    { key: "created_by_name", header: t("appointments.createdBy") },
     { key: "status", header: t("common.status"), sortKey: "status", render: (r) => <span className={`badge status-${r.status.toLowerCase()}`}>{statusLabel(r.status)}</span> },
     {
       key: "actions",
@@ -123,8 +150,8 @@ export function Appointments() {
         <>
           {canManage && r.status === "SCHEDULED" && (
             <>
-              <button className="btn small" onClick={() => complete(r)}>{t("appointments.complete")}</button>
-              <button className="btn small danger" onClick={() => cancel(r)}>{t("appointments.cancel")}</button>
+              <button className="btn small" onClick={() => complete(r)} disabled={actioningId === r.id}>{t("appointments.complete")}</button>
+              <button className="btn small danger" onClick={() => cancel(r)} disabled={actioningId === r.id}>{t("appointments.cancel")}</button>
             </>
           )}
         </>
@@ -137,7 +164,7 @@ export function Appointments() {
       title={t("appointments.title")}
       actions={
         canManage && (
-          <button className="btn primary" onClick={() => { setForm(EMPTY); setSelectedPatient(null); setModal(true); }}>
+          <button className="btn primary" onClick={() => { setForm(EMPTY); setSelectedPatient(null); setFormError(""); setModal(true); }}>
             + {t("appointments.new")}
           </button>
         )
@@ -174,6 +201,7 @@ export function Appointments() {
           onClose={() => setModal(false)}
           onSubmit={submit}
           submitLabel={t("common.save")}
+          error={formError}
         >
           <Field label={t("appointments.patient")}>
             <SearchableSelect<Patient>

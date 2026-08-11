@@ -10,11 +10,13 @@ export function Dashboard() {
   const { user } = useAuth();
   const [patients, setPatients] = useState(0);
   const [doctors, setDoctors] = useState(0);
+  const [appointmentsTotal, setAppointmentsTotal] = useState(0);
   const [appointments, setAppointments] = useState<Appointment[]>([]);
 
   useEffect(() => {
     api.get<Paginated<Patient>>("/patients/?page_size=1").then((r) => setPatients(r.count)).catch(() => {});
     api.get<Paginated<DoctorProfile>>("/doctors/profiles/?page_size=1").then((r) => setDoctors(r.count)).catch(() => {});
+    api.get<Paginated<Appointment>>("/appointments/?page_size=1").then((r) => setAppointmentsTotal(r.count)).catch(() => {});
     api
       .get<Paginated<Appointment>>("/appointments/?ordering=date_time&page_size=5")
       .then((r) => setAppointments(r.results))
@@ -33,8 +35,8 @@ export function Dashboard() {
       </div>
       <div className="stat-grid">
         <div className="stat-card">
-          <strong>{appointments.length}</strong>
-          <span>{t("dashboard.recentAppointments")}</span>
+          <strong>{appointmentsTotal}</strong>
+          <span>{t("dashboard.appointmentsTotal")}</span>
         </div>
         <div className="stat-card">
           <strong>{todayCount}</strong>

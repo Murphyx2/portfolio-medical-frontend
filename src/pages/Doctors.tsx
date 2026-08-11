@@ -1,11 +1,12 @@
 import { useCallback, useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 
-import { Field, FormModal, Page, Pagination, SearchBar, Spinner, Table, type Column } from "../components/ui";
+import { Field, FormModal, MaskedValue, Page, Pagination, SearchBar, Spinner, Table, type Column } from "../components/ui";
 import { useListControls } from "../hooks/useListControls";
-import { api } from "../services/api";
+import { api, ApiError } from "../services/api";
 import type { DoctorProfile, Paginated, User } from "../services/types";
 import { useAuth } from "../store/auth";
+import { flattenError } from "../utils/errors";
 import { formatPhone, formatPhoneInput, isValidRequiredPhone } from "../utils/phone";
 
 const EMPTY = { user: 0, specialty: "", license_number: "", contact_phone: "", contact_email: "", bio: "" };
@@ -20,6 +21,7 @@ export function Doctors() {
   const [form, setForm] = useState(EMPTY);
   const [editId, setEditId] = useState<number | null>(null);
   const [phoneError, setPhoneError] = useState("");
+  const [formError, setFormError] = useState("");
   const {
     page,
     setPage,
@@ -64,6 +66,7 @@ export function Doctors() {
     setForm(EMPTY);
     setEditId(null);
     setPhoneError("");
+    setFormError("");
     setModal(true);
   }
 
@@ -78,6 +81,7 @@ export function Doctors() {
     });
     setEditId(d.id);
     setPhoneError("");
+    setFormError("");
     setModal(true);
   }
 
@@ -86,23 +90,32 @@ export function Doctors() {
       setPhoneError(t("common.phoneInvalid"));
       return;
     }
+    setFormError("");
     const body = { ...form, contact_phone: form.contact_phone.replace(/\D/g, "") };
-    if (editId) await api.patch(`/doctors/profiles/${editId}/`, body);
-    else await api.post("/doctors/profiles/", body);
-    setModal(false);
-    load();
+    try {
+      if (editId) await api.patch(`/doctors/profiles/${editId}/`, body);
+      else await api.post("/doctors/profiles/", body);
+      setModal(false);
+      load();
+    } catch (err) {
+      setFormError(err instanceof ApiError ? flattenError(err.message) : String(err));
+    }
   }
 
   async function remove(d: DoctorProfile) {
-    await api.delete(`/doctors/profiles/${d.id}/`);
-    load();
+    try {
+      await api.delete(`/doctors/profiles/${d.id}/`);
+      load();
+    } catch (err) {
+      window.alert(err instanceof ApiError ? flattenError(err.message) : String(err));
+    }
   }
 
   const columns: Column<DoctorProfile>[] = [
     { key: "full_name", header: t("doctors.fullName"), sortKey: "user__last_name" },
     { key: "specialty", header: t("doctors.specialty"), sortKey: "specialty" },
-    { key: "license_number", header: t("doctors.license"), sortKey: "license_number" },
-    { key: "contact_phone", header: t("doctors.contactPhone"), sortKey: "contact_phone", render: (r) => formatPhone(r.contact_phone) },
+    { key: "license_number", header: t("doctors.license"), sortKey: "license_number", render: (r) => <MaskedValue value={r.license_number} /> },
+    { key: "contact_phone", header: t("doctors.contactPhone"), sortKey: "contact_phone", render: (r) => <MaskedValue value={formatPhone(r.contact_phone)} /> },
     { key: "contact_email", header: t("doctors.contactEmail"), sortKey: "contact_email" },
   ];
 
@@ -150,6 +163,7 @@ export function Doctors() {
           onClose={() => setModal(false)}
           onSubmit={submit}
           submitLabel={t("common.save")}
+          error={formError}
         >
           <Field label={t("doctors.user")}>
             <select

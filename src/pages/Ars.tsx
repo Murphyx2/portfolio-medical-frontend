@@ -3,8 +3,9 @@ import { useTranslation } from "react-i18next";
 
 import { FormModal, Page, Spinner, Table, type Column } from "../components/ui";
 import { RoleGate } from "../components/guards";
-import { api } from "../services/api";
+import { api, ApiError } from "../services/api";
 import type { ARS, ARSProgram, Paginated } from "../services/types";
+import { flattenError } from "../utils/errors";
 
 interface ProgramDraft {
   id?: number;
@@ -24,6 +25,7 @@ export function Ars() {
   const [modal, setModal] = useState(false);
   const [form, setForm] = useState(EMPTY);
   const [editId, setEditId] = useState<number | null>(null);
+  const [formError, setFormError] = useState("");
 
   const load = useCallback(() => {
     setLoading(true);
@@ -38,6 +40,7 @@ export function Ars() {
   function openNew() {
     setForm({ ...EMPTY });
     setEditId(null);
+    setFormError("");
     setModal(true);
   }
 
@@ -48,24 +51,34 @@ export function Ars() {
       programs: a.programs.map((p: ARSProgram) => ({ id: p.id, name: p.name })),
     });
     setEditId(a.id);
+    setFormError("");
     setModal(true);
   }
 
   async function submit() {
+    setFormError("");
     const body = {
       ars_id: form.ars_id,
       name: form.name,
       programs: form.programs.map((p) => ({ id: p.id, name: p.name })),
     };
-    if (editId) await api.patch(`/ars/${editId}/`, body);
-    else await api.post("/ars/", body);
-    setModal(false);
-    load();
+    try {
+      if (editId) await api.patch(`/ars/${editId}/`, body);
+      else await api.post("/ars/", body);
+      setModal(false);
+      load();
+    } catch (err) {
+      setFormError(err instanceof ApiError ? flattenError(err.message) : String(err));
+    }
   }
 
   async function remove(a: ARS) {
-    await api.delete(`/ars/${a.id}/`);
-    load();
+    try {
+      await api.delete(`/ars/${a.id}/`);
+      load();
+    } catch (err) {
+      window.alert(err instanceof ApiError ? flattenError(err.message) : String(err));
+    }
   }
 
   const columns: Column<ARS>[] = [
@@ -100,6 +113,7 @@ export function Ars() {
             onClose={() => setModal(false)}
             onSubmit={submit}
             submitLabel={t("common.save")}
+            error={formError}
           >
             <label className="field">
               <span>{t("ars.arsId")}</span>

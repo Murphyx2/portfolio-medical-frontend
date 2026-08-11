@@ -28,10 +28,11 @@
     "appointmentsToday": "Citas de hoy",
     "patientsTotal": "Total de pacientes",
     "doctorsTotal": "Total de médicos",
-    "recentAppointments": "Citas recientes"
+    "appointmentsTotal": "Total de citas"
   },
   "common": {
     "save": "Guardar",
+    "saving": "Guardando...",
     "cancel": "Cancelar",
     "edit": "Editar",
     "delete": "Eliminar",
@@ -45,6 +46,7 @@
     "noData": "No se encontraron datos",
     "back": "Volver",
     "close": "Cerrar",
+    "maskedTooltip": "Oculto para tu rol",
     "view": "Ver",
     "deleteConfirm": "¿Eliminar este registro?",
     "phoneInvalid": "El teléfono debe tener exactamente 10 dígitos.",
@@ -139,7 +141,9 @@
     "statusNoShow": "No asistió",
     "cancel": "Cancelar cita",
     "complete": "Completar",
-    "createdBy": "Creada por"
+    "createdBy": "Creada por",
+    "cancelConfirm": "¿Cancelar la cita de {{patient}} el {{time}}?",
+    "completeConfirm": "¿Marcar como completada la cita de {{patient}} el {{time}}?"
   },
   "records": {
     "title": "Expedientes Médicos",
@@ -158,7 +162,6 @@
     "plan": "Plan",
     "doctor": "Médico",
     "images": "Imágenes",
-    "addImage": "Añadir imagen",
     "uploadImage": "Subir imagen",
     "caption": "Título de la imagen",
     "patientPickerPlaceholder": "Buscar paciente por nombre, cédula o NSS…"

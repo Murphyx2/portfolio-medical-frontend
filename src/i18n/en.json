@@ -28,10 +28,11 @@
     "appointmentsToday": "Appointments today",
     "patientsTotal": "Total patients",
     "doctorsTotal": "Total doctors",
-    "recentAppointments": "Recent appointments"
+    "appointmentsTotal": "Total appointments"
   },
   "common": {
     "save": "Save",
+    "saving": "Saving...",
     "cancel": "Cancel",
     "edit": "Edit",
     "delete": "Delete",
@@ -45,6 +46,7 @@
     "noData": "No data found",
     "back": "Back",
     "close": "Close",
+    "maskedTooltip": "Hidden for your role",
     "view": "View",
     "deleteConfirm": "Delete this record?",
     "phoneInvalid": "Phone must contain exactly 10 digits.",
@@ -139,7 +141,9 @@
     "statusNoShow": "No show",
     "cancel": "Cancel appointment",
     "complete": "Complete",
-    "createdBy": "Created by"
+    "createdBy": "Created by",
+    "cancelConfirm": "Cancel {{patient}}'s appointment on {{time}}?",
+    "completeConfirm": "Mark {{patient}}'s appointment on {{time}} as completed?"
   },
   "records": {
     "title": "Medical Records",
@@ -158,7 +162,6 @@
     "plan": "Plan",
     "doctor": "Doctor",
     "images": "Images",
-    "addImage": "Add image",
     "uploadImage": "Upload image",
     "caption": "Caption",
     "patientPickerPlaceholder": "Search patient by name, cedula or NSS…"

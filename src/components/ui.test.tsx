@@ -17,7 +17,7 @@
 import { fireEvent, render, screen } from "@testing-library/react";
 import { describe, expect, it, vi } from "vitest";
 
-import { FormModal, Pagination, SearchableSelect, SearchBar, Table } from "./ui";
+import { Dialog, FormModal, MaskedValue, Pagination, SearchableSelect, SearchBar, Table } from "./ui";
 
 function renderModal(onClose = vi.fn()) {
   const utils = render(
@@ -116,6 +116,89 @@ describe("FormModal backdrop close", () => {
   it("renders the empty-state label translated when no rows", () => {
     render(<Table columns={[{ key: "name", header: "Nombre" }]} rows={[]} />);
     expect(screen.getByText("No se encontraron datos")).toBeInTheDocument();
+  });
+});
+
+describe("Dialog focus trap", () => {
+  it("wraps Tab from the last focusable element back to the first", () => {
+    render(
+      <FormModal title="Test modal" onClose={() => {}} onSubmit={() => {}} submitLabel="Save">
+        <input placeholder="first field" />
+      </FormModal>,
+    );
+    const saveBtn = screen.getByRole("button", { name: "Save" });
+    saveBtn.focus();
+    expect(document.activeElement).toBe(saveBtn);
+    fireEvent.keyDown(document, { key: "Tab" });
+    expect(document.activeElement).toBe(screen.getByPlaceholderText("first field"));
+  });
+
+  it("wraps Shift+Tab from the first focusable element back to the last", () => {
+    render(
+      <FormModal title="Test modal" onClose={() => {}} onSubmit={() => {}} submitLabel="Save">
+        <input placeholder="first field" />
+      </FormModal>,
+    );
+    const firstField = screen.getByPlaceholderText("first field");
+    firstField.focus();
+    fireEvent.keyDown(document, { key: "Tab", shiftKey: true });
+    expect(document.activeElement).toBe(screen.getByRole("button", { name: "Save" }));
+  });
+
+  it("ignores Escape while a submit is in flight (preventClose)", async () => {
+    const onClose = vi.fn();
+    let resolveSubmit: () => void = () => {};
+    const onSubmit = () =>
+      new Promise<void>((resolve) => {
+        resolveSubmit = resolve;
+      });
+    render(
+      <FormModal title="Test modal" onClose={onClose} onSubmit={onSubmit} submitLabel="Save">
+        <input placeholder="first field" />
+      </FormModal>,
+    );
+    fireEvent.click(screen.getByRole("button", { name: "Save" }));
+    await screen.findByRole("button", { name: "Guardando..." });
+    fireEvent.keyDown(document, { key: "Escape" });
+    expect(onClose).not.toHaveBeenCalled();
+    resolveSubmit();
+  });
+
+  it("uses Dialog directly (not FormModal's submit/cancel shape) with the same role and focus-trap behavior", () => {
+    render(
+      <Dialog title="Detail view" onClose={() => {}}>
+        <button type="button">only action</button>
+      </Dialog>,
+    );
+    expect(screen.getByRole("dialog", { name: "Detail view" })).toBeInTheDocument();
+    expect(document.activeElement).toBe(screen.getByRole("button", { name: "only action" }));
+  });
+});
+
+describe("MaskedValue", () => {
+  it("renders a plain (unmasked) value with no icon or tooltip", () => {
+    render(<MaskedValue value="(809) 555-1212" />);
+    expect(screen.getByText("(809) 555-1212")).toBeInTheDocument();
+    expect(screen.queryByTitle("Oculto para tu rol")).not.toBeInTheDocument();
+  });
+
+  it("renders a lock affordance with a role-explanation tooltip for masked values", () => {
+    render(<MaskedValue value="80••••00" />);
+    expect(screen.getByText("80••••00")).toBeInTheDocument();
+    expect(screen.getByTitle("Oculto para tu rol")).toBeInTheDocument();
+  });
+
+  it("renders an em dash for empty/null values", () => {
+    render(<MaskedValue value={null} />);
+    expect(screen.getByText("—")).toBeInTheDocument();
+  });
+
+  it("keeps the masked value as the accessible name (no aria-label override) so screen readers read it, not just the tooltip", () => {
+    render(<MaskedValue value="80••••00" />);
+    expect(screen.getByText("Oculto para tu rol:", { exact: false })).toHaveClass("sr-only");
+    const wrapper = screen.getByTitle("Oculto para tu rol");
+    expect(wrapper).not.toHaveAttribute("aria-label");
+    expect(wrapper).toHaveTextContent("80••••00");
   });
 });
 

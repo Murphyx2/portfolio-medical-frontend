@@ -341,7 +341,8 @@ body {
 
 .data-table {
   width: 100%;
-  border-collapse: collapse;
+  border-collapse: separate;
+  border-spacing: 0;
   background: var(--mc-white);
   border-radius: 12px;
   overflow: hidden;

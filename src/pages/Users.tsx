@@ -69,8 +69,12 @@ export function Users() {
   }
 
   async function remove(u: User) {
-    await api.delete(`/auth/users/${u.id}/`);
-    load();
+    try {
+      await api.delete(`/auth/users/${u.id}/`);
+      load();
+    } catch (err) {
+      window.alert(err instanceof ApiError ? flattenError(err.message) : String(err));
+    }
   }
 
   const columns: Column<User>[] = [

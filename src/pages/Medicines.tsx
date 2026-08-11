@@ -80,8 +80,12 @@ export function Medicines() {
   }
 
   async function remove(m: Medicine) {
-    await api.delete(`/medicines/${m.id}/`);
-    load();
+    try {
+      await api.delete(`/medicines/${m.id}/`);
+      load();
+    } catch (err) {
+      window.alert(err instanceof ApiError ? flattenError(err.message) : String(err));
+    }
   }
 
   const columns: Column<Medicine>[] = [

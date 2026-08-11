@@ -73,8 +73,12 @@ export function Ars() {
   }
 
   async function remove(a: ARS) {
-    await api.delete(`/ars/${a.id}/`);
-    load();
+    try {
+      await api.delete(`/ars/${a.id}/`);
+      load();
+    } catch (err) {
+      window.alert(err instanceof ApiError ? flattenError(err.message) : String(err));
+    }
   }
 
   const columns: Column<ARS>[] = [

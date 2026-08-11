@@ -89,8 +89,12 @@ export function Centers() {
   }
 
   async function remove(c: MedicalCenter) {
-    await api.delete(`/centers/${c.id}/`);
-    load();
+    try {
+      await api.delete(`/centers/${c.id}/`);
+      load();
+    } catch (err) {
+      window.alert(err instanceof ApiError ? flattenError(err.message) : String(err));
+    }
   }
 
   const columns: Column<MedicalCenter>[] = [

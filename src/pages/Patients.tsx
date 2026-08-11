@@ -198,8 +198,12 @@ export function Patients() {
   }
 
   async function remove(p: Patient) {
-    await api.delete(`/patients/${p.id}/`);
-    load();
+    try {
+      await api.delete(`/patients/${p.id}/`);
+      load();
+    } catch (err) {
+      window.alert(err instanceof ApiError ? flattenError(err.message) : String(err));
+    }
   }
 
   const columns: Column<Patient>[] = [

@@ -103,8 +103,12 @@ export function Doctors() {
   }
 
   async function remove(d: DoctorProfile) {
-    await api.delete(`/doctors/profiles/${d.id}/`);
-    load();
+    try {
+      await api.delete(`/doctors/profiles/${d.id}/`);
+      load();
+    } catch (err) {
+      window.alert(err instanceof ApiError ? flattenError(err.message) : String(err));
+    }
   }
 
   const columns: Column<DoctorProfile>[] = [

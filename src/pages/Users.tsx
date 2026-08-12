@@ -18,6 +18,7 @@ export function Users() {
   const [rows, setRows] = useState<User[]>([]);
   const [modal, setModal] = useState(false);
   const [form, setForm] = useState(EMPTY);
+  const [editId, setEditId] = useState<number | null>(null);
   const [roles, setRoles] = useState<{ value: string; label: string }[]>([]);
   const [formError, setFormError] = useState("");
   const [showInactive, setShowInactive] = useState(false);
@@ -41,6 +42,11 @@ export function Users() {
 
   const qs = query({ include_inactive: showInactive ? "true" : "" });
 
+  // Non-admins (IT) may not assign the ADMIN role — the backend rejects it,
+  // but omitting it from the picker prevents the error instead of just
+  // explaining it after submit.
+  const availableRoles = isAdmin ? roles : roles.filter((r) => r.value !== "ADMIN");
+
   const load = useCallback(() => {
     runList((signal) => api.get<Paginated<User>>(`/auth/users/?${qs}`, { signal }))
       .then((r) => {
@@ -61,10 +67,29 @@ export function Users() {
     api.get<{ value: string; label: string }[]>("/auth/users/roles/").then(setRoles).catch(() => {});
   }, []);
 
+  function openNew() {
+    setForm(EMPTY);
+    setEditId(null);
+    setFormError("");
+    setModal(true);
+  }
+
+  function openEdit(u: User) {
+    setForm({ username: u.username, email: u.email, first_name: u.first_name, last_name: u.last_name, password: "", role: u.role });
+    setEditId(u.id);
+    setFormError("");
+    setModal(true);
+  }
+
   async function submit() {
     setFormError("");
     try {
-      await api.post("/auth/users/", form);
+      if (editId) {
+        const { username, email, first_name, last_name, role } = form;
+        await api.patch(`/auth/users/${editId}/`, { username, email, first_name, last_name, role });
+      } else {
+        await api.post("/auth/users/", form);
+      }
       setModal(false);
       load();
     } catch (err) {
@@ -95,7 +120,7 @@ export function Users() {
       <Page
         title={t("users.title")}
         actions={
-          <button className="btn primary" onClick={() => { setForm(EMPTY); setFormError(""); setModal(true); }}>
+          <button className="btn primary" onClick={openNew}>
             + {t("users.new")}
           </button>
         }
@@ -127,6 +152,7 @@ export function Users() {
             <Table
               columns={columns}
               rows={rows}
+              onEdit={openEdit}
               onDelete={remove}
               onRestore={isAdmin ? restore : undefined}
               getRowLabel={(r) => r.full_name || r.username}
@@ -141,7 +167,7 @@ export function Users() {
 
         {modal && (
           <FormModal
-            title={t("users.new")}
+            title={editId ? t("common.edit") : t("users.new")}
             onClose={() => setModal(false)}
             onSubmit={submit}
             submitLabel={t("common.save")}
@@ -150,9 +176,11 @@ export function Users() {
             <Field label={t("users.username")}>
               <input value={form.username} onChange={(e) => setForm({ ...form, username: e.target.value })} required />
             </Field>
-            <Field label={t("users.password")}>
-              <input type="password" value={form.password} onChange={(e) => setForm({ ...form, password: e.target.value })} required />
-            </Field>
+            {!editId && (
+              <Field label={t("users.password")}>
+                <input type="password" value={form.password} onChange={(e) => setForm({ ...form, password: e.target.value })} required />
+              </Field>
+            )}
             <Field label={t("users.firstName")}>
               <input value={form.first_name} onChange={(e) => setForm({ ...form, first_name: e.target.value })} />
             </Field>
@@ -164,7 +192,7 @@ export function Users() {
             </Field>
             <Field label={t("users.role")}>
               <select value={form.role} onChange={(e) => setForm({ ...form, role: e.target.value })}>
-                {roles.map((r) => (
+                {availableRoles.map((r) => (
                   <option key={r.value} value={r.value}>
                     {r.label}
                   </option>

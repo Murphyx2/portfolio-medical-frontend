@@ -37,6 +37,7 @@ export interface MedicalCenter {
   phone: string;
   email: string;
   doctor_count: number;
+  active: boolean;
 }
 
 export interface DoctorProfile {
@@ -49,6 +50,7 @@ export interface DoctorProfile {
   contact_phone: string;
   contact_email: string;
   bio: string;
+  active: boolean;
 }
 
 export interface Patient {
@@ -72,11 +74,13 @@ export interface Patient {
   center_name: string | null;
   created_at: string;
   updated_at: string;
+  active: boolean;
 }
 
 export interface ARSProgram {
   id: number;
   name: string;
+  active: boolean;
 }
 
 export interface ARS {
@@ -84,6 +88,7 @@ export interface ARS {
   ars_id: string;
   name: string;
   programs: ARSProgram[];
+  active: boolean;
 }
 
 export interface Medicine {
@@ -91,6 +96,7 @@ export interface Medicine {
   generic_name: string;
   commercial_name: string;
   concentration: string;
+  active: boolean;
 }
 
 export interface RecordImage {
@@ -100,6 +106,7 @@ export interface RecordImage {
   image_url: string | null;
   caption: string;
   uploaded_by: number | null;
+  active: boolean;
 }
 
 export interface PatientLite {
@@ -125,6 +132,7 @@ export interface MedicalRecord {
   medicine_and_doses: string;
   notes: string;
   images: RecordImage[];
+  active: boolean;
 }
 
 export interface ConsultationLog {
@@ -141,6 +149,7 @@ export interface ConsultationLog {
   assessment: string;
   plan: string;
   notes: string;
+  active: boolean;
 }
 
 export type AppointmentStatus =
@@ -165,4 +174,5 @@ export interface Appointment {
   created_by: number;
   created_by_name: string;
   created_at: string;
+  active: boolean;
 }

@@ -5,6 +5,7 @@ import { Field, FormModal, MaskedValue, Page, Pagination, SearchBar, Spinner, Ta
 import { useListControls } from "../hooks/useListControls";
 import { api, ApiError } from "../services/api";
 import type { ARS, MedicalCenter, Paginated, Patient } from "../services/types";
+import { useAuth } from "../store/auth";
 import { flattenError } from "../utils/errors";
 import { formatPhone, formatPhoneInput, isValidPhone, stripToDigits } from "../utils/phone";
 
@@ -32,6 +33,8 @@ function formatCedula(value: string): string {
 
 export function Patients() {
   const { t } = useTranslation();
+  const { user } = useAuth();
+  const isAdmin = user?.role === "ADMIN";
   const [rows, setRows] = useState<Patient[]>([]);
   const [arsList, setArsList] = useState<ARS[]>([]);
   const [centersList, setCentersList] = useState<MedicalCenter[]>([]);
@@ -40,6 +43,7 @@ export function Patients() {
   const [editId, setEditId] = useState<number | null>(null);
   const [phoneError, setPhoneError] = useState("");
   const [formError, setFormError] = useState("");
+  const [showInactive, setShowInactive] = useState(false);
   const {
     page,
     setPage,
@@ -58,7 +62,7 @@ export function Patients() {
     query,
   } = useListControls();
 
-  const qs = query();
+  const qs = query({ include_inactive: showInactive ? "true" : "" });
 
   const load = useCallback(() => {
     runList((signal) => api.get<Paginated<Patient>>(`/patients/?${qs}`, { signal }))
@@ -206,6 +210,15 @@ export function Patients() {
     }
   }
 
+  async function restore(p: Patient) {
+    try {
+      await api.post(`/patients/${p.id}/restore/`, {});
+      load();
+    } catch (err) {
+      window.alert(err instanceof ApiError ? flattenError(err.message) : String(err));
+    }
+  }
+
   const columns: Column<Patient>[] = [
     { key: "full_name", header: t("common.name"), sortKey: "search_name", render: (r) => <MaskedValue value={r.full_name} /> },
     { key: "age", header: t("patients.age"), sortKey: "age", render: (r) => (r.age ?? "-") },
@@ -222,6 +235,19 @@ export function Patients() {
     { key: "ars_program_name", header: t("patients.arsProgram"), sortKey: "ars_program__name" },
     { key: "email", header: t("common.email"), sortKey: "email", render: (r) => <MaskedValue value={r.email} /> },
     { key: "center_name", header: t("patients.center"), sortKey: "center__name", render: (r) => r.center_name ?? "—" },
+    ...(isAdmin
+      ? [
+          {
+            key: "active",
+            header: t("common.status"),
+            render: (r: Patient) => (
+              <span className={`badge status-${r.active ? "active" : "inactive"}`}>
+                {r.active ? t("common.active") : t("common.inactive")}
+              </span>
+            ),
+          } as Column<Patient>,
+        ]
+      : []),
   ];
 
   return (
@@ -245,6 +271,16 @@ export function Patients() {
               placeholder={t("common.searchPlaceholder")}
               label={t("common.search")}
             />
+            {isAdmin && (
+              <label className="show-inactive-toggle">
+                <input
+                  type="checkbox"
+                  checked={showInactive}
+                  onChange={(e) => setShowInactive(e.target.checked)}
+                />
+                {t("common.showInactive")}
+              </label>
+            )}
           </div>
           <Pagination page={page} count={count} pageSize={pageSize} onChange={setPage} onPageSizeChange={changePageSize} />
           <Table
@@ -252,6 +288,8 @@ export function Patients() {
             rows={displayRows}
             onEdit={openEdit}
             onDelete={remove}
+            onRestore={isAdmin ? restore : undefined}
+            isInactive={(r) => !r.active}
             sortKey={clientSort?.key ?? sortKey}
             sortDir={clientSort?.dir ?? sortDir}
             onSort={handleColumnSort}

@@ -5,6 +5,7 @@ import { FormModal, Page, Spinner, Table, type Column } from "../components/ui";
 import { RoleGate } from "../components/guards";
 import { api, ApiError } from "../services/api";
 import type { ARS, ARSProgram, Paginated } from "../services/types";
+import { useAuth } from "../store/auth";
 import { flattenError } from "../utils/errors";
 
 interface ProgramDraft {
@@ -20,20 +21,24 @@ const EMPTY: { ars_id: string; name: string; programs: ProgramDraft[] } = {
 
 export function Ars() {
   const { t } = useTranslation();
+  const { user } = useAuth();
+  const isAdmin = user?.role === "ADMIN";
   const [rows, setRows] = useState<ARS[]>([]);
   const [loading, setLoading] = useState(true);
   const [modal, setModal] = useState(false);
   const [form, setForm] = useState(EMPTY);
   const [editId, setEditId] = useState<number | null>(null);
   const [formError, setFormError] = useState("");
+  const [showInactive, setShowInactive] = useState(false);
 
   const load = useCallback(() => {
     setLoading(true);
+    const qs = showInactive ? "&include_inactive=true" : "";
     api
-      .get<Paginated<ARS>>("/ars/?page_size=100")
+      .get<Paginated<ARS>>(`/ars/?page_size=100${qs}`)
       .then((r) => setRows(r.results))
       .finally(() => setLoading(false));
-  }, []);
+  }, [showInactive]);
 
   useEffect(load, [load]);
 
@@ -81,6 +86,15 @@ export function Ars() {
     }
   }
 
+  async function restore(a: ARS) {
+    try {
+      await api.post(`/ars/${a.id}/restore/`, {});
+      load();
+    } catch (err) {
+      window.alert(err instanceof ApiError ? flattenError(err.message) : String(err));
+    }
+  }
+
   const columns: Column<ARS>[] = [
     { key: "ars_id", header: t("ars.arsId") },
     { key: "name", header: t("ars.name") },
@@ -89,6 +103,19 @@ export function Ars() {
       header: t("ars.programs"),
       render: (r) => r.programs.map((p) => p.name).join(", "),
     },
+    ...(isAdmin
+      ? [
+          {
+            key: "active",
+            header: t("common.status"),
+            render: (r: ARS) => (
+              <span className={`badge status-${r.active ? "active" : "inactive"}`}>
+                {r.active ? t("common.active") : t("common.inactive")}
+              </span>
+            ),
+          } as Column<ARS>,
+        ]
+      : []),
   ];
 
   return (
@@ -104,7 +131,28 @@ export function Ars() {
         {loading ? (
           <Spinner />
         ) : (
-          <Table columns={columns} rows={rows} onEdit={openEdit} onDelete={remove} />
+          <>
+            {isAdmin && (
+              <div className="list-toolbar">
+                <label className="show-inactive-toggle">
+                  <input
+                    type="checkbox"
+                    checked={showInactive}
+                    onChange={(e) => setShowInactive(e.target.checked)}
+                  />
+                  {t("common.showInactive")}
+                </label>
+              </div>
+            )}
+            <Table
+              columns={columns}
+              rows={rows}
+              onEdit={openEdit}
+              onDelete={remove}
+              onRestore={isAdmin ? restore : undefined}
+              isInactive={(r) => !r.active}
+            />
+          </>
         )}
 
         {modal && (

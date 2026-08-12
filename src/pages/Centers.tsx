@@ -15,12 +15,14 @@ export function Centers() {
   const { t } = useTranslation();
   const { user } = useAuth();
   const canEdit = user?.role === "ADMIN" || user?.role === "IT";
+  const isAdmin = user?.role === "ADMIN";
   const [rows, setRows] = useState<MedicalCenter[]>([]);
   const [modal, setModal] = useState(false);
   const [form, setForm] = useState(EMPTY);
   const [editId, setEditId] = useState<number | null>(null);
   const [phoneError, setPhoneError] = useState("");
   const [formError, setFormError] = useState("");
+  const [showInactive, setShowInactive] = useState(false);
   const {
     page,
     setPage,
@@ -39,7 +41,7 @@ export function Centers() {
     query,
   } = useListControls();
 
-  const qs = query();
+  const qs = query({ include_inactive: showInactive ? "true" : "" });
 
   const load = useCallback(() => {
     runList((signal) => api.get<Paginated<MedicalCenter>>(`/centers/?${qs}`, { signal }))
@@ -97,6 +99,15 @@ export function Centers() {
     }
   }
 
+  async function restore(c: MedicalCenter) {
+    try {
+      await api.post(`/centers/${c.id}/restore/`, {});
+      load();
+    } catch (err) {
+      window.alert(err instanceof ApiError ? flattenError(err.message) : String(err));
+    }
+  }
+
   const columns: Column<MedicalCenter>[] = [
     { key: "name", header: t("centers.name"), sortKey: "name" },
     { key: "code", header: t("centers.code"), sortKey: "code" },
@@ -104,6 +115,19 @@ export function Centers() {
     { key: "phone", header: t("centers.phone"), sortKey: "phone", render: (r) => formatPhone(r.phone) },
     { key: "email", header: t("centers.email"), sortKey: "email" },
     { key: "doctor_count", header: t("centers.doctorsCount"), sortKey: "doctor_count" },
+    ...(isAdmin
+      ? [
+          {
+            key: "active",
+            header: t("common.status"),
+            render: (r: MedicalCenter) => (
+              <span className={`badge status-${r.active ? "active" : "inactive"}`}>
+                {r.active ? t("common.active") : t("common.inactive")}
+              </span>
+            ),
+          } as Column<MedicalCenter>,
+        ]
+      : []),
   ];
 
   return (
@@ -129,6 +153,16 @@ export function Centers() {
               placeholder={t("common.searchPlaceholder")}
               label={t("common.search")}
             />
+            {isAdmin && (
+              <label className="show-inactive-toggle">
+                <input
+                  type="checkbox"
+                  checked={showInactive}
+                  onChange={(e) => setShowInactive(e.target.checked)}
+                />
+                {t("common.showInactive")}
+              </label>
+            )}
           </div>
           <Pagination page={page} count={count} pageSize={pageSize} onChange={setPage} onPageSizeChange={changePageSize} />
           <Table
@@ -136,6 +170,8 @@ export function Centers() {
             rows={rows}
             onEdit={canEdit ? openEdit : undefined}
             onDelete={canEdit ? remove : undefined}
+            onRestore={isAdmin ? restore : undefined}
+            isInactive={(r) => !r.active}
             sortKey={sortKey}
             sortDir={sortDir}
             onSort={handleSort}

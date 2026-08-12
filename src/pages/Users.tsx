@@ -6,17 +6,21 @@ import { RoleGate } from "../components/guards";
 import { useListControls } from "../hooks/useListControls";
 import { api, ApiError } from "../services/api";
 import type { Paginated, User } from "../services/types";
+import { useAuth } from "../store/auth";
 import { flattenError } from "../utils/errors";
 
 const EMPTY = { username: "", email: "", first_name: "", last_name: "", password: "", role: "RECEPTIONIST" };
 
 export function Users() {
   const { t } = useTranslation();
+  const { user } = useAuth();
+  const isAdmin = user?.role === "ADMIN";
   const [rows, setRows] = useState<User[]>([]);
   const [modal, setModal] = useState(false);
   const [form, setForm] = useState(EMPTY);
   const [roles, setRoles] = useState<{ value: string; label: string }[]>([]);
   const [formError, setFormError] = useState("");
+  const [showInactive, setShowInactive] = useState(false);
   const {
     page,
     setPage,
@@ -35,7 +39,7 @@ export function Users() {
     query,
   } = useListControls();
 
-  const qs = query();
+  const qs = query({ include_inactive: showInactive ? "true" : "" });
 
   const load = useCallback(() => {
     runList((signal) => api.get<Paginated<User>>(`/auth/users/?${qs}`, { signal }))
@@ -77,6 +81,15 @@ export function Users() {
     }
   }
 
+  async function restore(u: User) {
+    try {
+      await api.post(`/auth/users/${u.id}/restore/`, {});
+      load();
+    } catch (err) {
+      window.alert(err instanceof ApiError ? flattenError(err.message) : String(err));
+    }
+  }
+
   const columns: Column<User>[] = [
     { key: "username", header: t("users.username"), sortKey: "username" },
     { key: "full_name", header: t("common.name"), sortKey: "first_name" },
@@ -107,12 +120,24 @@ export function Users() {
                 placeholder={t("common.searchPlaceholder")}
                 label={t("common.search")}
               />
+              {isAdmin && (
+                <label className="show-inactive-toggle">
+                  <input
+                    type="checkbox"
+                    checked={showInactive}
+                    onChange={(e) => setShowInactive(e.target.checked)}
+                  />
+                  {t("common.showInactive")}
+                </label>
+              )}
             </div>
             <Pagination page={page} count={count} pageSize={pageSize} onChange={setPage} onPageSizeChange={changePageSize} />
             <Table
               columns={columns}
               rows={rows}
               onDelete={remove}
+              onRestore={isAdmin ? restore : undefined}
+              isInactive={(r) => !r.is_active}
               sortKey={sortKey}
               sortDir={sortDir}
               onSort={handleSort}

@@ -10,7 +10,7 @@ export interface InitialSort {
 }
 
 /**
- * Shared state for the 7 paginated list pages: pagination, page-size, the
+ * Shared state for the 8 paginated list pages: pagination, page-size, the
  * top search bar (server-side, debounced 300ms or immediate on Enter, active
  * from the 3rd character) and per-column sorting (asc -> desc -> clear on
  * repeated clicks).

@@ -1,8 +1,9 @@
 import { useCallback, useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 
-import { FormModal, Page, Spinner, Table, type Column } from "../components/ui";
+import { FormModal, Page, Pagination, SearchBar, Spinner, Table, type Column } from "../components/ui";
 import { RoleGate } from "../components/guards";
+import { useListControls } from "../hooks/useListControls";
 import { api, ApiError } from "../services/api";
 import type { ARS, ARSProgram, Paginated } from "../services/types";
 import { useAuth } from "../store/auth";
@@ -24,21 +25,42 @@ export function Ars() {
   const { user } = useAuth();
   const isAdmin = user?.role === "ADMIN";
   const [rows, setRows] = useState<ARS[]>([]);
-  const [loading, setLoading] = useState(true);
   const [modal, setModal] = useState(false);
   const [form, setForm] = useState(EMPTY);
   const [editId, setEditId] = useState<number | null>(null);
   const [formError, setFormError] = useState("");
   const [showInactive, setShowInactive] = useState(false);
+  const {
+    page,
+    setPage,
+    pageSize,
+    count,
+    setCount,
+    search,
+    setSearch,
+    searchSubmit,
+    sortKey,
+    sortDir,
+    handleSort,
+    changePageSize,
+    initialLoading,
+    runList,
+    query,
+  } = useListControls();
+
+  const qs = query({ include_inactive: showInactive ? "true" : "" });
 
   const load = useCallback(() => {
-    setLoading(true);
-    const qs = showInactive ? "&include_inactive=true" : "";
-    api
-      .get<Paginated<ARS>>(`/ars/?page_size=100${qs}`)
-      .then((r) => setRows(r.results))
-      .finally(() => setLoading(false));
-  }, [showInactive]);
+    runList((signal) => api.get<Paginated<ARS>>(`/ars/?${qs}`, { signal }))
+      .then((r) => {
+        if (!r) return;
+        setRows(r.results);
+        setCount(r.count);
+        const total = Math.ceil(r.count / pageSize);
+        if (total > 0 && page > total) setPage(total);
+      })
+      .catch(() => {});
+  }, [qs, page, pageSize, setCount, setPage, runList]);
 
   useEffect(load, [load]);
 
@@ -88,8 +110,8 @@ export function Ars() {
   }
 
   const columns: Column<ARS>[] = [
-    { key: "ars_id", header: t("ars.arsId") },
-    { key: "name", header: t("ars.name") },
+    { key: "ars_id", header: t("ars.arsId"), sortKey: "ars_id" },
+    { key: "name", header: t("ars.name"), sortKey: "name" },
     {
       key: "programs",
       header: t("ars.programs"),
@@ -120,12 +142,19 @@ export function Ars() {
           </button>
         }
       >
-        {loading ? (
+        {initialLoading ? (
           <Spinner />
         ) : (
           <>
-            {isAdmin && (
-              <div className="list-toolbar">
+            <div className="list-toolbar">
+              <SearchBar
+                value={search}
+                onChange={setSearch}
+                onSubmit={searchSubmit}
+                placeholder={t("common.searchPlaceholder")}
+                label={t("common.search")}
+              />
+              {isAdmin && (
                 <label className="show-inactive-toggle">
                   <input
                     type="checkbox"
@@ -134,8 +163,9 @@ export function Ars() {
                   />
                   {t("common.showInactive")}
                 </label>
-              </div>
-            )}
+              )}
+            </div>
+            <Pagination page={page} count={count} pageSize={pageSize} onChange={setPage} onPageSizeChange={changePageSize} />
             <Table
               columns={columns}
               rows={rows}
@@ -144,7 +174,11 @@ export function Ars() {
               onRestore={isAdmin ? restore : undefined}
               getRowLabel={(r) => r.name}
               isInactive={(r) => !r.active}
+              sortKey={sortKey}
+              sortDir={sortDir}
+              onSort={handleSort}
             />
+            <Pagination page={page} count={count} pageSize={pageSize} onChange={setPage} onPageSizeChange={changePageSize} />
           </>
         )}
 

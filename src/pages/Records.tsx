@@ -56,6 +56,8 @@ export function Records() {
   const [recordFormError, setRecordFormError] = useState("");
   const [logFormError, setLogFormError] = useState("");
   const [imageError, setImageError] = useState("");
+  const [openingId, setOpeningId] = useState<number | null>(null);
+  const [uploading, setUploading] = useState(false);
   const {
     page,
     setPage,
@@ -100,17 +102,22 @@ export function Records() {
     setLogForm({ ...EMPTY_LOG, patient: rec.patient });
     setLogFormError("");
     setImageError("");
-    // Independent requests (neither depends on the other's result): fire
-    // them concurrently instead of waiting for the record detail before
-    // starting the logs fetch.
-    const [full, logsResult] = await Promise.all([
-      api.get<MedicalRecord>(`/medical-records/${rec.id}/`),
-      api
-        .get<Paginated<ConsultationLog>>(`/consultation-logs/?patient=${rec.patient}&page_size=20`)
-        .catch(() => ({ results: [] as ConsultationLog[] })),
-    ]);
-    setDetail(full);
-    setLogs(logsResult.results);
+    setOpeningId(rec.id);
+    try {
+      // Independent requests (neither depends on the other's result): fire
+      // them concurrently instead of waiting for the record detail before
+      // starting the logs fetch.
+      const [full, logsResult] = await Promise.all([
+        api.get<MedicalRecord>(`/medical-records/${rec.id}/`),
+        api
+          .get<Paginated<ConsultationLog>>(`/consultation-logs/?patient=${rec.patient}&page_size=20`)
+          .catch(() => ({ results: [] as ConsultationLog[] })),
+      ]);
+      setDetail(full);
+      setLogs(logsResult.results);
+    } finally {
+      setOpeningId(null);
+    }
   }
 
   async function createRecord() {
@@ -143,8 +150,9 @@ export function Records() {
   }
 
   async function uploadImage() {
-    if (!detail || !imageFile) return;
+    if (!detail || !imageFile || uploading) return;
     setImageError("");
+    setUploading(true);
     try {
       const fd = new FormData();
       fd.append("record", String(detail.id));
@@ -157,6 +165,8 @@ export function Records() {
       setDetail(full);
     } catch (err) {
       setImageError(err instanceof ApiError ? flattenError(err.message) : String(err));
+    } finally {
+      setUploading(false);
     }
   }
 
@@ -171,8 +181,8 @@ export function Records() {
   }
 
   const openDetailLink = (rec: MedicalRecord) => (
-    <button type="button" className="row-link" onClick={() => openDetail(rec)}>
-      <MaskedValue value={rec.patient_info.full_name} />
+    <button type="button" className="row-link" disabled={openingId === rec.id} onClick={() => openDetail(rec)}>
+      {openingId === rec.id ? t("common.loading") : <MaskedValue value={rec.patient_info.full_name} />}
     </button>
   );
 
@@ -187,7 +197,7 @@ export function Records() {
       key: "cedula",
       header: t("patients.cedula"),
       render: (r) => (
-        <button type="button" className="row-link" onClick={() => openDetail(r)}>
+        <button type="button" className="row-link" disabled={openingId === r.id} onClick={() => openDetail(r)}>
           <MaskedValue
             value={
               r.patient_info.cedula
@@ -204,7 +214,7 @@ export function Records() {
       key: "nss",
       header: t("patients.nss"),
       render: (r) => (
-        <button type="button" className="row-link" onClick={() => openDetail(r)}>
+        <button type="button" className="row-link" disabled={openingId === r.id} onClick={() => openDetail(r)}>
           <MaskedValue value={r.patient_info.nss} />
         </button>
       ),
@@ -320,6 +330,7 @@ export function Records() {
           </div>
 
           <h4>{t("records.images")}</h4>
+          {detail.images.length === 0 && <p className="muted">{t("common.noData")}</p>}
           <div className="image-grid">
             {detail.images.map((img) => (
               <a key={img.id} href={img.image_url ?? "#"} target="_blank" rel="noreferrer">
@@ -329,10 +340,15 @@ export function Records() {
           </div>
           {canCreate && (
             <div className="upload-row">
-              <input type="file" accept="image/*" onChange={(e) => setImageFile(e.target.files?.[0] ?? null)} />
-              <input placeholder={t("records.caption")} value={caption} onChange={(e) => setCaption(e.target.value)} />
-              <button className="btn primary" onClick={uploadImage} disabled={!imageFile}>
-                {t("records.uploadImage")}
+              <input type="file" accept="image/*" onChange={(e) => setImageFile(e.target.files?.[0] ?? null)} disabled={uploading} />
+              <input
+                placeholder={t("records.caption")}
+                value={caption}
+                onChange={(e) => setCaption(e.target.value)}
+                disabled={uploading}
+              />
+              <button className="btn primary" onClick={uploadImage} disabled={!imageFile || uploading}>
+                {uploading ? t("common.saving") : t("records.uploadImage")}
               </button>
             </div>
           )}
@@ -343,7 +359,7 @@ export function Records() {
           )}
 
           <h4>{t("records.newLog")}</h4>
-          {logs.length > 0 && (
+          {logs.length > 0 ? (
             <div className="log-list">
               {logs.map((log) => (
                 <div key={log.id} className="log-entry">
@@ -355,6 +371,8 @@ export function Records() {
                 </div>
               ))}
             </div>
+          ) : (
+            <p className="muted">{t("common.noData")}</p>
           )}
           {canCreate && (
             <form className="log-form" onSubmit={createLog}>

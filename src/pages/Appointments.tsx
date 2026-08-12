@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 
-import { Field, FormModal, Page, Pagination, SearchableSelect, SearchBar, Spinner, Table, type Column } from "../components/ui";
+import { ConfirmDialog, Field, FormModal, Page, Pagination, SearchableSelect, SearchBar, Spinner, Table, type Column } from "../components/ui";
 import { useListControls } from "../hooks/useListControls";
 import { api, ApiError } from "../services/api";
 import type {
@@ -36,7 +36,9 @@ export function Appointments() {
   const [modal, setModal] = useState(false);
   const [form, setForm] = useState(EMPTY);
   const [formError, setFormError] = useState("");
-  const [actioningId, setActioningId] = useState<number | null>(null);
+  const [confirming, setConfirming] = useState<{ type: "complete" | "cancel" | "delete" | "restore"; row: Appointment } | null>(null);
+  const [actionError, setActionError] = useState("");
+  const [actionPending, setActionPending] = useState(false);
   const {
     page,
     setPage,
@@ -108,58 +110,50 @@ export function Appointments() {
     }
   }
 
-  async function cancel(a: Appointment) {
-    const time = new Date(a.date_time).toLocaleString();
-    if (!window.confirm(t("appointments.cancelConfirm", { patient: a.patient_info.full_name, time }))) return;
-    setActioningId(a.id);
+  function closeConfirm() {
+    setConfirming(null);
+    setActionError("");
+  }
+
+  async function runConfirmedAction() {
+    if (!confirming) return;
+    const { type, row } = confirming;
+    const endpoint =
+      type === "delete" ? { method: "delete" as const, path: `/appointments/${row.id}/` } : { method: "post" as const, path: `/appointments/${row.id}/${type}/` };
+    setActionPending(true);
+    setActionError("");
     try {
-      await api.post(`/appointments/${a.id}/cancel/`, {});
+      if (endpoint.method === "delete") {
+        await api.delete(endpoint.path);
+      } else {
+        await api.post(endpoint.path, {});
+      }
+      setConfirming(null);
       load();
     } catch (err) {
-      window.alert(err instanceof ApiError ? flattenError(err.message) : String(err));
+      setActionError(err instanceof ApiError ? flattenError(err.message) : String(err));
     } finally {
-      setActioningId(null);
+      setActionPending(false);
     }
   }
 
-  async function complete(a: Appointment) {
-    const time = new Date(a.date_time).toLocaleString();
-    if (!window.confirm(t("appointments.completeConfirm", { patient: a.patient_info.full_name, time }))) return;
-    setActioningId(a.id);
-    try {
-      await api.post(`/appointments/${a.id}/complete/`, {});
-      load();
-    } catch (err) {
-      window.alert(err instanceof ApiError ? flattenError(err.message) : String(err));
-    } finally {
-      setActioningId(null);
-    }
-  }
-
-  async function removeAppointment(a: Appointment) {
-    if (!window.confirm(t("common.deleteConfirm"))) return;
-    setActioningId(a.id);
-    try {
-      await api.delete(`/appointments/${a.id}/`);
-      load();
-    } catch (err) {
-      window.alert(err instanceof ApiError ? flattenError(err.message) : String(err));
-    } finally {
-      setActioningId(null);
-    }
-  }
-
-  async function restoreAppointment(a: Appointment) {
-    setActioningId(a.id);
-    try {
-      await api.post(`/appointments/${a.id}/restore/`, {});
-      load();
-    } catch (err) {
-      window.alert(err instanceof ApiError ? flattenError(err.message) : String(err));
-    } finally {
-      setActioningId(null);
-    }
-  }
+  const confirmCopy = confirming
+    ? (() => {
+        const { type, row } = confirming;
+        const time = new Date(row.date_time).toLocaleString();
+        const patient = row.patient_info.full_name;
+        switch (type) {
+          case "complete":
+            return { title: t("appointments.complete"), message: t("appointments.completeConfirm", { patient, time }), confirmLabel: t("appointments.complete"), danger: false };
+          case "cancel":
+            return { title: t("appointments.cancel"), message: t("appointments.cancelConfirm", { patient, time }), confirmLabel: t("appointments.cancel"), danger: true };
+          case "delete":
+            return { title: t("common.delete"), message: t("common.deleteConfirmNamed", { name: patient }), confirmLabel: t("common.delete"), danger: true };
+          case "restore":
+            return { title: t("common.restore"), message: t("common.restoreConfirmNamed", { name: patient }), confirmLabel: t("common.restore"), danger: false };
+        }
+      })()
+    : null;
 
   const statusLabel = (s: string) => t(`appointments.status${s[0]}${s.slice(1).toLowerCase()}`);
 
@@ -190,19 +184,15 @@ export function Appointments() {
         <>
           {canManage && r.status === "SCHEDULED" && (
             <>
-              <button className="btn small" onClick={() => complete(r)} disabled={actioningId === r.id}>{t("appointments.complete")}</button>
-              <button className="btn small danger" onClick={() => cancel(r)} disabled={actioningId === r.id}>{t("appointments.cancel")}</button>
+              <button className="btn small" onClick={() => setConfirming({ type: "complete", row: r })}>{t("appointments.complete")}</button>
+              <button className="btn small danger" onClick={() => setConfirming({ type: "cancel", row: r })}>{t("appointments.cancel")}</button>
             </>
           )}
           {canManage && r.active && (
-            <button className="btn small danger" onClick={() => removeAppointment(r)} disabled={actioningId === r.id}>{t("common.delete")}</button>
+            <button className="btn small danger" onClick={() => setConfirming({ type: "delete", row: r })}>{t("common.delete")}</button>
           )}
           {isAdmin && !r.active && (
-            <button
-              className="btn small"
-              onClick={() => window.confirm(t("common.restoreConfirm")) && restoreAppointment(r)}
-              disabled={actioningId === r.id}
-            >
+            <button className="btn small" onClick={() => setConfirming({ type: "restore", row: r })}>
               {t("common.restore")}
             </button>
           )}
@@ -312,6 +302,19 @@ export function Appointments() {
             <textarea value={form.notes} onChange={(e) => setForm({ ...form, notes: e.target.value })} />
           </Field>
         </FormModal>
+      )}
+
+      {confirming && confirmCopy && (
+        <ConfirmDialog
+          title={confirmCopy.title}
+          message={confirmCopy.message}
+          confirmLabel={confirmCopy.confirmLabel}
+          danger={confirmCopy.danger}
+          error={actionError}
+          pending={actionPending}
+          onConfirm={runConfirmedAction}
+          onCancel={closeConfirm}
+        />
       )}
     </Page>
   );

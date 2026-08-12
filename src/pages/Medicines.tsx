@@ -176,7 +176,11 @@ export function Medicines() {
             <input value={form.commercial_name} onChange={(e) => setForm({ ...form, commercial_name: e.target.value })} required />
           </Field>
           <Field label={t("medicines.concentration")}>
-            <input value={form.concentration} onChange={(e) => setForm({ ...form, concentration: e.target.value })} />
+            <input
+              value={form.concentration}
+              onChange={(e) => setForm({ ...form, concentration: e.target.value })}
+              placeholder="500 mg"
+            />
           </Field>
         </FormModal>
       )}

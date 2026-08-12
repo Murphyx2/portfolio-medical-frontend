@@ -49,6 +49,8 @@
     "maskedTooltip": "Hidden for your role",
     "view": "View",
     "deleteConfirm": "Delete this record?",
+    "deleteConfirmNamed": "Deactivate {{name}}? An administrator will be able to restore it later.",
+    "restoreConfirmNamed": "Restore {{name}}?",
     "active": "Active",
     "inactive": "Inactive",
     "showInactive": "Show inactive",

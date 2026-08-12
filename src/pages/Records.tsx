@@ -161,21 +161,13 @@ export function Records() {
   }
 
   async function removeRecord(rec: MedicalRecord) {
-    try {
-      await api.delete(`/medical-records/${rec.id}/`);
-      load();
-    } catch (err) {
-      window.alert(err instanceof ApiError ? flattenError(err.message) : String(err));
-    }
+    await api.delete(`/medical-records/${rec.id}/`);
+    load();
   }
 
   async function restoreRecord(rec: MedicalRecord) {
-    try {
-      await api.post(`/medical-records/${rec.id}/restore/`, {});
-      load();
-    } catch (err) {
-      window.alert(err instanceof ApiError ? flattenError(err.message) : String(err));
-    }
+    await api.post(`/medical-records/${rec.id}/restore/`, {});
+    load();
   }
 
   const openDetailLink = (rec: MedicalRecord) => (
@@ -299,6 +291,7 @@ export function Records() {
             rows={rows}
             onDelete={canCreate ? removeRecord : undefined}
             onRestore={isAdmin ? restoreRecord : undefined}
+            getRowLabel={(r) => r.patient_info.full_name}
             isInactive={(r) => !r.active}
             sortKey={sortKey}
             sortDir={sortDir}

@@ -3,7 +3,7 @@
     "name": "MedicalConsultations"
   },
   "nav": {
-    "dashboard": "Panel",
+    "dashboard": "Dashboard",
     "patients": "Pacientes",
     "doctors": "Médicos",
     "centers": "Centros Médicos",
@@ -49,6 +49,8 @@
     "maskedTooltip": "Oculto para tu rol",
     "view": "Ver",
     "deleteConfirm": "¿Eliminar este registro?",
+    "deleteConfirmNamed": "¿Desactivar a {{name}}? Un administrador podrá restaurarlo más tarde.",
+    "restoreConfirmNamed": "¿Restaurar a {{name}}?",
     "active": "Activo",
     "inactive": "Inactivo",
     "showInactive": "Mostrar inactivos",

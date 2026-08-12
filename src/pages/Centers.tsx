@@ -91,21 +91,13 @@ export function Centers() {
   }
 
   async function remove(c: MedicalCenter) {
-    try {
-      await api.delete(`/centers/${c.id}/`);
-      load();
-    } catch (err) {
-      window.alert(err instanceof ApiError ? flattenError(err.message) : String(err));
-    }
+    await api.delete(`/centers/${c.id}/`);
+    load();
   }
 
   async function restore(c: MedicalCenter) {
-    try {
-      await api.post(`/centers/${c.id}/restore/`, {});
-      load();
-    } catch (err) {
-      window.alert(err instanceof ApiError ? flattenError(err.message) : String(err));
-    }
+    await api.post(`/centers/${c.id}/restore/`, {});
+    load();
   }
 
   const columns: Column<MedicalCenter>[] = [
@@ -171,6 +163,7 @@ export function Centers() {
             onEdit={canEdit ? openEdit : undefined}
             onDelete={canEdit ? remove : undefined}
             onRestore={isAdmin ? restore : undefined}
+            getRowLabel={(r) => r.name}
             isInactive={(r) => !r.active}
             sortKey={sortKey}
             sortDir={sortDir}

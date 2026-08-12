@@ -78,21 +78,13 @@ export function Ars() {
   }
 
   async function remove(a: ARS) {
-    try {
-      await api.delete(`/ars/${a.id}/`);
-      load();
-    } catch (err) {
-      window.alert(err instanceof ApiError ? flattenError(err.message) : String(err));
-    }
+    await api.delete(`/ars/${a.id}/`);
+    load();
   }
 
   async function restore(a: ARS) {
-    try {
-      await api.post(`/ars/${a.id}/restore/`, {});
-      load();
-    } catch (err) {
-      window.alert(err instanceof ApiError ? flattenError(err.message) : String(err));
-    }
+    await api.post(`/ars/${a.id}/restore/`, {});
+    load();
   }
 
   const columns: Column<ARS>[] = [
@@ -150,6 +142,7 @@ export function Ars() {
               onEdit={openEdit}
               onDelete={remove}
               onRestore={isAdmin ? restore : undefined}
+              getRowLabel={(r) => r.name}
               isInactive={(r) => !r.active}
             />
           </>

@@ -178,6 +178,8 @@ export function Table<T extends { id: number }>({
   rows,
   onEdit,
   onDelete,
+  onRestore,
+  isInactive,
   emptyLabel,
   sortKey,
   sortDir,
@@ -187,12 +189,15 @@ export function Table<T extends { id: number }>({
   rows: T[];
   onEdit?: (row: T) => void;
   onDelete?: (row: T) => void;
+  onRestore?: (row: T) => void;
+  isInactive?: (row: T) => boolean;
   emptyLabel?: string;
   sortKey?: string | null;
   sortDir?: SortDir | null;
   onSort?: (key: string) => void;
 }) {
   const { t } = useTranslation();
+  const hasActions = Boolean(onEdit || onDelete || onRestore);
   return (
     <div className="table-scroll">
       <table className="data-table">
@@ -231,13 +236,13 @@ export function Table<T extends { id: number }>({
                 </th>
               );
             })}
-            {(onEdit || onDelete) && <th>{t("common.actions")}</th>}
+            {hasActions && <th>{t("common.actions")}</th>}
           </tr>
         </thead>
         <tbody>
           {rows.length === 0 && (
             <tr>
-              <td colSpan={columns.length + (onEdit || onDelete ? 1 : 0)} className="muted">
+              <td colSpan={columns.length + (hasActions ? 1 : 0)} className="muted">
                 {emptyLabel ?? t("common.noData")}
               </td>
             </tr>
@@ -247,7 +252,7 @@ export function Table<T extends { id: number }>({
               {columns.map((c) => (
                 <td key={c.key}>{c.render ? c.render(row) : String((row as never)[c.key] ?? "")}</td>
               ))}
-              {(onEdit || onDelete) && (
+              {hasActions && (
                 <td className="row-actions">
                   {onEdit && (
                     <button className="btn small" onClick={() => onEdit(row)}>
@@ -260,6 +265,14 @@ export function Table<T extends { id: number }>({
                       onClick={() => window.confirm(t("common.deleteConfirm")) && onDelete(row)}
                     >
                       {t("common.delete")}
+                    </button>
+                  )}
+                  {onRestore && isInactive?.(row) && (
+                    <button
+                      className="btn small"
+                      onClick={() => window.confirm(t("common.restoreConfirm")) && onRestore(row)}
+                    >
+                      {t("common.restore")}
                     </button>
                   )}
                 </td>

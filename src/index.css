@@ -671,6 +671,17 @@ body {
 .status-completed { background: var(--mc-primary-dark); }
 .status-cancelled { background: var(--mc-danger); }
 .status-no_show { background: var(--mc-muted); }
+.status-active { background: var(--mc-primary-dark); }
+.status-inactive { background: var(--mc-muted); }
+
+.show-inactive-toggle {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  font-size: 0.9rem;
+  color: var(--mc-muted);
+  white-space: nowrap;
+}
 
 .kv-grid {
   display: grid;

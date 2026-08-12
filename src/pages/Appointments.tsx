@@ -27,6 +27,8 @@ export function Appointments() {
   const { t } = useTranslation();
   const { user } = useAuth();
   const canManage = user?.role === "DOCTOR" || user?.role === "RECEPTIONIST" || user?.role === "ADMIN";
+  const isAdmin = user?.role === "ADMIN";
+  const [showInactive, setShowInactive] = useState(false);
   const [rows, setRows] = useState<Appointment[]>([]);
   const [selectedPatient, setSelectedPatient] = useState<Patient | null>(null);
   const [doctors, setDoctors] = useState<DoctorProfile[]>([]);
@@ -53,7 +55,7 @@ export function Appointments() {
     query,
   } = useListControls({ key: "date_time", dir: "asc" });
 
-  const qs = query();
+  const qs = query({ include_inactive: showInactive ? "true" : "" });
 
   const load = useCallback(() => {
     runList((signal) => api.get<Paginated<Appointment>>(`/appointments/?${qs}`, { signal }))
@@ -134,6 +136,31 @@ export function Appointments() {
     }
   }
 
+  async function removeAppointment(a: Appointment) {
+    if (!window.confirm(t("common.deleteConfirm"))) return;
+    setActioningId(a.id);
+    try {
+      await api.delete(`/appointments/${a.id}/`);
+      load();
+    } catch (err) {
+      window.alert(err instanceof ApiError ? flattenError(err.message) : String(err));
+    } finally {
+      setActioningId(null);
+    }
+  }
+
+  async function restoreAppointment(a: Appointment) {
+    setActioningId(a.id);
+    try {
+      await api.post(`/appointments/${a.id}/restore/`, {});
+      load();
+    } catch (err) {
+      window.alert(err instanceof ApiError ? flattenError(err.message) : String(err));
+    } finally {
+      setActioningId(null);
+    }
+  }
+
   const statusLabel = (s: string) => t(`appointments.status${s[0]}${s.slice(1).toLowerCase()}`);
 
   const columns: Column<Appointment>[] = [
@@ -143,6 +170,19 @@ export function Appointments() {
     { key: "center", header: t("appointments.center"), sortKey: "center__name", render: (r) => r.center_name ?? "—" },
     { key: "created_by_name", header: t("appointments.createdBy") },
     { key: "status", header: t("common.status"), sortKey: "status", render: (r) => <span className={`badge status-${r.status.toLowerCase()}`}>{statusLabel(r.status)}</span> },
+    ...(isAdmin
+      ? [
+          {
+            key: "active",
+            header: t("common.active"),
+            render: (r: Appointment) => (
+              <span className={`badge status-${r.active ? "active" : "inactive"}`}>
+                {r.active ? t("common.active") : t("common.inactive")}
+              </span>
+            ),
+          } as Column<Appointment>,
+        ]
+      : []),
     {
       key: "actions",
       header: t("common.actions"),
@@ -153,6 +193,18 @@ export function Appointments() {
               <button className="btn small" onClick={() => complete(r)} disabled={actioningId === r.id}>{t("appointments.complete")}</button>
               <button className="btn small danger" onClick={() => cancel(r)} disabled={actioningId === r.id}>{t("appointments.cancel")}</button>
             </>
+          )}
+          {canManage && r.active && (
+            <button className="btn small danger" onClick={() => removeAppointment(r)} disabled={actioningId === r.id}>{t("common.delete")}</button>
+          )}
+          {isAdmin && !r.active && (
+            <button
+              className="btn small"
+              onClick={() => window.confirm(t("common.restoreConfirm")) && restoreAppointment(r)}
+              disabled={actioningId === r.id}
+            >
+              {t("common.restore")}
+            </button>
           )}
         </>
       ),
@@ -182,6 +234,16 @@ export function Appointments() {
               placeholder={t("common.searchPlaceholder")}
               label={t("common.search")}
             />
+            {isAdmin && (
+              <label className="show-inactive-toggle">
+                <input
+                  type="checkbox"
+                  checked={showInactive}
+                  onChange={(e) => setShowInactive(e.target.checked)}
+                />
+                {t("common.showInactive")}
+              </label>
+            )}
           </div>
           <Pagination page={page} count={count} pageSize={pageSize} onChange={setPage} onPageSizeChange={changePageSize} />
           <Table

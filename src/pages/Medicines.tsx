@@ -14,11 +14,13 @@ export function Medicines() {
   const { t } = useTranslation();
   const { user } = useAuth();
   const canEdit = user?.role === "ADMIN" || user?.role === "IT";
+  const isAdmin = user?.role === "ADMIN";
   const [rows, setRows] = useState<Medicine[]>([]);
   const [modal, setModal] = useState(false);
   const [form, setForm] = useState(EMPTY);
   const [editId, setEditId] = useState<number | null>(null);
   const [formError, setFormError] = useState("");
+  const [showInactive, setShowInactive] = useState(false);
   const {
     page,
     setPage,
@@ -37,7 +39,7 @@ export function Medicines() {
     query,
   } = useListControls();
 
-  const qs = query();
+  const qs = query({ include_inactive: showInactive ? "true" : "" });
 
   const load = useCallback(() => {
     runList((signal) => api.get<Paginated<Medicine>>(`/medicines/?${qs}`, { signal }))
@@ -88,10 +90,32 @@ export function Medicines() {
     }
   }
 
+  async function restore(m: Medicine) {
+    try {
+      await api.post(`/medicines/${m.id}/restore/`, {});
+      load();
+    } catch (err) {
+      window.alert(err instanceof ApiError ? flattenError(err.message) : String(err));
+    }
+  }
+
   const columns: Column<Medicine>[] = [
     { key: "generic_name", header: t("medicines.genericName"), sortKey: "generic_name" },
     { key: "commercial_name", header: t("medicines.commercialName"), sortKey: "commercial_name" },
     { key: "concentration", header: t("medicines.concentration"), sortKey: "concentration" },
+    ...(isAdmin
+      ? [
+          {
+            key: "active",
+            header: t("common.status"),
+            render: (m: Medicine) => (
+              <span className={`badge status-${m.active ? "active" : "inactive"}`}>
+                {m.active ? t("common.active") : t("common.inactive")}
+              </span>
+            ),
+          } as Column<Medicine>,
+        ]
+      : []),
   ];
 
   return (
@@ -117,6 +141,16 @@ export function Medicines() {
               placeholder={t("common.searchPlaceholder")}
               label={t("common.search")}
             />
+            {isAdmin && (
+              <label className="show-inactive-toggle">
+                <input
+                  type="checkbox"
+                  checked={showInactive}
+                  onChange={(e) => setShowInactive(e.target.checked)}
+                />
+                {t("common.showInactive")}
+              </label>
+            )}
           </div>
           <Pagination page={page} count={count} pageSize={pageSize} onChange={setPage} onPageSizeChange={changePageSize} />
           <Table
@@ -124,6 +158,8 @@ export function Medicines() {
             rows={rows}
             onEdit={canEdit ? openEdit : undefined}
             onDelete={canEdit ? remove : undefined}
+            onRestore={isAdmin ? restore : undefined}
+            isInactive={(m) => !m.active}
             sortKey={sortKey}
             sortDir={sortDir}
             onSort={handleSort}

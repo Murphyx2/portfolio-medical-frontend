@@ -41,6 +41,8 @@ export function Records() {
   const { t } = useTranslation();
   const { user } = useAuth();
   const canCreate = user?.role === "DOCTOR" || user?.role === "NURSE" || user?.role === "ADMIN";
+  const isAdmin = user?.role === "ADMIN";
+  const [showInactive, setShowInactive] = useState(false);
   const [rows, setRows] = useState<MedicalRecord[]>([]);
   const [patients, setPatients] = useState<Patient[]>([]);
   const [detail, setDetail] = useState<MedicalRecord | null>(null);
@@ -72,7 +74,7 @@ export function Records() {
     query,
   } = useListControls({ key: "date", dir: "desc" });
 
-  const qs = query();
+  const qs = query({ include_inactive: showInactive ? "true" : "" });
 
   const load = useCallback(() => {
     runList((signal) => api.get<Paginated<MedicalRecord>>(`/medical-records/?${qs}`, { signal }))
@@ -158,6 +160,24 @@ export function Records() {
     }
   }
 
+  async function removeRecord(rec: MedicalRecord) {
+    try {
+      await api.delete(`/medical-records/${rec.id}/`);
+      load();
+    } catch (err) {
+      window.alert(err instanceof ApiError ? flattenError(err.message) : String(err));
+    }
+  }
+
+  async function restoreRecord(rec: MedicalRecord) {
+    try {
+      await api.post(`/medical-records/${rec.id}/restore/`, {});
+      load();
+    } catch (err) {
+      window.alert(err instanceof ApiError ? flattenError(err.message) : String(err));
+    }
+  }
+
   const openDetailLink = (rec: MedicalRecord) => (
     <button type="button" className="row-link" onClick={() => openDetail(rec)}>
       <MaskedValue value={rec.patient_info.full_name} />
@@ -200,6 +220,19 @@ export function Records() {
     { key: "title", header: t("records.recordTitle"), sortKey: "title" },
     { key: "date", header: t("records.date"), sortKey: "date", render: (r) => new Date(r.date).toLocaleString() },
     { key: "created_by_name", header: t("records.doctor"), sortKey: "created_by__username" },
+    ...(isAdmin
+      ? [
+          {
+            key: "active",
+            header: t("common.status"),
+            render: (r: MedicalRecord) => (
+              <span className={`badge status-${r.active ? "active" : "inactive"}`}>
+                {r.active ? t("common.active") : t("common.inactive")}
+              </span>
+            ),
+          } as Column<MedicalRecord>,
+        ]
+      : []),
   ];
 
   function openRecordForm() {
@@ -249,11 +282,24 @@ export function Records() {
               placeholder={t("common.searchPlaceholder")}
               label={t("common.search")}
             />
+            {isAdmin && (
+              <label className="show-inactive-toggle">
+                <input
+                  type="checkbox"
+                  checked={showInactive}
+                  onChange={(e) => setShowInactive(e.target.checked)}
+                />
+                {t("common.showInactive")}
+              </label>
+            )}
           </div>
           <Pagination page={page} count={count} pageSize={pageSize} onChange={setPage} onPageSizeChange={changePageSize} />
           <Table
             columns={columns}
             rows={rows}
+            onDelete={canCreate ? removeRecord : undefined}
+            onRestore={isAdmin ? restoreRecord : undefined}
+            isInactive={(r) => !r.active}
             sortKey={sortKey}
             sortDir={sortDir}
             onSort={handleSort}

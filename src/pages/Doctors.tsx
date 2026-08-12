@@ -15,6 +15,7 @@ export function Doctors() {
   const { t } = useTranslation();
   const { user } = useAuth();
   const canEdit = user?.role === "ADMIN" || user?.role === "IT";
+  const isAdmin = user?.role === "ADMIN";
   const [rows, setRows] = useState<DoctorProfile[]>([]);
   const [userOptions, setUserOptions] = useState<User[]>([]);
   const [modal, setModal] = useState(false);
@@ -22,6 +23,7 @@ export function Doctors() {
   const [editId, setEditId] = useState<number | null>(null);
   const [phoneError, setPhoneError] = useState("");
   const [formError, setFormError] = useState("");
+  const [showInactive, setShowInactive] = useState(false);
   const {
     page,
     setPage,
@@ -40,7 +42,7 @@ export function Doctors() {
     query,
   } = useListControls();
 
-  const qs = query();
+  const qs = query({ include_inactive: showInactive ? "true" : "" });
 
   const load = useCallback(() => {
     runList((signal) => api.get<Paginated<DoctorProfile>>(`/doctors/profiles/?${qs}`, { signal }))
@@ -111,12 +113,34 @@ export function Doctors() {
     }
   }
 
+  async function restore(d: DoctorProfile) {
+    try {
+      await api.post(`/doctors/profiles/${d.id}/restore/`, {});
+      load();
+    } catch (err) {
+      window.alert(err instanceof ApiError ? flattenError(err.message) : String(err));
+    }
+  }
+
   const columns: Column<DoctorProfile>[] = [
     { key: "full_name", header: t("doctors.fullName"), sortKey: "user__last_name" },
     { key: "specialty", header: t("doctors.specialty"), sortKey: "specialty" },
     { key: "license_number", header: t("doctors.license"), sortKey: "license_number", render: (r) => <MaskedValue value={r.license_number} /> },
     { key: "contact_phone", header: t("doctors.contactPhone"), sortKey: "contact_phone", render: (r) => <MaskedValue value={formatPhone(r.contact_phone)} /> },
     { key: "contact_email", header: t("doctors.contactEmail"), sortKey: "contact_email" },
+    ...(isAdmin
+      ? [
+          {
+            key: "active",
+            header: t("common.status"),
+            render: (r: DoctorProfile) => (
+              <span className={`badge status-${r.active ? "active" : "inactive"}`}>
+                {r.active ? t("common.active") : t("common.inactive")}
+              </span>
+            ),
+          } as Column<DoctorProfile>,
+        ]
+      : []),
   ];
 
   return (
@@ -142,6 +166,16 @@ export function Doctors() {
               placeholder={t("common.searchPlaceholder")}
               label={t("common.search")}
             />
+            {isAdmin && (
+              <label className="show-inactive-toggle">
+                <input
+                  type="checkbox"
+                  checked={showInactive}
+                  onChange={(e) => setShowInactive(e.target.checked)}
+                />
+                {t("common.showInactive")}
+              </label>
+            )}
           </div>
           <Pagination page={page} count={count} pageSize={pageSize} onChange={setPage} onPageSizeChange={changePageSize} />
           <Table
@@ -149,6 +183,8 @@ export function Doctors() {
             rows={rows}
             onEdit={canEdit ? openEdit : undefined}
             onDelete={canEdit ? remove : undefined}
+            onRestore={isAdmin ? restore : undefined}
+            isInactive={(r) => !r.active}
             sortKey={sortKey}
             sortDir={sortDir}
             onSort={handleSort}

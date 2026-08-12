@@ -73,21 +73,13 @@ export function Users() {
   }
 
   async function remove(u: User) {
-    try {
-      await api.delete(`/auth/users/${u.id}/`);
-      load();
-    } catch (err) {
-      window.alert(err instanceof ApiError ? flattenError(err.message) : String(err));
-    }
+    await api.delete(`/auth/users/${u.id}/`);
+    load();
   }
 
   async function restore(u: User) {
-    try {
-      await api.post(`/auth/users/${u.id}/restore/`, {});
-      load();
-    } catch (err) {
-      window.alert(err instanceof ApiError ? flattenError(err.message) : String(err));
-    }
+    await api.post(`/auth/users/${u.id}/restore/`, {});
+    load();
   }
 
   const columns: Column<User>[] = [
@@ -137,6 +129,7 @@ export function Users() {
               rows={rows}
               onDelete={remove}
               onRestore={isAdmin ? restore : undefined}
+              getRowLabel={(r) => r.full_name || r.username}
               isInactive={(r) => !r.is_active}
               sortKey={sortKey}
               sortDir={sortDir}

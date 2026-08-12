@@ -105,21 +105,13 @@ export function Doctors() {
   }
 
   async function remove(d: DoctorProfile) {
-    try {
-      await api.delete(`/doctors/profiles/${d.id}/`);
-      load();
-    } catch (err) {
-      window.alert(err instanceof ApiError ? flattenError(err.message) : String(err));
-    }
+    await api.delete(`/doctors/profiles/${d.id}/`);
+    load();
   }
 
   async function restore(d: DoctorProfile) {
-    try {
-      await api.post(`/doctors/profiles/${d.id}/restore/`, {});
-      load();
-    } catch (err) {
-      window.alert(err instanceof ApiError ? flattenError(err.message) : String(err));
-    }
+    await api.post(`/doctors/profiles/${d.id}/restore/`, {});
+    load();
   }
 
   const columns: Column<DoctorProfile>[] = [
@@ -127,7 +119,7 @@ export function Doctors() {
     { key: "specialty", header: t("doctors.specialty"), sortKey: "specialty" },
     { key: "license_number", header: t("doctors.license"), sortKey: "license_number", render: (r) => <MaskedValue value={r.license_number} /> },
     { key: "contact_phone", header: t("doctors.contactPhone"), sortKey: "contact_phone", render: (r) => <MaskedValue value={formatPhone(r.contact_phone)} /> },
-    { key: "contact_email", header: t("doctors.contactEmail"), sortKey: "contact_email" },
+    { key: "contact_email", header: t("doctors.contactEmail"), sortKey: "contact_email", render: (r) => <MaskedValue value={r.contact_email} /> },
     ...(isAdmin
       ? [
           {
@@ -184,6 +176,7 @@ export function Doctors() {
             onEdit={canEdit ? openEdit : undefined}
             onDelete={canEdit ? remove : undefined}
             onRestore={isAdmin ? restore : undefined}
+            getRowLabel={(r) => r.full_name}
             isInactive={(r) => !r.active}
             sortKey={sortKey}
             sortDir={sortDir}

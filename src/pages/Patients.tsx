@@ -202,21 +202,13 @@ export function Patients() {
   }
 
   async function remove(p: Patient) {
-    try {
-      await api.delete(`/patients/${p.id}/`);
-      load();
-    } catch (err) {
-      window.alert(err instanceof ApiError ? flattenError(err.message) : String(err));
-    }
+    await api.delete(`/patients/${p.id}/`);
+    load();
   }
 
   async function restore(p: Patient) {
-    try {
-      await api.post(`/patients/${p.id}/restore/`, {});
-      load();
-    } catch (err) {
-      window.alert(err instanceof ApiError ? flattenError(err.message) : String(err));
-    }
+    await api.post(`/patients/${p.id}/restore/`, {});
+    load();
   }
 
   const columns: Column<Patient>[] = [
@@ -289,6 +281,7 @@ export function Patients() {
             onEdit={openEdit}
             onDelete={remove}
             onRestore={isAdmin ? restore : undefined}
+            getRowLabel={(r) => r.full_name}
             isInactive={(r) => !r.active}
             sortKey={clientSort?.key ?? sortKey}
             sortDir={clientSort?.dir ?? sortDir}

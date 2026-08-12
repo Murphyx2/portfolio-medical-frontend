@@ -82,21 +82,13 @@ export function Medicines() {
   }
 
   async function remove(m: Medicine) {
-    try {
-      await api.delete(`/medicines/${m.id}/`);
-      load();
-    } catch (err) {
-      window.alert(err instanceof ApiError ? flattenError(err.message) : String(err));
-    }
+    await api.delete(`/medicines/${m.id}/`);
+    load();
   }
 
   async function restore(m: Medicine) {
-    try {
-      await api.post(`/medicines/${m.id}/restore/`, {});
-      load();
-    } catch (err) {
-      window.alert(err instanceof ApiError ? flattenError(err.message) : String(err));
-    }
+    await api.post(`/medicines/${m.id}/restore/`, {});
+    load();
   }
 
   const columns: Column<Medicine>[] = [
@@ -159,6 +151,7 @@ export function Medicines() {
             onEdit={canEdit ? openEdit : undefined}
             onDelete={canEdit ? remove : undefined}
             onRestore={isAdmin ? restore : undefined}
+            getRowLabel={(m) => m.commercial_name || m.generic_name}
             isInactive={(m) => !m.active}
             sortKey={sortKey}
             sortDir={sortDir}

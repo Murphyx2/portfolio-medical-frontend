@@ -3,6 +3,12 @@ import type { FormEvent, ReactNode } from "react";
 import { useTranslation } from "react-i18next";
 
 import { MIN_SEARCH_CHARS } from "../hooks/useListControls";
+import { ApiError } from "../services/api";
+import { flattenError } from "../utils/errors";
+
+function actionErrorMessage(err: unknown): string {
+  return err instanceof ApiError ? flattenError(err.message) : String(err);
+}
 
 export function Page({ title, actions, children }: {
   title: string;
@@ -155,6 +161,49 @@ export function FormModal({ title, onClose, onSubmit, children, submitLabel, err
   );
 }
 
+/**
+ * Confirmation dialog for destructive/reversible row actions (delete,
+ * restore). Built on the shared `Dialog` shell instead of `window.confirm`
+ * so it inherits the app's own visual language, and shows API errors inline
+ * instead of `window.alert` — a native OS dialog otherwise breaks out of
+ * the design system at the exact moment a destructive action is confirmed.
+ */
+export function ConfirmDialog({ title, message, confirmLabel, danger, error, pending, onConfirm, onCancel }: {
+  title: string;
+  message: string;
+  confirmLabel: string;
+  danger?: boolean;
+  error?: string;
+  pending?: boolean;
+  onConfirm: () => void;
+  onCancel: () => void;
+}) {
+  const { t } = useTranslation();
+  return (
+    <Dialog title={title} onClose={onCancel} preventClose={pending}>
+      <p>{message}</p>
+      {error && (
+        <p className="form-error" role="alert">
+          {error}
+        </p>
+      )}
+      <div className="modal-actions">
+        <button type="button" className="btn ghost" onClick={onCancel} disabled={pending}>
+          {t("common.cancel")}
+        </button>
+        <button
+          type="button"
+          className={danger ? "btn danger" : "btn primary"}
+          onClick={onConfirm}
+          disabled={pending}
+        >
+          {pending ? t("common.saving") : confirmLabel}
+        </button>
+      </div>
+    </Dialog>
+  );
+}
+
 export function Field({ label, children }: { label: string; children: ReactNode }) {
   return (
     <label className="field">
@@ -180,6 +229,7 @@ export function Table<T extends { id: number }>({
   onDelete,
   onRestore,
   isInactive,
+  getRowLabel,
   emptyLabel,
   sortKey,
   sortDir,
@@ -188,9 +238,11 @@ export function Table<T extends { id: number }>({
   columns: Column<T>[];
   rows: T[];
   onEdit?: (row: T) => void;
-  onDelete?: (row: T) => void;
-  onRestore?: (row: T) => void;
+  onDelete?: (row: T) => void | Promise<void>;
+  onRestore?: (row: T) => void | Promise<void>;
   isInactive?: (row: T) => boolean;
+  /** Human-readable label for a row, interpolated into the delete/restore confirm message. Falls back to the row id. */
+  getRowLabel?: (row: T) => string;
   emptyLabel?: string;
   sortKey?: string | null;
   sortDir?: SortDir | null;
@@ -198,6 +250,31 @@ export function Table<T extends { id: number }>({
 }) {
   const { t } = useTranslation();
   const hasActions = Boolean(onEdit || onDelete || onRestore);
+  const [confirming, setConfirming] = useState<{ type: "delete" | "restore"; row: T } | null>(null);
+  const [actionError, setActionError] = useState("");
+  const [actionPending, setActionPending] = useState(false);
+
+  function closeConfirm() {
+    setConfirming(null);
+    setActionError("");
+  }
+
+  async function runConfirmedAction() {
+    if (!confirming) return;
+    const handler = confirming.type === "delete" ? onDelete : onRestore;
+    if (!handler) return;
+    setActionPending(true);
+    setActionError("");
+    try {
+      await handler(confirming.row);
+      setConfirming(null);
+    } catch (err) {
+      setActionError(actionErrorMessage(err));
+    } finally {
+      setActionPending(false);
+    }
+  }
+
   return (
     <div className="table-scroll">
       <table className="data-table">
@@ -262,7 +339,7 @@ export function Table<T extends { id: number }>({
                   {onDelete && (
                     <button
                       className="btn small danger"
-                      onClick={() => window.confirm(t("common.deleteConfirm")) && onDelete(row)}
+                      onClick={() => setConfirming({ type: "delete", row })}
                     >
                       {t("common.delete")}
                     </button>
@@ -270,7 +347,7 @@ export function Table<T extends { id: number }>({
                   {onRestore && isInactive?.(row) && (
                     <button
                       className="btn small"
-                      onClick={() => window.confirm(t("common.restoreConfirm")) && onRestore(row)}
+                      onClick={() => setConfirming({ type: "restore", row })}
                     >
                       {t("common.restore")}
                     </button>
@@ -281,6 +358,21 @@ export function Table<T extends { id: number }>({
           ))}
         </tbody>
       </table>
+      {confirming && (
+        <ConfirmDialog
+          title={confirming.type === "delete" ? t("common.delete") : t("common.restore")}
+          message={t(
+            confirming.type === "delete" ? "common.deleteConfirmNamed" : "common.restoreConfirmNamed",
+            { name: getRowLabel?.(confirming.row) ?? String(confirming.row.id) },
+          )}
+          confirmLabel={confirming.type === "delete" ? t("common.delete") : t("common.restore")}
+          danger={confirming.type === "delete"}
+          error={actionError}
+          pending={actionPending}
+          onConfirm={runConfirmedAction}
+          onCancel={closeConfirm}
+        />
+      )}
     </div>
   );
 }

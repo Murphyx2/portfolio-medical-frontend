@@ -10,6 +10,7 @@
     "medicines": "Medicines",
     "appointments": "Appointments",
     "records": "Medical Records",
+    "services": "Services",
     "users": "Users",
     "ars": "ARS",
     "logout": "Log out"
@@ -120,6 +121,22 @@
     "programs": "Programs",
     "programName": "Program name",
     "addProgram": "Add program"
+  },
+  "services": {
+    "title": "Services",
+    "new": "New service",
+    "simon": "SIMON",
+    "name": "Name",
+    "type": "Type",
+    "coPago": "Co-pay",
+    "privado": "Private",
+    "manageTypes": "Manage service types"
+  },
+  "serviceTypes": {
+    "title": "Service types",
+    "new": "New type",
+    "name": "Name",
+    "back": "Back to Services"
   },
   "users": {
     "title": "Users",

@@ -80,7 +80,7 @@
     "email": "Email (optional)",
     "genderMale": "Male",
     "genderFemale": "Female",
-    "genderOther": "Other",
+    "selectGender": "Select gender",
     "age": "Age",
     "cedula": "Cedula",
     "nss": "NSS",

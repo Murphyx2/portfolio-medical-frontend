@@ -490,6 +490,16 @@ input[type="radio"]:focus-visible {
   color: var(--mc-muted);
 }
 
+/* Reuses the searchable-select label/sublabel pattern inside a data-table
+   cell, per DESIGN.md's own note that this pattern is meant to disambiguate
+   a person in the table itself, not just in pickers. */
+.cell-sublabel {
+  display: block;
+  font-size: 0.78rem;
+  color: var(--mc-muted);
+  margin-top: 0.1rem;
+}
+
 .searchable-select-caret {
   color: var(--mc-muted);
 }
@@ -657,9 +667,23 @@ input[type="radio"]:focus-visible {
 
 .stat-card {
   background: var(--mc-white);
+  border: none;
   border-radius: 12px;
   padding: 1.25rem;
   box-shadow: 0 2px 10px rgba(27, 94, 32, 0.08);
+  width: 100%;
+  text-align: left;
+  font: inherit;
+  cursor: pointer;
+}
+
+.stat-card:hover {
+  box-shadow: 0 4px 14px rgba(13, 33, 55, 0.12);
+}
+
+.stat-card:focus-visible {
+  outline: 2px solid var(--mc-primary);
+  outline-offset: 2px;
 }
 
 .stat-card strong {
@@ -671,6 +695,17 @@ input[type="radio"]:focus-visible {
 .stat-card span {
   color: var(--mc-muted);
   font-size: 0.85rem;
+}
+
+.dashboard-date {
+  font-size: 0.85rem;
+  text-transform: capitalize;
+}
+
+.dashboard-overview-heading {
+  margin: 0 0 0.75rem;
+  font-size: 1rem;
+  color: var(--mc-primary-dark);
 }
 
 .dashboard-today {

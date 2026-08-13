@@ -29,7 +29,10 @@
     "appointmentsToday": "Citas de hoy",
     "patientsTotal": "Total de pacientes",
     "doctorsTotal": "Total de médicos",
-    "appointmentsTotal": "Total de citas"
+    "appointmentsTotal": "Total de citas",
+    "noAppointmentsToday": "No hay citas programadas para hoy.",
+    "loadError": "No se pudieron cargar algunos datos del panel.",
+    "retry": "Reintentar"
   },
   "common": {
     "save": "Guardar",
@@ -83,12 +86,16 @@
     "nss": "NSS",
     "ars": "ARS (aseguradora)",
     "arsProgram": "Programa ARS",
-    "center": "Centro"
+    "center": "Centro",
+    "sectionIdentity": "Identidad",
+    "sectionContact": "Contacto",
+    "sectionInsurance": "Seguro y centro"
   },
   "doctors": {
     "title": "Médicos",
     "new": "Nuevo médico",
     "user": "Cuenta de usuario",
+    "userRequired": "Selecciona una cuenta de médico.",
     "specialty": "Especialidad",
     "license": "Número de licencia",
     "contactPhone": "Teléfono de contacto",

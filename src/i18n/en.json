@@ -29,7 +29,10 @@
     "appointmentsToday": "Appointments today",
     "patientsTotal": "Total patients",
     "doctorsTotal": "Total doctors",
-    "appointmentsTotal": "Total appointments"
+    "appointmentsTotal": "Total appointments",
+    "noAppointmentsToday": "No appointments scheduled for today.",
+    "loadError": "Some dashboard data couldn't be loaded.",
+    "retry": "Retry"
   },
   "common": {
     "save": "Save",
@@ -83,12 +86,16 @@
     "nss": "NSS",
     "ars": "ARS (insurance)",
     "arsProgram": "ARS Program",
-    "center": "Center"
+    "center": "Center",
+    "sectionIdentity": "Identity",
+    "sectionContact": "Contact",
+    "sectionInsurance": "Insurance and center"
   },
   "doctors": {
     "title": "Doctors",
     "new": "New doctor",
     "user": "User account",
+    "userRequired": "Select a doctor account.",
     "specialty": "Specialty",
     "license": "License number",
     "contactPhone": "Contact phone",

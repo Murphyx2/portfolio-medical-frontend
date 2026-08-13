@@ -211,9 +211,28 @@ export function Patients() {
     load();
   }
 
+  // DESIGN.md's label/sublabel pattern, reused into the table itself (as
+  // the doc claims) rather than staying picker-only: pairs the name with a
+  // muted cédula sublabel so two similarly-named patients stay
+  // distinguishable at a glance instead of requiring a cross-reference to
+  // a distant column.
   const columns: Column<Patient>[] = [
-    { key: "full_name", header: t("common.name"), sortKey: "search_name", render: (r) => <MaskedValue value={r.full_name} /> },
-    { key: "age", header: t("patients.age"), sortKey: "age", render: (r) => (r.age ?? "-") },
+    {
+      key: "full_name",
+      header: t("common.name"),
+      sortKey: "search_name",
+      render: (r) => (
+        <span>
+          <MaskedValue value={r.full_name} />
+          {r.cedula && (
+            <span className="cell-sublabel">
+              <MaskedValue value={r.cedula.includes("•") ? r.cedula : formatCedula(r.cedula)} />
+            </span>
+          )}
+        </span>
+      ),
+    },
+    { key: "age", header: t("patients.age"), sortKey: "age", render: (r) => (r.age ?? "—") },
     { key: "gender", header: t("patients.gender"), sortKey: "gender" },
     {
       key: "cedula",
@@ -299,6 +318,7 @@ export function Patients() {
           submitLabel={t("common.save")}
           error={formError}
         >
+          <h4>{t("patients.sectionIdentity")}</h4>
           <Field label={t("patients.firstName")}>
             <input
               value={form.first_name}
@@ -335,12 +355,14 @@ export function Patients() {
               value={form.gender}
               onChange={(e) => setForm({ ...form, gender: e.target.value })}
             >
+              <option value="UNSPECIFIED">—</option>
               <option value="MALE">{t("patients.genderMale")}</option>
               <option value="FEMALE">{t("patients.genderFemale")}</option>
               <option value="OTHER">{t("patients.genderOther")}</option>
-              <option value="UNSPECIFIED">—</option>
             </select>
           </Field>
+
+          <h4>{t("patients.sectionContact")}</h4>
           <Field label={t("patients.phone")}>
             <input
               type="tel"
@@ -355,6 +377,21 @@ export function Patients() {
             />
             {phoneError && <span className="field-error">{phoneError}</span>}
           </Field>
+          <Field label={t("patients.email")}>
+            <input
+              type="email"
+              value={form.email}
+              onChange={(e) => setForm({ ...form, email: e.target.value })}
+            />
+          </Field>
+          <Field label={t("patients.address")}>
+            <input
+              value={form.address}
+              onChange={(e) => setForm({ ...form, address: e.target.value })}
+            />
+          </Field>
+
+          <h4>{t("patients.sectionInsurance")}</h4>
           <Field label={t("patients.nss")}>
             <input
               value={form.nss}
@@ -402,19 +439,6 @@ export function Patients() {
                 </option>
               ))}
             </select>
-          </Field>
-          <Field label={t("patients.address")}>
-            <input
-              value={form.address}
-              onChange={(e) => setForm({ ...form, address: e.target.value })}
-            />
-          </Field>
-          <Field label={t("patients.email")}>
-            <input
-              type="email"
-              value={form.email}
-              onChange={(e) => setForm({ ...form, email: e.target.value })}
-            />
           </Field>
         </FormModal>
       )}

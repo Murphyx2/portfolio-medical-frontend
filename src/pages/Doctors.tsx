@@ -22,6 +22,7 @@ export function Doctors() {
   const [form, setForm] = useState(EMPTY);
   const [editId, setEditId] = useState<number | null>(null);
   const [phoneError, setPhoneError] = useState("");
+  const [userError, setUserError] = useState("");
   const [formError, setFormError] = useState("");
   const [showInactive, setShowInactive] = useState(false);
   const {
@@ -68,6 +69,7 @@ export function Doctors() {
     setForm(EMPTY);
     setEditId(null);
     setPhoneError("");
+    setUserError("");
     setFormError("");
     setModal(true);
   }
@@ -83,11 +85,16 @@ export function Doctors() {
     });
     setEditId(d.id);
     setPhoneError("");
+    setUserError("");
     setFormError("");
     setModal(true);
   }
 
   async function submit() {
+    if (!form.user) {
+      setUserError(t("doctors.userRequired"));
+      return;
+    }
     if (!isValidRequiredPhone(form.contact_phone)) {
       setPhoneError(t("common.phoneInvalid"));
       return;
@@ -113,6 +120,15 @@ export function Doctors() {
     await api.post(`/doctors/profiles/${d.id}/restore/`, {});
     load();
   }
+
+  // Only DOCTOR-role accounts are eligible for a new profile; if the
+  // profile being edited is somehow linked to a non-DOCTOR account (role
+  // changed after assignment), keep it selectable so the form doesn't
+  // silently drop it.
+  const eligibleUsers =
+    editId && form.user && !userOptions.some((u) => u.id === form.user && u.role === "DOCTOR")
+      ? userOptions.filter((u) => u.role === "DOCTOR" || u.id === form.user)
+      : userOptions.filter((u) => u.role === "DOCTOR");
 
   const columns: Column<DoctorProfile>[] = [
     { key: "full_name", header: t("doctors.fullName"), sortKey: "user__last_name" },
@@ -197,18 +213,21 @@ export function Doctors() {
           <Field label={t("doctors.user")}>
             <select
               value={form.user}
-              onChange={(e) => setForm({ ...form, user: Number(e.target.value) })}
-              required
+              onChange={(e) => {
+                setForm({ ...form, user: Number(e.target.value) });
+                setUserError("");
+              }}
             >
               <option value={0} disabled>
                 —
               </option>
-              {userOptions.map((u) => (
+              {eligibleUsers.map((u) => (
                 <option key={u.id} value={u.id}>
-                  {u.username} ({u.role})
+                  {u.full_name || u.username} ({u.username})
                 </option>
               ))}
             </select>
+            {userError && <span className="field-error">{userError}</span>}
           </Field>
           <Field label={t("doctors.specialty")}>
             <input

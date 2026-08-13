@@ -339,7 +339,7 @@ export function Patients() {
               placeholder="000-0000000-0"
               inputMode="numeric"
               maxLength={13}
-              required={editId === null}
+              required
               onChange={(e) => setForm({ ...form, cedula: formatCedula(e.target.value) })}
             />
           </Field>

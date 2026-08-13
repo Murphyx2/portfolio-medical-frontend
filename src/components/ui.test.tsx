@@ -91,11 +91,17 @@ describe("FormModal backdrop close", () => {
         rows={rows}
         onEdit={() => {}}
         onDelete={() => {}}
+        getRowLabel={(r) => r.name}
       />,
     );
     expect(screen.getByRole("columnheader", { name: "Acciones" })).toBeInTheDocument();
-    expect(screen.getAllByRole("button", { name: "Editar" })).toHaveLength(2);
-    expect(screen.getAllByRole("button", { name: "Eliminar" })).toHaveLength(2);
+    // Each row's action buttons carry a row-specific aria-label (via
+    // getRowLabel) so a screen reader can tell "Editar Ana" apart from
+    // "Editar Luis" instead of hearing two identical unlabeled buttons.
+    expect(screen.getByRole("button", { name: "Editar Ana" })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Editar Luis" })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Eliminar Ana" })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Eliminar Luis" })).toBeInTheDocument();
   });
 
   it("renders an alert banner when an error is passed to the form", () => {

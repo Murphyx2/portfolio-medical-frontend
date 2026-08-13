@@ -286,6 +286,7 @@ export function Table<T extends { id: number }>({
               return (
                 <th
                   key={c.key}
+                  scope="col"
                   aria-sort={
                     sortable
                       ? active
@@ -313,7 +314,7 @@ export function Table<T extends { id: number }>({
                 </th>
               );
             })}
-            {hasActions && <th>{t("common.actions")}</th>}
+            {hasActions && <th scope="col">{t("common.actions")}</th>}
           </tr>
         </thead>
         <tbody>
@@ -332,7 +333,11 @@ export function Table<T extends { id: number }>({
               {hasActions && (
                 <td className="row-actions">
                   {onEdit && (
-                    <button className="btn small" onClick={() => onEdit(row)}>
+                    <button
+                      className="btn small"
+                      onClick={() => onEdit(row)}
+                      aria-label={`${t("common.edit")} ${getRowLabel?.(row) ?? row.id}`}
+                    >
                       {t("common.edit")}
                     </button>
                   )}
@@ -340,6 +345,7 @@ export function Table<T extends { id: number }>({
                     <button
                       className="btn small danger"
                       onClick={() => setConfirming({ type: "delete", row })}
+                      aria-label={`${t("common.delete")} ${getRowLabel?.(row) ?? row.id}`}
                     >
                       {t("common.delete")}
                     </button>
@@ -348,6 +354,7 @@ export function Table<T extends { id: number }>({
                     <button
                       className="btn small"
                       onClick={() => setConfirming({ type: "restore", row })}
+                      aria-label={`${t("common.restore")} ${getRowLabel?.(row) ?? row.id}`}
                     >
                       {t("common.restore")}
                     </button>

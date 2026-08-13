@@ -13,7 +13,7 @@ const EMPTY = {
   first_name: "",
   last_name: "",
   birth_date: "",
-  gender: "UNSPECIFIED",
+  gender: "",
   phone: "",
   address: "",
   email: "",
@@ -211,6 +211,11 @@ export function Patients() {
     load();
   }
 
+  const genderLabels: Record<string, string> = {
+    MALE: t("patients.genderMale"),
+    FEMALE: t("patients.genderFemale"),
+  };
+
   // DESIGN.md's label/sublabel pattern, reused into the table itself (as
   // the doc claims) rather than staying picker-only: pairs the name with a
   // muted cédula sublabel so two similarly-named patients stay
@@ -233,7 +238,12 @@ export function Patients() {
       ),
     },
     { key: "age", header: t("patients.age"), sortKey: "age", render: (r) => (r.age ?? "—") },
-    { key: "gender", header: t("patients.gender"), sortKey: "gender" },
+    {
+      key: "gender",
+      header: t("patients.gender"),
+      sortKey: "gender",
+      render: (r) => genderLabels[r.gender] ?? r.gender,
+    },
     {
       key: "cedula",
       header: t("patients.cedula"),
@@ -317,128 +327,140 @@ export function Patients() {
           onSubmit={submit}
           submitLabel={t("common.save")}
           error={formError}
+          wide
         >
-          <h4>{t("patients.sectionIdentity")}</h4>
-          <Field label={t("patients.firstName")}>
-            <input
-              value={form.first_name}
-              onChange={(e) => setForm({ ...form, first_name: e.target.value })}
-              required
-            />
-          </Field>
-          <Field label={t("patients.lastName")}>
-            <input
-              value={form.last_name}
-              onChange={(e) => setForm({ ...form, last_name: e.target.value })}
-              required
-            />
-          </Field>
-          <Field label={t("patients.cedula")}>
-            <input
-              value={form.cedula}
-              placeholder="000-0000000-0"
-              inputMode="numeric"
-              maxLength={13}
-              required
-              onChange={(e) => setForm({ ...form, cedula: formatCedula(e.target.value) })}
-            />
-          </Field>
-          <Field label={t("patients.birthDate")}>
-            <input
-              type="date"
-              value={form.birth_date}
-              onChange={(e) => setForm({ ...form, birth_date: e.target.value })}
-            />
-          </Field>
-          <Field label={t("patients.gender")}>
-            <select
-              value={form.gender}
-              onChange={(e) => setForm({ ...form, gender: e.target.value })}
-            >
-              <option value="UNSPECIFIED">—</option>
-              <option value="MALE">{t("patients.genderMale")}</option>
-              <option value="FEMALE">{t("patients.genderFemale")}</option>
-              <option value="OTHER">{t("patients.genderOther")}</option>
-            </select>
-          </Field>
+          <div className="form-columns">
+            <div>
+              <h4>{t("patients.sectionIdentity")}</h4>
+              <Field label={t("patients.firstName")}>
+                <input
+                  value={form.first_name}
+                  onChange={(e) => setForm({ ...form, first_name: e.target.value })}
+                  required
+                />
+              </Field>
+              <Field label={t("patients.lastName")}>
+                <input
+                  value={form.last_name}
+                  onChange={(e) => setForm({ ...form, last_name: e.target.value })}
+                  required
+                />
+              </Field>
+              <Field label={t("patients.cedula")}>
+                <input
+                  value={form.cedula}
+                  placeholder="000-0000000-0"
+                  inputMode="numeric"
+                  maxLength={13}
+                  required
+                  onChange={(e) => setForm({ ...form, cedula: formatCedula(e.target.value) })}
+                />
+              </Field>
+              <Field label={t("patients.birthDate")}>
+                <input
+                  type="date"
+                  value={form.birth_date}
+                  required
+                  onChange={(e) => setForm({ ...form, birth_date: e.target.value })}
+                />
+              </Field>
+              <Field label={t("patients.gender")}>
+                <select
+                  value={form.gender}
+                  required
+                  onChange={(e) => setForm({ ...form, gender: e.target.value })}
+                >
+                  <option value="" disabled>
+                    {t("patients.selectGender")}
+                  </option>
+                  <option value="MALE">{t("patients.genderMale")}</option>
+                  <option value="FEMALE">{t("patients.genderFemale")}</option>
+                </select>
+              </Field>
+            </div>
+
+            <div>
+              <h4>{t("patients.sectionInsurance")}</h4>
+              <Field label={t("patients.nss")}>
+                <input
+                  value={form.nss}
+                  inputMode="numeric"
+                  maxLength={11}
+                  onChange={(e) => setForm({ ...form, nss: stripToDigits(e.target.value).slice(0, 11) })}
+                />
+              </Field>
+              <Field label={t("patients.ars")}>
+                <select
+                  value={form.ars}
+                  onChange={(e) => setForm({ ...form, ars: e.target.value, ars_program: "" })}
+                >
+                  <option value="">—</option>
+                  {arsList.map((a) => (
+                    <option key={a.id} value={a.id}>
+                      {a.name}
+                    </option>
+                  ))}
+                </select>
+              </Field>
+              <Field label={t("patients.arsProgram")}>
+                <select
+                  value={form.ars_program}
+                  onChange={(e) => setForm({ ...form, ars_program: e.target.value })}
+                  disabled={!form.ars}
+                >
+                  <option value="">—</option>
+                  {(selectedArs?.programs ?? []).map((p) => (
+                    <option key={p.id} value={p.id}>
+                      {p.name}
+                    </option>
+                  ))}
+                </select>
+              </Field>
+              <Field label={t("patients.center")}>
+                <select
+                  value={form.center}
+                  onChange={(e) => setForm({ ...form, center: e.target.value })}
+                >
+                  <option value="">—</option>
+                  {centersList.map((c) => (
+                    <option key={c.id} value={c.id}>
+                      {c.name}
+                    </option>
+                  ))}
+                </select>
+              </Field>
+            </div>
+          </div>
 
           <h4>{t("patients.sectionContact")}</h4>
-          <Field label={t("patients.phone")}>
-            <input
-              type="tel"
-              inputMode="tel"
-              value={form.phone}
-              placeholder="(809) 555-1212"
-              maxLength={14}
-              onChange={(e) => {
-                setForm({ ...form, phone: formatPhoneInput(e.target.value) });
-                setPhoneError("");
-              }}
-            />
-            {phoneError && <span className="field-error">{phoneError}</span>}
-          </Field>
-          <Field label={t("patients.email")}>
-            <input
-              type="email"
-              value={form.email}
-              onChange={(e) => setForm({ ...form, email: e.target.value })}
-            />
-          </Field>
+          <div className="form-columns">
+            <Field label={t("patients.phone")}>
+              <input
+                type="tel"
+                inputMode="tel"
+                value={form.phone}
+                placeholder="(809) 555-1212"
+                maxLength={14}
+                onChange={(e) => {
+                  setForm({ ...form, phone: formatPhoneInput(e.target.value) });
+                  setPhoneError("");
+                }}
+              />
+              {phoneError && <span className="field-error">{phoneError}</span>}
+            </Field>
+            <Field label={t("patients.email")}>
+              <input
+                type="email"
+                value={form.email}
+                onChange={(e) => setForm({ ...form, email: e.target.value })}
+              />
+            </Field>
+          </div>
           <Field label={t("patients.address")}>
             <input
               value={form.address}
               onChange={(e) => setForm({ ...form, address: e.target.value })}
             />
-          </Field>
-
-          <h4>{t("patients.sectionInsurance")}</h4>
-          <Field label={t("patients.nss")}>
-            <input
-              value={form.nss}
-              inputMode="numeric"
-              maxLength={11}
-              onChange={(e) => setForm({ ...form, nss: stripToDigits(e.target.value).slice(0, 11) })}
-            />
-          </Field>
-          <Field label={t("patients.ars")}>
-            <select
-              value={form.ars}
-              onChange={(e) => setForm({ ...form, ars: e.target.value, ars_program: "" })}
-            >
-              <option value="">—</option>
-              {arsList.map((a) => (
-                <option key={a.id} value={a.id}>
-                  {a.name}
-                </option>
-              ))}
-            </select>
-          </Field>
-          <Field label={t("patients.arsProgram")}>
-            <select
-              value={form.ars_program}
-              onChange={(e) => setForm({ ...form, ars_program: e.target.value })}
-              disabled={!form.ars}
-            >
-              <option value="">—</option>
-              {(selectedArs?.programs ?? []).map((p) => (
-                <option key={p.id} value={p.id}>
-                  {p.name}
-                </option>
-              ))}
-            </select>
-          </Field>
-          <Field label={t("patients.center")}>
-            <select
-              value={form.center}
-              onChange={(e) => setForm({ ...form, center: e.target.value })}
-            >
-              <option value="">—</option>
-              {centersList.map((c) => (
-                <option key={c.id} value={c.id}>
-                  {c.name}
-                </option>
-              ))}
-            </select>
           </Field>
         </FormModal>
       )}

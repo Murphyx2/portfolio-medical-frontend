@@ -117,12 +117,13 @@ export function Dialog({ title, onClose, children, wide, preventClose }: {
   );
 }
 
-export function FormModal({ title, onClose, onSubmit, children, submitLabel, error }: {
+export function FormModal({ title, onClose, onSubmit, children, submitLabel, error, wide }: {
   title: string;
   onClose: () => void;
   onSubmit: () => void | Promise<void>;
   submitLabel: string;
   error?: string;
+  wide?: boolean;
   children: ReactNode;
 }) {
   const [submitting, setSubmitting] = useState(false);
@@ -140,7 +141,7 @@ export function FormModal({ title, onClose, onSubmit, children, submitLabel, err
   }
 
   return (
-    <Dialog title={title} onClose={onClose} preventClose={submitting}>
+    <Dialog title={title} onClose={onClose} preventClose={submitting} wide={wide}>
       <form onSubmit={handleSubmit}>
         {children}
         {error && (

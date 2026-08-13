@@ -320,6 +320,18 @@ body {
   width: min(860px, 94vw);
 }
 
+.form-columns {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0 2rem;
+}
+
+@media (max-width: 640px) {
+  .form-columns {
+    grid-template-columns: 1fr;
+  }
+}
+
 .modal h3 {
   margin: 0 0 1rem;
   color: var(--mc-primary-dark);

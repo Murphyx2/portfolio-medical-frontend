@@ -89,7 +89,16 @@
     "center": "Center",
     "sectionIdentity": "Identity",
     "sectionContact": "Contact",
-    "sectionInsurance": "Insurance and center"
+    "sectionInsurance": "Insurance and center",
+    "sectionGuardian": "Guardian/Parent",
+    "guardianCheckbox": "Guardian/Parent",
+    "guardianFirstName": "Guardian's first name",
+    "guardianLastName": "Guardian's last name",
+    "guardianCedula": "Guardian's cedula",
+    "guardianNss": "Guardian's NSS",
+    "guardianPhone": "Guardian's phone",
+    "guardianNotOnFile": "No guardian information on file",
+    "guardianCedulaTooltip": "This cedula belongs to the patient's guardian, not the patient"
   },
   "doctors": {
     "title": "Doctors",
@@ -111,7 +120,9 @@
     "address": "Address",
     "phone": "Phone",
     "email": "Email",
-    "doctorsCount": "Doctors"
+    "doctorsCount": "Doctors",
+    "isDefault": "Set as default center",
+    "defaultLabel": "Default"
   },
   "medicines": {
     "title": "Medicines",

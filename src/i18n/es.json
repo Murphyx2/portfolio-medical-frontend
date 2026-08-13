@@ -89,7 +89,16 @@
     "center": "Centro",
     "sectionIdentity": "Identidad",
     "sectionContact": "Contacto",
-    "sectionInsurance": "Seguro y centro"
+    "sectionInsurance": "Seguro y centro",
+    "sectionGuardian": "Tutor/Padre o Madre",
+    "guardianCheckbox": "Tutor/Padre o Madre",
+    "guardianFirstName": "Nombre del tutor",
+    "guardianLastName": "Apellido del tutor",
+    "guardianCedula": "Cédula del tutor",
+    "guardianNss": "NSS del tutor",
+    "guardianPhone": "Teléfono del tutor",
+    "guardianNotOnFile": "No hay información del tutor registrada",
+    "guardianCedulaTooltip": "Esta cédula pertenece al tutor del paciente, no al paciente"
   },
   "doctors": {
     "title": "Médicos",
@@ -111,7 +120,9 @@
     "address": "Dirección",
     "phone": "Teléfono",
     "email": "Correo",
-    "doctorsCount": "Médicos"
+    "doctorsCount": "Médicos",
+    "isDefault": "Establecer como centro predeterminado",
+    "defaultLabel": "Predeterminado"
   },
   "medicines": {
     "title": "Medicamentos",

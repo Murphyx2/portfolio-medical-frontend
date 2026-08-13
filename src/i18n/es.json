@@ -10,6 +10,7 @@
     "medicines": "Medicamentos",
     "appointments": "Citas",
     "records": "Expedientes Médicos",
+    "services": "Servicios",
     "users": "Usuarios",
     "ars": "ARS",
     "logout": "Cerrar sesión"
@@ -120,6 +121,22 @@
     "programs": "Programas",
     "programName": "Nombre del programa",
     "addProgram": "Añadir programa"
+  },
+  "services": {
+    "title": "Servicios",
+    "new": "Nuevo servicio",
+    "simon": "SIMON",
+    "name": "Nombre",
+    "type": "Tipo",
+    "coPago": "Co-pago",
+    "privado": "Privado",
+    "manageTypes": "Gestionar tipos de servicio"
+  },
+  "serviceTypes": {
+    "title": "Tipos de servicio",
+    "new": "Nuevo tipo",
+    "name": "Nombre",
+    "back": "Volver a Servicios"
   },
   "users": {
     "title": "Usuarios",

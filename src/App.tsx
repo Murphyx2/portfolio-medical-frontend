@@ -11,6 +11,8 @@ import { Login } from "./pages/Login";
 import { Medicines } from "./pages/Medicines";
 import { Patients } from "./pages/Patients";
 import { Records } from "./pages/Records";
+import { ServiceTypes } from "./pages/ServiceTypes";
+import { Services } from "./pages/Services";
 import { Users } from "./pages/Users";
 
 export default function App() {
@@ -93,6 +95,26 @@ export default function App() {
           <ProtectedRoute>
             <Layout>
               <Records />
+            </Layout>
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/services"
+        element={
+          <ProtectedRoute>
+            <Layout>
+              <Services />
+            </Layout>
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/services/types"
+        element={
+          <ProtectedRoute>
+            <Layout>
+              <ServiceTypes />
             </Layout>
           </ProtectedRoute>
         }

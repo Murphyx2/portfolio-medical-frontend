@@ -159,6 +159,24 @@ export type AppointmentStatus =
   | "CANCELLED"
   | "NO_SHOW";
 
+export interface ServiceType {
+  id: number;
+  name: string;
+  active: boolean;
+}
+
+export interface Service {
+  id: number;
+  simon: string;
+  name: string;
+  type: number;
+  type_name: string;
+  co_pago: string;
+  privado: string;
+  created_at: string;
+  active: boolean;
+}
+
 export interface Appointment {
   id: number;
   patient: number;

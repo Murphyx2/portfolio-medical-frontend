@@ -11,6 +11,7 @@
     "appointments": "Appointments",
     "records": "Medical Records",
     "services": "Services",
+    "rooms": "Rooms",
     "users": "Users",
     "ars": "ARS",
     "logout": "Log out"
@@ -130,6 +131,25 @@
     "genericName": "Generic (medical) term",
     "commercialName": "Commercial name",
     "concentration": "Concentration"
+  },
+  "rooms": {
+    "title": "Rooms",
+    "new": "New room",
+    "code": "Code",
+    "name": "Name",
+    "type": "Type",
+    "center": "Center",
+    "floorArea": "Floor / area",
+    "capacity": "Capacity",
+    "notes": "Notes",
+    "allTypes": "All types",
+    "allCenters": "All centers",
+    "typeConsultation": "Consultation",
+    "typeProcedure": "Procedure",
+    "typeLaboratory": "Laboratory",
+    "typeImaging": "Imaging",
+    "typeWaiting": "Waiting area",
+    "typeOther": "Other"
   },
   "ars": {
     "title": "ARS Insurers",

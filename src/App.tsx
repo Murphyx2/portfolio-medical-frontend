@@ -11,6 +11,7 @@ import { Login } from "./pages/Login";
 import { Medicines } from "./pages/Medicines";
 import { Patients } from "./pages/Patients";
 import { Records } from "./pages/Records";
+import { Rooms } from "./pages/Rooms";
 import { ServiceTypes } from "./pages/ServiceTypes";
 import { Services } from "./pages/Services";
 import { Users } from "./pages/Users";
@@ -65,6 +66,16 @@ export default function App() {
           <ProtectedRoute>
             <Layout>
               <Medicines />
+            </Layout>
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/rooms"
+        element={
+          <ProtectedRoute>
+            <Layout>
+              <Rooms />
             </Layout>
           </ProtectedRoute>
         }

@@ -11,6 +11,7 @@
     "appointments": "Citas",
     "records": "Expedientes Médicos",
     "services": "Servicios",
+    "rooms": "Salas",
     "users": "Usuarios",
     "ars": "ARS",
     "logout": "Cerrar sesión"
@@ -130,6 +131,25 @@
     "genericName": "Término genérico (médico)",
     "commercialName": "Nombre comercial",
     "concentration": "Concentración"
+  },
+  "rooms": {
+    "title": "Salas",
+    "new": "Nueva sala",
+    "code": "Código",
+    "name": "Nombre",
+    "type": "Tipo",
+    "center": "Centro",
+    "floorArea": "Piso / área",
+    "capacity": "Capacidad",
+    "notes": "Notas",
+    "allTypes": "Todos los tipos",
+    "allCenters": "Todos los centros",
+    "typeConsultation": "Consulta",
+    "typeProcedure": "Procedimiento",
+    "typeLaboratory": "Laboratorio",
+    "typeImaging": "Imágenes",
+    "typeWaiting": "Sala de espera",
+    "typeOther": "Otro"
   },
   "ars": {
     "title": "Aseguradoras ARS",

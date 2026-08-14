@@ -185,6 +185,29 @@ export interface Service {
   active: boolean;
 }
 
+export type RoomType =
+  | "CONSULTATION"
+  | "PROCEDURE"
+  | "LABORATORY"
+  | "IMAGING"
+  | "WAITING"
+  | "OTHER";
+
+export interface Room {
+  id: number;
+  code: string;
+  name: string;
+  room_type: RoomType;
+  center: number;
+  center_name: string;
+  floor_area: string;
+  capacity: number | null;
+  notes: string;
+  created_at: string;
+  updated_at: string;
+  active: boolean;
+}
+
 export interface Appointment {
   id: number;
   patient: number;

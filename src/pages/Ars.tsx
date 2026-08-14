@@ -137,9 +137,11 @@ export function Ars() {
       <Page
         title={t("ars.title")}
         actions={
-          <button className="btn primary" onClick={openNew}>
-            + {t("ars.new")}
-          </button>
+          isAdmin && (
+            <button className="btn primary" onClick={openNew}>
+              + {t("ars.new")}
+            </button>
+          )
         }
       >
         {initialLoading ? (
@@ -169,8 +171,8 @@ export function Ars() {
             <Table
               columns={columns}
               rows={rows}
-              onEdit={openEdit}
-              onDelete={remove}
+              onEdit={isAdmin ? openEdit : undefined}
+              onDelete={isAdmin ? remove : undefined}
               onRestore={isAdmin ? restore : undefined}
               getRowLabel={(r) => r.name}
               isInactive={(r) => !r.active}

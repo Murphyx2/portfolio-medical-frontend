@@ -779,6 +779,10 @@ input[type="radio"]:focus-visible {
 .status-no_show { background: var(--mc-muted); }
 .status-active { background: var(--mc-primary-dark); }
 .status-inactive { background: var(--mc-muted); }
+.status-draft { background: var(--mc-muted); }
+.status-routine { background: var(--mc-muted); }
+.status-urgent { background: #ef6c00; }
+.status-emergency { background: var(--mc-danger); }
 
 .show-inactive-toggle {
   display: flex;
@@ -818,6 +822,24 @@ input[type="radio"]:focus-visible {
 
 .upload-row input[type="file"] {
   flex: 1;
+}
+
+.encounter-summary-card {
+  background: var(--mc-surface-alt, #f4f7f5);
+  border: 1px solid var(--mc-border);
+  border-radius: 8px;
+  padding: 0.75rem 1rem;
+  margin-bottom: 1rem;
+}
+
+.encounter-alert {
+  color: var(--mc-danger);
+  font-weight: 600;
+}
+
+.encounter-line-row {
+  align-items: end;
+  margin-bottom: 0.5rem;
 }
 
 .program-editor {

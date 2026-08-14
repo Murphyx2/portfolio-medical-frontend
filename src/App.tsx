@@ -7,6 +7,7 @@ import { Ars } from "./pages/Ars";
 import { Centers } from "./pages/Centers";
 import { Dashboard } from "./pages/Dashboard";
 import { Doctors } from "./pages/Doctors";
+import { Encounters } from "./pages/Encounters";
 import { Login } from "./pages/Login";
 import { Medicines } from "./pages/Medicines";
 import { Patients } from "./pages/Patients";
@@ -107,6 +108,16 @@ export default function App() {
           <ProtectedRoute>
             <Layout>
               <Appointments />
+            </Layout>
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/encounters"
+        element={
+          <ProtectedRoute>
+            <Layout>
+              <Encounters />
             </Layout>
           </ProtectedRoute>
         }

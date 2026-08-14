@@ -169,7 +169,7 @@ export function FormModal({ title, onClose, onSubmit, children, submitLabel, err
  * instead of `window.alert` — a native OS dialog otherwise breaks out of
  * the design system at the exact moment a destructive action is confirmed.
  */
-export function ConfirmDialog({ title, message, confirmLabel, danger, error, pending, onConfirm, onCancel }: {
+export function ConfirmDialog({ title, message, confirmLabel, danger, error, pending, onConfirm, onCancel, children }: {
   title: string;
   message: string;
   confirmLabel: string;
@@ -178,11 +178,13 @@ export function ConfirmDialog({ title, message, confirmLabel, danger, error, pen
   pending?: boolean;
   onConfirm: () => void;
   onCancel: () => void;
+  children?: ReactNode;
 }) {
   const { t } = useTranslation();
   return (
     <Dialog title={title} onClose={onCancel} preventClose={pending}>
       <p>{message}</p>
+      {children}
       {error && (
         <p className="form-error" role="alert">
           {error}

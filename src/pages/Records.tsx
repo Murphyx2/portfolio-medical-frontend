@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useState, type FormEvent } from "react";
 import { useTranslation } from "react-i18next";
+import { useSearchParams } from "react-router-dom";
 
 import { Dialog, Field, FormModal, MaskedValue, Page, Pagination, SearchableSelect, SearchBar, Spinner, Table, type Column } from "../components/ui";
 import { RoleGate } from "../components/guards";
@@ -59,6 +60,7 @@ export function Records() {
   const [imageError, setImageError] = useState("");
   const [openingId, setOpeningId] = useState<number | null>(null);
   const [uploading, setUploading] = useState(false);
+  const [searchParams] = useSearchParams();
   const {
     page,
     setPage,
@@ -98,6 +100,35 @@ export function Records() {
     // every page/sort/search change (unlike `load`, which re-runs then).
     api.get<Paginated<Patient>>("/patients/?page_size=100").then((r) => setPatients(r.results)).catch(() => {});
   }, []);
+
+  useEffect(() => {
+    // Arriving from Encounters.tsx's "Open Record" action (?patient=<id>):
+    // jump straight to that patient's most recent record, or -- if they
+    // don't have one yet -- open the "new record" form pre-filled for them,
+    // instead of leaving the visitor to search the list manually.
+    const patientId = searchParams.get("patient");
+    if (!patientId) return;
+    (async () => {
+      try {
+        const existing = await api.get<Paginated<MedicalRecord>>(
+          `/medical-records/?patient=${patientId}&page_size=1`,
+        );
+        if (existing.results.length > 0) {
+          await openDetail(existing.results[0]);
+          return;
+        }
+        if (!canCreate) return;
+        const patient = await api.get<Patient>(`/patients/${patientId}/`);
+        setSelectedPatient(patient);
+        setForm({ ...EMPTY_RECORD, patient: patient.id, title: recordTitleFor(patient) });
+        setRecordFormError("");
+        setModal("record");
+      } catch {
+        /* patient/records lookup failed -- leave the list view as-is */
+      }
+    })();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [searchParams]);
 
   async function openDetail(rec: MedicalRecord) {
     setLogForm({ ...EMPTY_LOG, patient: rec.patient });

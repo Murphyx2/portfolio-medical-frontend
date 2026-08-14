@@ -51,6 +51,8 @@ export interface DoctorProfile {
   contact_phone: string;
   contact_email: string;
   bio: string;
+  default_room: number | null;
+  default_room_name: string | null;
   active: boolean;
 }
 
@@ -80,6 +82,8 @@ export interface Patient {
   guardian_cedula: string;
   guardian_nss: string;
   guardian_phone: string;
+  allergies: string;
+  critical_conditions: string;
   created_at: string;
   updated_at: string;
   active: boolean;
@@ -222,5 +226,78 @@ export interface Appointment {
   created_by: number;
   created_by_name: string;
   created_at: string;
+  active: boolean;
+}
+
+export type EncounterStatus = "DRAFT" | "ACTIVE" | "COMPLETED" | "CANCELLED";
+export type EncounterPriority = "ROUTINE" | "URGENT" | "EMERGENCY";
+export type EncounterServiceStatus = "PENDING" | "COMPLETED" | "CANCELLED";
+
+export interface EncounterType {
+  id: number;
+  name: string;
+  requires_diagnosis: boolean;
+  active: boolean;
+}
+
+export interface EncounterPatientSummary {
+  id: number;
+  full_name: string;
+  age: number | null;
+  gender: string;
+  cedula: string;
+  allergies: string;
+  critical_conditions: string;
+  ars_name: string | null;
+}
+
+export interface EncounterDiagnosis {
+  id?: number;
+  description: string;
+  is_primary: boolean;
+}
+
+export interface EncounterService {
+  id?: number;
+  service: number;
+  service_name?: string;
+  doctor: number | null;
+  doctor_name?: string | null;
+  quantity: number;
+  notes: string;
+  status: EncounterServiceStatus;
+}
+
+export interface Encounter {
+  id: number;
+  encounter_number: string | null;
+  encounter_type: number;
+  encounter_type_name: string;
+  patient: number;
+  patient_info: EncounterPatientSummary;
+  doctor: number;
+  doctor_info: { id: number; full_name: string; specialty: string };
+  referring_doctor_name: string;
+  room: number | null;
+  room_name: string | null;
+  center: number | null;
+  center_name: string | null;
+  status: EncounterStatus;
+  priority: EncounterPriority;
+  admitted_at: string | null;
+  completed_at: string | null;
+  chief_complaint: string;
+  cancel_reason: string;
+  ars: number | null;
+  ars_name: string | null;
+  ars_program: number | null;
+  ars_program_name: string | null;
+  authorization_number: string;
+  diagnoses: EncounterDiagnosis[];
+  services: EncounterService[];
+  created_by: number;
+  created_by_name: string;
+  created_at: string;
+  updated_at: string;
   active: boolean;
 }

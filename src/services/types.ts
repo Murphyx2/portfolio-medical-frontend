@@ -36,6 +36,7 @@ export interface MedicalCenter {
   address: string;
   phone: string;
   email: string;
+  is_default: boolean;
   doctor_count: number;
   active: boolean;
 }
@@ -72,6 +73,13 @@ export interface Patient {
   ars_program_name: string | null;
   center: number | null;
   center_name: string | null;
+  center_code: string | null;
+  has_guardian: boolean;
+  guardian_first_name: string;
+  guardian_last_name: string;
+  guardian_cedula: string;
+  guardian_nss: string;
+  guardian_phone: string;
   created_at: string;
   updated_at: string;
   active: boolean;

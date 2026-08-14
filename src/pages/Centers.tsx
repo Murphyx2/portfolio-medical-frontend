@@ -9,7 +9,7 @@ import { useAuth } from "../store/auth";
 import { flattenError } from "../utils/errors";
 import { formatPhone, formatPhoneInput, isValidRequiredPhone } from "../utils/phone";
 
-const EMPTY = { name: "", code: "", address: "", phone: "", email: "" };
+const EMPTY = { name: "", code: "", address: "", phone: "", email: "", is_default: false };
 
 export function Centers() {
   const { t } = useTranslation();
@@ -66,7 +66,14 @@ export function Centers() {
   }
 
   function openEdit(c: MedicalCenter) {
-    setForm({ name: c.name, code: c.code, address: c.address, phone: formatPhone(c.phone), email: c.email });
+    setForm({
+      name: c.name,
+      code: c.code,
+      address: c.address,
+      phone: formatPhone(c.phone),
+      email: c.email,
+      is_default: c.is_default,
+    });
     setEditId(c.id);
     setPhoneError("");
     setFormError("");
@@ -102,7 +109,17 @@ export function Centers() {
 
   const columns: Column<MedicalCenter>[] = [
     { key: "name", header: t("centers.name"), sortKey: "name" },
-    { key: "code", header: t("centers.code"), sortKey: "code" },
+    {
+      key: "code",
+      header: t("centers.code"),
+      sortKey: "code",
+      render: (r) => (
+        <span>
+          {r.code}
+          {r.is_default && <span className="cell-sublabel">{t("centers.defaultLabel")}</span>}
+        </span>
+      ),
+    },
     { key: "address", header: t("centers.address"), sortKey: "address" },
     { key: "phone", header: t("centers.phone"), sortKey: "phone", render: (r) => formatPhone(r.phone) },
     { key: "email", header: t("centers.email"), sortKey: "email" },
@@ -208,6 +225,14 @@ export function Centers() {
           <Field label={t("centers.email")}>
             <input type="email" value={form.email} onChange={(e) => setForm({ ...form, email: e.target.value })} />
           </Field>
+          <label className="show-inactive-toggle">
+            <input
+              type="checkbox"
+              checked={form.is_default}
+              onChange={(e) => setForm({ ...form, is_default: e.target.checked })}
+            />
+            {t("centers.isDefault")}
+          </label>
         </FormModal>
       )}
     </Page>

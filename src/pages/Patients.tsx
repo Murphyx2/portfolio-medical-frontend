@@ -1,13 +1,13 @@
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState, type ReactNode } from "react";
 import { useTranslation } from "react-i18next";
 
-import { Field, FormModal, MaskedValue, Page, Pagination, SearchBar, Spinner, Table, type Column, type SortDir } from "../components/ui";
+import { Dialog, Field, FormModal, MaskedValue, Page, Pagination, SearchBar, Spinner, Table, type Column, type SortDir } from "../components/ui";
 import { useListControls } from "../hooks/useListControls";
 import { api, ApiError } from "../services/api";
 import type { ARS, MedicalCenter, Paginated, Patient } from "../services/types";
 import { useAuth } from "../store/auth";
 import { flattenError } from "../utils/errors";
-import { formatPhone, formatPhoneInput, isValidPhone, stripToDigits } from "../utils/phone";
+import { formatPhone, formatPhoneInput, isValidPhone, isValidRequiredPhone, stripToDigits } from "../utils/phone";
 
 const EMPTY = {
   first_name: "",
@@ -22,6 +22,12 @@ const EMPTY = {
   ars: "",
   ars_program: "",
   center: "",
+  has_guardian: true,
+  guardian_first_name: "",
+  guardian_last_name: "",
+  guardian_cedula: "",
+  guardian_nss: "",
+  guardian_phone: "",
 };
 
 function formatCedula(value: string): string {
@@ -29,6 +35,24 @@ function formatCedula(value: string): string {
   if (digits.length <= 3) return digits;
   if (digits.length <= 10) return `${digits.slice(0, 3)}-${digits.slice(3)}`;
   return `${digits.slice(0, 3)}-${digits.slice(3, 10)}-${digits.slice(10)}`;
+}
+
+// Client-side mirror of the backend's age arithmetic, used only to decide
+// whether to show the Guardian/Parent section -- the server remains the
+// source of truth via PatientSerializer.validate(). Returns null (rather
+// than throwing) on an empty/unparseable date so the section just stays
+// hidden instead of crashing the form.
+function calcAge(birthDateStr: string): number | null {
+  if (!birthDateStr) return null;
+  const bd = new Date(birthDateStr);
+  if (Number.isNaN(bd.getTime())) return null;
+  const today = new Date();
+  let age = today.getFullYear() - bd.getFullYear();
+  const beforeBirthday =
+    today.getMonth() < bd.getMonth() ||
+    (today.getMonth() === bd.getMonth() && today.getDate() < bd.getDate());
+  if (beforeBirthday) age--;
+  return age;
 }
 
 export function Patients() {
@@ -39,9 +63,12 @@ export function Patients() {
   const [arsList, setArsList] = useState<ARS[]>([]);
   const [centersList, setCentersList] = useState<MedicalCenter[]>([]);
   const [modal, setModal] = useState(false);
+  const [detail, setDetail] = useState<Patient | null>(null);
+  const [openingId, setOpeningId] = useState<number | null>(null);
   const [form, setForm] = useState(EMPTY);
   const [editId, setEditId] = useState<number | null>(null);
   const [phoneError, setPhoneError] = useState("");
+  const [guardianPhoneError, setGuardianPhoneError] = useState("");
   const [formError, setFormError] = useState("");
   const [showInactive, setShowInactive] = useState(false);
   const {
@@ -93,6 +120,7 @@ export function Patients() {
   }, []);
 
   const selectedArs = arsList.find((a) => String(a.id) === form.ars);
+  const isMinor = (calcAge(form.birth_date) ?? 99) < 18;
 
   // cedula/nss/phone/email/age are encrypted at rest: the backend can't sort
   // them in SQL and simply ignores an `?ordering=` request for them (falls
@@ -148,9 +176,11 @@ export function Patients() {
   }, [rows, clientSort]);
 
   function openNew() {
-    setForm(EMPTY);
+    const defaultCenter = centersList.find((c) => c.is_default);
+    setForm({ ...EMPTY, center: defaultCenter ? String(defaultCenter.id) : "" });
     setEditId(null);
     setPhoneError("");
+    setGuardianPhoneError("");
     setFormError("");
     setModal(true);
   }
@@ -169,9 +199,16 @@ export function Patients() {
       ars: p.ars ? String(p.ars) : "",
       ars_program: p.ars_program ? String(p.ars_program) : "",
       center: p.center ? String(p.center) : "",
+      has_guardian: p.has_guardian,
+      guardian_first_name: p.guardian_first_name,
+      guardian_last_name: p.guardian_last_name,
+      guardian_cedula: p.guardian_cedula,
+      guardian_nss: p.guardian_nss,
+      guardian_phone: formatPhone(p.guardian_phone),
     });
     setEditId(p.id);
     setPhoneError("");
+    setGuardianPhoneError("");
     setFormError("");
     setModal(true);
   }
@@ -181,11 +218,17 @@ export function Patients() {
       setPhoneError(t("common.phoneInvalid"));
       return;
     }
+    if (isMinor && form.has_guardian && !isValidRequiredPhone(form.guardian_phone)) {
+      setGuardianPhoneError(t("common.phoneInvalid"));
+      return;
+    }
     const body = {
       ...form,
       birth_date: form.birth_date || null,
       phone: form.phone.replace(/\D/g, ""),
       cedula: form.cedula.replace(/\D/g, ""),
+      guardian_cedula: form.guardian_cedula.replace(/\D/g, ""),
+      guardian_phone: form.guardian_phone.replace(/\D/g, ""),
       ars: form.ars ? Number(form.ars) : null,
       ars_program: form.ars_program ? Number(form.ars_program) : null,
       center: form.center ? Number(form.center) : null,
@@ -211,31 +254,61 @@ export function Patients() {
     load();
   }
 
+  async function openDetail(p: Patient) {
+    setOpeningId(p.id);
+    try {
+      const full = await api.get<Patient>(`/patients/${p.id}/`);
+      setDetail(full);
+    } finally {
+      setOpeningId(null);
+    }
+  }
+
   const genderLabels: Record<string, string> = {
     MALE: t("patients.genderMale"),
     FEMALE: t("patients.genderFemale"),
   };
 
-  // DESIGN.md's label/sublabel pattern, reused into the table itself (as
-  // the doc claims) rather than staying picker-only: pairs the name with a
-  // muted cédula sublabel so two similarly-named patients stay
-  // distinguishable at a glance instead of requiring a cross-reference to
-  // a distant column.
+  // Matches Records.tsx's click-to-detail pattern: Name/Cedula/NSS cells
+  // become links that open a read-only "complete information" dialog
+  // instead of trying to fit every field into the table.
+  const openDetailLink = (r: Patient, content: ReactNode) => (
+    <button type="button" className="row-link" disabled={openingId === r.id} onClick={() => openDetail(r)}>
+      {openingId === r.id ? t("common.loading") : content}
+    </button>
+  );
+
+  // Small inline marker (mirrors MaskedValue's lock-icon mechanism: icon +
+  // title tooltip + sr-only label) shown before a guardian's cedula in the
+  // table, so staff don't mistake it for the patient's own document.
+  function guardianCedulaIcon() {
+    const label = t("patients.guardianCedulaTooltip");
+    return (
+      <span className="masked-value" title={label}>
+        <svg
+          className="masked-value-icon"
+          width="12"
+          height="12"
+          viewBox="0 0 16 16"
+          fill="none"
+          stroke="currentColor"
+          strokeWidth="1.5"
+          aria-hidden="true"
+        >
+          <circle cx="8" cy="5.5" r="2.5" />
+          <path d="M3 13c0-2.7 2.2-4.75 5-4.75s5 2.05 5 4.75" />
+        </svg>
+        <span className="sr-only">{label}: </span>
+      </span>
+    );
+  }
+
   const columns: Column<Patient>[] = [
     {
       key: "full_name",
       header: t("common.name"),
       sortKey: "search_name",
-      render: (r) => (
-        <span>
-          <MaskedValue value={r.full_name} />
-          {r.cedula && (
-            <span className="cell-sublabel">
-              <MaskedValue value={r.cedula.includes("•") ? r.cedula : formatCedula(r.cedula)} />
-            </span>
-          )}
-        </span>
-      ),
+      render: (r) => openDetailLink(r, <MaskedValue value={r.full_name} />),
     },
     { key: "age", header: t("patients.age"), sortKey: "age", render: (r) => (r.age ?? "—") },
     {
@@ -248,14 +321,28 @@ export function Patients() {
       key: "cedula",
       header: t("patients.cedula"),
       sortKey: "cedula",
-      render: (r) => <MaskedValue value={r.cedula ? (r.cedula.includes("•") ? r.cedula : formatCedula(r.cedula)) : ""} />,
+      render: (r) => {
+        // For a minor with guardian info on file, this column shows the
+        // guardian's cedula instead of the patient's own -- the same value
+        // can therefore legitimately repeat across sibling rows. The
+        // patient's own cedula is always shown in the detail modal.
+        const showsGuardian = (r.age ?? 99) < 18 && r.has_guardian && !!r.guardian_cedula;
+        const raw = showsGuardian ? r.guardian_cedula : r.cedula;
+        const formatted = raw ? (raw.includes("•") ? raw : formatCedula(raw)) : "";
+        return openDetailLink(
+          r,
+          <>
+            {showsGuardian && guardianCedulaIcon()}
+            <MaskedValue value={formatted} />
+          </>,
+        );
+      },
     },
-    { key: "nss", header: t("patients.nss"), sortKey: "nss", render: (r) => <MaskedValue value={r.nss} /> },
+    { key: "nss", header: t("patients.nss"), sortKey: "nss", render: (r) => openDetailLink(r, <MaskedValue value={r.nss} />) },
     { key: "phone", header: t("patients.phone"), sortKey: "phone", render: (r) => <MaskedValue value={formatPhone(r.phone)} /> },
     { key: "ars_name", header: t("patients.ars"), sortKey: "ars__name" },
     { key: "ars_program_name", header: t("patients.arsProgram"), sortKey: "ars_program__name" },
-    { key: "email", header: t("common.email"), sortKey: "email", render: (r) => <MaskedValue value={r.email} /> },
-    { key: "center_name", header: t("patients.center"), sortKey: "center__name", render: (r) => r.center_name ?? "—" },
+    { key: "center_name", header: t("patients.center"), sortKey: "center__code", render: (r) => r.center_code ?? "—" },
     ...(isAdmin
       ? [
           {
@@ -432,6 +519,75 @@ export function Patients() {
             </div>
           </div>
 
+          {isMinor && (
+            <>
+              <h4>{t("patients.sectionGuardian")}</h4>
+              <label className="show-inactive-toggle">
+                <input
+                  type="checkbox"
+                  checked={form.has_guardian}
+                  onChange={(e) => setForm({ ...form, has_guardian: e.target.checked })}
+                />
+                {t("patients.guardianCheckbox")}
+              </label>
+              {form.has_guardian && (
+                <>
+                  <div className="form-columns">
+                    <Field label={t("patients.guardianFirstName")}>
+                      <input
+                        value={form.guardian_first_name}
+                        required
+                        onChange={(e) => setForm({ ...form, guardian_first_name: e.target.value })}
+                      />
+                    </Field>
+                    <Field label={t("patients.guardianLastName")}>
+                      <input
+                        value={form.guardian_last_name}
+                        required
+                        onChange={(e) => setForm({ ...form, guardian_last_name: e.target.value })}
+                      />
+                    </Field>
+                  </div>
+                  <div className="form-columns">
+                    <Field label={t("patients.guardianCedula")}>
+                      <input
+                        value={form.guardian_cedula}
+                        placeholder="000-0000000-0"
+                        inputMode="numeric"
+                        maxLength={13}
+                        required
+                        onChange={(e) => setForm({ ...form, guardian_cedula: formatCedula(e.target.value) })}
+                      />
+                    </Field>
+                    <Field label={t("patients.guardianPhone")}>
+                      <input
+                        type="tel"
+                        inputMode="tel"
+                        value={form.guardian_phone}
+                        placeholder="(809) 555-1212"
+                        maxLength={14}
+                        required
+                        onChange={(e) => {
+                          setForm({ ...form, guardian_phone: formatPhoneInput(e.target.value) });
+                          setGuardianPhoneError("");
+                        }}
+                      />
+                      {guardianPhoneError && <span className="field-error">{guardianPhoneError}</span>}
+                    </Field>
+                  </div>
+                  <Field label={t("patients.guardianNss")}>
+                    <input
+                      value={form.guardian_nss}
+                      inputMode="numeric"
+                      maxLength={11}
+                      onChange={(e) => setForm({ ...form, guardian_nss: stripToDigits(e.target.value).slice(0, 11) })}
+                    />
+                  </Field>
+                </>
+              )}
+            </>
+          )}
+
           <h4>{t("patients.sectionContact")}</h4>
           <div className="form-columns">
             <Field label={t("patients.phone")}>
@@ -463,6 +619,103 @@ export function Patients() {
             />
           </Field>
         </FormModal>
+      )}
+
+      {detail && (
+        <Dialog title={<MaskedValue value={detail.full_name} />} onClose={() => setDetail(null)} wide>
+          <div className="form-columns">
+            <div>
+              <h4>{t("patients.sectionIdentity")}</h4>
+              <div className="kv-grid">
+                <div>
+                  <b>{t("patients.cedula")}:</b>{" "}
+                  <MaskedValue value={detail.cedula ? (detail.cedula.includes("•") ? detail.cedula : formatCedula(detail.cedula)) : ""} />
+                </div>
+                <div>
+                  <b>{t("patients.birthDate")}:</b> {detail.birth_date ?? "—"}
+                </div>
+                <div>
+                  <b>{t("patients.age")}:</b> {detail.age ?? "—"}
+                </div>
+                <div>
+                  <b>{t("patients.gender")}:</b> {genderLabels[detail.gender] ?? detail.gender}
+                </div>
+              </div>
+            </div>
+            <div>
+              <h4>{t("patients.sectionInsurance")}</h4>
+              <div className="kv-grid">
+                <div>
+                  <b>{t("patients.nss")}:</b> <MaskedValue value={detail.nss} />
+                </div>
+                <div>
+                  <b>{t("patients.ars")}:</b> {detail.ars_name ?? "—"}
+                </div>
+                <div>
+                  <b>{t("patients.arsProgram")}:</b> {detail.ars_program_name ?? "—"}
+                </div>
+                <div>
+                  <b>{t("patients.center")}:</b> {detail.center_name ?? "—"}
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <h4>{t("patients.sectionContact")}</h4>
+          <div className="kv-grid">
+            <div>
+              <b>{t("patients.phone")}:</b> <MaskedValue value={formatPhone(detail.phone)} />
+            </div>
+            <div>
+              <b>{t("common.email")}:</b> <MaskedValue value={detail.email} />
+            </div>
+            <div>
+              <b>{t("patients.address")}:</b> <MaskedValue value={detail.address} />
+            </div>
+          </div>
+
+          {(detail.age ?? 99) < 18 && (
+            <>
+              <h4>{t("patients.sectionGuardian")}</h4>
+              {detail.has_guardian ? (
+                <div className="kv-grid">
+                  <div>
+                    <b>{t("patients.guardianFirstName")}:</b> <MaskedValue value={detail.guardian_first_name} />
+                  </div>
+                  <div>
+                    <b>{t("patients.guardianLastName")}:</b> <MaskedValue value={detail.guardian_last_name} />
+                  </div>
+                  <div>
+                    <b>{t("patients.guardianCedula")}:</b>{" "}
+                    <MaskedValue
+                      value={
+                        detail.guardian_cedula
+                          ? detail.guardian_cedula.includes("•")
+                            ? detail.guardian_cedula
+                            : formatCedula(detail.guardian_cedula)
+                          : ""
+                      }
+                    />
+                  </div>
+                  <div>
+                    <b>{t("patients.guardianNss")}:</b> <MaskedValue value={detail.guardian_nss} />
+                  </div>
+                  <div>
+                    <b>{t("patients.guardianPhone")}:</b> <MaskedValue value={formatPhone(detail.guardian_phone)} />
+                  </div>
+                </div>
+              ) : (
+                <p className="muted">{t("patients.guardianNotOnFile")}</p>
+              )}
+            </>
+          )}
+
+          <div className="modal-actions">
+            <button className="btn ghost" onClick={() => setDetail(null)}>
+              {t("common.close")}
+            </button>
+          </div>
+        </Dialog>
       )}
     </Page>
   );

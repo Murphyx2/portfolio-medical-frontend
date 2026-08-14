@@ -185,6 +185,28 @@ export interface Service {
   active: boolean;
 }
 
+export interface RoomType {
+  id: number;
+  name: string;
+  active: boolean;
+}
+
+export interface Room {
+  id: number;
+  code: string;
+  name: string;
+  room_type: number;
+  room_type_name: string;
+  center: number;
+  center_name: string;
+  floor_area: string;
+  capacity: number | null;
+  notes: string;
+  created_at: string;
+  updated_at: string;
+  active: boolean;
+}
+
 export interface Appointment {
   id: number;
   patient: number;

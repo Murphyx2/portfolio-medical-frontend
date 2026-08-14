@@ -418,6 +418,33 @@ export function MaskedValue({ value }: { value?: string | null }) {
   );
 }
 
+/** Marker shown before a guardian's cedula (icon + tooltip + sr-only label,
+ * same mechanism as MaskedValue's lock icon) so staff don't mistake it for
+ * the patient's own document. Shared by Patients.tsx and Encounters.tsx,
+ * wherever a minor's guardian cedula is displayed in place of their own. */
+export function GuardianCedulaIcon() {
+  const { t } = useTranslation();
+  const label = t("patients.guardianCedulaTooltip");
+  return (
+    <span className="masked-value" title={label}>
+      <svg
+        className="masked-value-icon"
+        width="12"
+        height="12"
+        viewBox="0 0 16 16"
+        fill="none"
+        stroke="currentColor"
+        strokeWidth="1.5"
+        aria-hidden="true"
+      >
+        <circle cx="8" cy="5.5" r="2.5" />
+        <path d="M3 13c0-2.7 2.2-4.75 5-4.75s5 2.05 5 4.75" />
+      </svg>
+      <span className="sr-only">{label}: </span>
+    </span>
+  );
+}
+
 export function SearchBar({ value, onChange, placeholder, label, onSubmit }: {
   value: string;
   onChange: (value: string) => void;

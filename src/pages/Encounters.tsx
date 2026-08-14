@@ -1,12 +1,14 @@
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useState, type ReactNode } from "react";
 import { useTranslation } from "react-i18next";
 import { useNavigate } from "react-router-dom";
 
 import { PatientFormModal } from "../components/PatientFormModal";
 import {
   ConfirmDialog,
+  Dialog,
   Field,
   FormModal,
+  GuardianCedulaIcon,
   MaskedValue,
   Page,
   Pagination,
@@ -51,6 +53,22 @@ const EMPTY_FORM = {
 
 type ConfirmAction = "admit" | "cancel" | "complete" | "delete" | "restore";
 
+// Local (not UTC) YYYY-MM-DD -- admissions are handled on a daily basis, so
+// the date selector must match the browser's own "today", not a UTC one
+// that could be a day off depending on the visitor's timezone.
+function todayLocalISO(): string {
+  const d = new Date();
+  const pad = (n: number) => String(n).padStart(2, "0");
+  return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
+}
+
+function nextLocalISO(dateStr: string): string {
+  const d = new Date(`${dateStr}T00:00:00`);
+  d.setDate(d.getDate() + 1);
+  const pad = (n: number) => String(n).padStart(2, "0");
+  return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
+}
+
 export function Encounters() {
   const { t } = useTranslation();
   const { user } = useAuth();
@@ -72,6 +90,8 @@ export function Encounters() {
   const [services, setServices] = useState<Service[]>([]);
   const [showInactive, setShowInactive] = useState(false);
   const [statusFilter, setStatusFilter] = useState("");
+  const [dateFilter, setDateFilter] = useState(todayLocalISO);
+  const [detail, setDetail] = useState<Encounter | null>(null);
 
   const [modal, setModal] = useState(false);
   const [editingEncounter, setEditingEncounter] = useState<Encounter | null>(null);
@@ -107,7 +127,12 @@ export function Encounters() {
     query,
   } = useListControls({ key: "created_at", dir: "desc" });
 
-  const qs = query({ include_inactive: showInactive ? "true" : "", status: statusFilter });
+  const qs = query({
+    include_inactive: showInactive ? "true" : "",
+    status: statusFilter,
+    created_at__gte: `${dateFilter}T00:00:00`,
+    created_at__lt: `${nextLocalISO(dateFilter)}T00:00:00`,
+  });
 
   const load = useCallback(() => {
     runList((signal) => api.get<Paginated<Encounter>>(`/encounters/?${qs}`, { signal }))
@@ -138,8 +163,6 @@ export function Encounters() {
       .catch(() => []);
   }, []);
 
-  const selectedArs = arsList.find((a) => String(a.id) === form.ars);
-
   const patientSummary: EncounterPatientSummary | null = editingEncounter
     ? editingEncounter.patient_info
     : selectedPatient
@@ -151,9 +174,22 @@ export function Encounters() {
           cedula: selectedPatient.cedula,
           allergies: selectedPatient.allergies,
           critical_conditions: selectedPatient.critical_conditions,
+          ars: selectedPatient.ars,
           ars_name: selectedPatient.ars_name,
+          ars_program: selectedPatient.ars_program,
+          has_guardian: selectedPatient.has_guardian,
+          guardian_cedula: selectedPatient.guardian_cedula,
         }
       : null;
+
+  // ARS/Program are locked to the patient's own values as soon as one is on
+  // file -- editable only when the patient doesn't have that information yet
+  // (an encounter-only choice in that case, never written back to the patient).
+  const arsLocked = patientSummary?.ars != null;
+  const arsProgramLocked = patientSummary?.ars_program != null;
+  const effectiveArs = arsLocked ? String(patientSummary!.ars) : form.ars;
+  const effectiveArsProgram = arsProgramLocked ? String(patientSummary!.ars_program) : form.ars_program;
+  const selectedArs = arsList.find((a) => String(a.id) === effectiveArs);
 
   function openNew() {
     setEditingEncounter(null);
@@ -251,8 +287,8 @@ export function Encounters() {
       room: form.room || null,
       chief_complaint: form.chief_complaint,
       priority: form.priority,
-      ars: form.ars ? Number(form.ars) : null,
-      ars_program: form.ars_program ? Number(form.ars_program) : null,
+      ars: effectiveArs ? Number(effectiveArs) : null,
+      ars_program: effectiveArsProgram ? Number(effectiveArsProgram) : null,
       authorization_number: form.authorization_number,
       diagnoses: form.diagnoses.filter((d) => d.description.trim()),
       services: form.services.filter((s) => s.service),
@@ -338,10 +374,44 @@ export function Encounters() {
       })()
     : null;
 
+  // Matches Patients.tsx's click-to-detail pattern: the patient name opens a
+  // read-only "full admission details" dialog instead of cramming doctor
+  // full name/specialty, referring doctor, diagnoses, services, coverage,
+  // and timestamps into the list table.
+  const openDetailLink = (r: Encounter, content: ReactNode) => (
+    <button type="button" className="row-link" onClick={() => setDetail(r)}>
+      {content}
+    </button>
+  );
+
   const columns: Column<Encounter>[] = [
     { key: "encounter_number", header: t("encounters.number"), render: (r) => r.encounter_number ?? "—" },
-    { key: "patient", header: t("encounters.patient"), sortKey: "patient__search_name", render: (r) => <MaskedValue value={r.patient_info.full_name} /> },
-    { key: "doctor", header: t("encounters.doctor"), sortKey: "doctor__user__last_name", render: (r) => r.doctor_info.full_name },
+    {
+      key: "patient",
+      header: t("encounters.patient"),
+      sortKey: "patient__search_name",
+      render: (r) => openDetailLink(r, <MaskedValue value={r.patient_info.full_name} />),
+    },
+    {
+      key: "cedula",
+      header: t("encounters.cedula"),
+      render: (r) => {
+        // A minor's guardian cedula is shown in place of their own, same
+        // rule (and the same icon marker) as Patients.tsx's cedula column.
+        const p = r.patient_info;
+        const showsGuardian = (p.age ?? 99) < 18 && p.has_guardian && !!p.guardian_cedula;
+        const raw = showsGuardian ? p.guardian_cedula : p.cedula;
+        const formatted = raw ? (raw.includes("•") ? raw : formatCedula(raw)) : "";
+        return openDetailLink(
+          r,
+          <>
+            {showsGuardian && <GuardianCedulaIcon />}
+            <MaskedValue value={formatted} />
+          </>,
+        );
+      },
+    },
+    { key: "doctor", header: t("encounters.doctor"), sortKey: "doctor__code", render: (r) => r.doctor_info.code },
     { key: "encounter_type_name", header: t("encounters.type") },
     { key: "room_name", header: t("encounters.room"), render: (r) => r.room_name ?? "—" },
     { key: "priority", header: t("encounters.priority"), sortKey: "priority", render: (r) => <span className={`badge status-${r.priority.toLowerCase()}`}>{priorityLabel(r.priority)}</span> },
@@ -394,6 +464,13 @@ export function Encounters() {
       ) : (
         <>
           <div className="list-toolbar">
+            <input
+              type="date"
+              className="date-filter"
+              aria-label={t("encounters.date")}
+              value={dateFilter}
+              onChange={(e) => setDateFilter(e.target.value || todayLocalISO())}
+            />
             <SearchBar
               value={search}
               onChange={setSearch}
@@ -569,9 +646,16 @@ export function Encounters() {
           </button>
 
           <h4>{t("encounters.sectionCoverage")}</h4>
+          {(arsLocked || arsProgramLocked) && (
+            <p className="muted">{t("encounters.arsLockedNote")}</p>
+          )}
           <div className="form-columns">
             <Field label={t("patients.ars")}>
-              <select value={form.ars} onChange={(e) => setForm({ ...form, ars: e.target.value, ars_program: "" })}>
+              <select
+                value={effectiveArs}
+                disabled={arsLocked}
+                onChange={(e) => setForm({ ...form, ars: e.target.value, ars_program: "" })}
+              >
                 <option value="">—</option>
                 {arsList.map((a) => (
                   <option key={a.id} value={a.id}>{a.name}</option>
@@ -579,7 +663,11 @@ export function Encounters() {
               </select>
             </Field>
             <Field label={t("patients.arsProgram")}>
-              <select value={form.ars_program} onChange={(e) => setForm({ ...form, ars_program: e.target.value })} disabled={!form.ars}>
+              <select
+                value={effectiveArsProgram}
+                disabled={arsProgramLocked || !effectiveArs}
+                onChange={(e) => setForm({ ...form, ars_program: e.target.value })}
+              >
                 <option value="">—</option>
                 {(selectedArs?.programs ?? []).map((p) => (
                   <option key={p.id} value={p.id}>{p.name}</option>
@@ -591,6 +679,103 @@ export function Encounters() {
             </Field>
           </div>
         </FormModal>
+      )}
+
+      {detail && (
+        <Dialog
+          title={
+            <>
+              {detail.encounter_number ?? t("encounters.title")} · <MaskedValue value={detail.patient_info.full_name} />
+            </>
+          }
+          onClose={() => setDetail(null)}
+          wide
+        >
+          <div className="encounter-detail-badges">
+            <span className={`badge status-${detail.status.toLowerCase()}`}>{statusLabel(detail.status)}</span>
+            <span className={`badge status-${detail.priority.toLowerCase()}`}>{priorityLabel(detail.priority)}</span>
+          </div>
+
+          <div className="form-columns">
+            <div>
+              <h4>{t("encounters.sectionPatient")}</h4>
+              <div className="kv-grid">
+                <div><b>{t("patients.age")}:</b> {detail.patient_info.age ?? "—"}</div>
+                <div><b>{t("patients.gender")}:</b> {detail.patient_info.gender || "—"}</div>
+                <div>
+                  <b>{t("patients.cedula")}:</b>{" "}
+                  <MaskedValue
+                    value={detail.patient_info.cedula ? (detail.patient_info.cedula.includes("•") ? detail.patient_info.cedula : formatCedula(detail.patient_info.cedula)) : ""}
+                  />
+                </div>
+                <div><b>{t("patients.ars")}:</b> {detail.patient_info.ars_name ?? "—"}</div>
+                {detail.patient_info.allergies && (
+                  <div className="encounter-alert"><b>{t("patients.allergies")}:</b> <MaskedValue value={detail.patient_info.allergies} /></div>
+                )}
+                {detail.patient_info.critical_conditions && (
+                  <div className="encounter-alert"><b>{t("patients.criticalConditions")}:</b> <MaskedValue value={detail.patient_info.critical_conditions} /></div>
+                )}
+              </div>
+            </div>
+            <div>
+              <h4>{t("encounters.sectionAdmission")}</h4>
+              <div className="kv-grid">
+                <div><b>{t("encounters.doctor")}:</b> {detail.doctor_info.full_name} ({detail.doctor_info.specialty})</div>
+                <div><b>{t("encounters.type")}:</b> {detail.encounter_type_name}</div>
+                <div><b>{t("encounters.room")}:</b> {detail.room_name ?? "—"}</div>
+                <div><b>{t("encounters.referringDoctor")}:</b> {detail.referring_doctor_name || "—"}</div>
+                <div><b>{t("encounters.createdAt")}:</b> {new Date(detail.created_at).toLocaleString()}</div>
+                {detail.admitted_at && <div><b>{t("encounters.admit")}:</b> {new Date(detail.admitted_at).toLocaleString()}</div>}
+                {detail.completed_at && <div><b>{t("encounters.complete")}:</b> {new Date(detail.completed_at).toLocaleString()}</div>}
+                {detail.cancel_reason && <div><b>{t("encounters.cancelReason")}:</b> {detail.cancel_reason}</div>}
+              </div>
+            </div>
+          </div>
+
+          <h4>{t("encounters.chiefComplaint")}</h4>
+          <p>{detail.chief_complaint || "—"}</p>
+
+          <h4>{t("encounters.sectionDiagnoses")}</h4>
+          {detail.diagnoses.length === 0 ? (
+            <p className="muted">{t("common.noData")}</p>
+          ) : (
+            <div className="log-list">
+              {detail.diagnoses.map((d, i) => (
+                <div key={d.id ?? i} className="log-entry">
+                  {d.description}
+                  {d.is_primary && <span className="badge status-active encounter-inline-badge">{t("encounters.primary")}</span>}
+                </div>
+              ))}
+            </div>
+          )}
+
+          <h4>{t("encounters.sectionServices")}</h4>
+          {detail.services.length === 0 ? (
+            <p className="muted">{t("common.noData")}</p>
+          ) : (
+            <div className="log-list">
+              {detail.services.map((s, i) => (
+                <div key={s.id ?? i} className="log-entry">
+                  <b>{s.service_name}</b> × {s.quantity}{" "}
+                  <span className={`badge status-${s.status.toLowerCase()} encounter-inline-badge`}>{statusLabel(s.status)}</span>
+                  {s.doctor_name && <div className="muted">{s.doctor_name}</div>}
+                  {s.notes && <div className="muted">{s.notes}</div>}
+                </div>
+              ))}
+            </div>
+          )}
+
+          <h4>{t("encounters.sectionCoverage")}</h4>
+          <div className="kv-grid">
+            <div><b>{t("patients.ars")}:</b> {detail.ars_name ?? "—"}</div>
+            <div><b>{t("patients.arsProgram")}:</b> {detail.ars_program_name ?? "—"}</div>
+            <div><b>{t("encounters.authorizationNumber")}:</b> {detail.authorization_number || "—"}</div>
+          </div>
+
+          <div className="modal-actions">
+            <button className="btn ghost" onClick={() => setDetail(null)}>{t("common.close")}</button>
+          </div>
+        </Dialog>
       )}
 
       {patientModal && (

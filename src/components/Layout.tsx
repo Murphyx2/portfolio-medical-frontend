@@ -8,6 +8,7 @@ import { LanguageSwitcher } from "./LanguageSwitcher";
 
 const NAV: { to: string; key: string; roles?: Role[] }[] = [
   { to: "/", key: "nav.dashboard" },
+  { to: "/encounters", key: "nav.encounters" },
   { to: "/patients", key: "nav.patients" },
   { to: "/doctors", key: "nav.doctors" },
   { to: "/services", key: "nav.services" },
@@ -16,7 +17,6 @@ const NAV: { to: string; key: string; roles?: Role[] }[] = [
   { to: "/medicines", key: "nav.medicines" },
   { to: "/rooms", key: "nav.rooms" },
   { to: "/appointments", key: "nav.appointments" },
-  { to: "/encounters", key: "nav.encounters" },
   { to: "/records", key: "nav.records", roles: ["ADMIN", "DOCTOR", "IT", "NURSE", "CENTER_MANAGER"] },
   { to: "/users", key: "nav.users", roles: ["ADMIN", "IT"] },
 ];

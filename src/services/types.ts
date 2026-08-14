@@ -43,6 +43,7 @@ export interface MedicalCenter {
 
 export interface DoctorProfile {
   id: number;
+  code: string;
   user_id: number;
   username: string;
   full_name: string;
@@ -248,7 +249,11 @@ export interface EncounterPatientSummary {
   cedula: string;
   allergies: string;
   critical_conditions: string;
+  ars: number | null;
   ars_name: string | null;
+  ars_program: number | null;
+  has_guardian: boolean;
+  guardian_cedula: string;
 }
 
 export interface EncounterDiagnosis {
@@ -276,7 +281,7 @@ export interface Encounter {
   patient: number;
   patient_info: EncounterPatientSummary;
   doctor: number;
-  doctor_info: { id: number; full_name: string; specialty: string };
+  doctor_info: { id: number; code: string; full_name: string; specialty: string };
   referring_doctor_name: string;
   room: number | null;
   room_name: string | null;

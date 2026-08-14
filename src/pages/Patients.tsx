@@ -2,7 +2,7 @@ import { useCallback, useEffect, useMemo, useState, type ReactNode } from "react
 import { useTranslation } from "react-i18next";
 
 import { PatientFormModal } from "../components/PatientFormModal";
-import { Dialog, MaskedValue, Page, Pagination, SearchBar, Spinner, Table, type Column, type SortDir } from "../components/ui";
+import { Dialog, GuardianCedulaIcon, MaskedValue, Page, Pagination, SearchBar, Spinner, Table, type Column, type SortDir } from "../components/ui";
 import { useListControls } from "../hooks/useListControls";
 import { api } from "../services/api";
 import type { Paginated, Patient } from "../services/types";
@@ -152,31 +152,6 @@ export function Patients() {
     </button>
   );
 
-  // Small inline marker (mirrors MaskedValue's lock-icon mechanism: icon +
-  // title tooltip + sr-only label) shown before a guardian's cedula in the
-  // table, so staff don't mistake it for the patient's own document.
-  function guardianCedulaIcon() {
-    const label = t("patients.guardianCedulaTooltip");
-    return (
-      <span className="masked-value" title={label}>
-        <svg
-          className="masked-value-icon"
-          width="12"
-          height="12"
-          viewBox="0 0 16 16"
-          fill="none"
-          stroke="currentColor"
-          strokeWidth="1.5"
-          aria-hidden="true"
-        >
-          <circle cx="8" cy="5.5" r="2.5" />
-          <path d="M3 13c0-2.7 2.2-4.75 5-4.75s5 2.05 5 4.75" />
-        </svg>
-        <span className="sr-only">{label}: </span>
-      </span>
-    );
-  }
-
   const columns: Column<Patient>[] = [
     {
       key: "full_name",
@@ -206,7 +181,7 @@ export function Patients() {
         return openDetailLink(
           r,
           <>
-            {showsGuardian && guardianCedulaIcon()}
+            {showsGuardian && <GuardianCedulaIcon />}
             <MaskedValue value={formatted} />
           </>,
         );

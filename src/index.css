@@ -458,6 +458,22 @@ body {
   margin-bottom: 0.75rem;
 }
 
+.date-filter {
+  padding: 0.5rem 0.65rem;
+  border: 1px solid var(--mc-border);
+  border-radius: 8px;
+  font-size: 0.9rem;
+  font-family: inherit;
+  background: var(--mc-white);
+  color: var(--mc-text);
+}
+
+.date-filter:focus {
+  outline: 2px solid var(--mc-primary);
+  outline-offset: 1px;
+  border-color: var(--mc-primary);
+}
+
 input[type="checkbox"]:focus-visible,
 input[type="radio"]:focus-visible {
   outline: 2px solid var(--mc-primary);
@@ -780,6 +796,7 @@ input[type="radio"]:focus-visible {
 .status-active { background: var(--mc-primary-dark); }
 .status-inactive { background: var(--mc-muted); }
 .status-draft { background: var(--mc-muted); }
+.status-pending { background: var(--mc-primary); }
 .status-routine { background: var(--mc-muted); }
 .status-urgent { background: #ef6c00; }
 .status-emergency { background: var(--mc-danger); }
@@ -840,6 +857,17 @@ input[type="radio"]:focus-visible {
 .encounter-line-row {
   align-items: end;
   margin-bottom: 0.5rem;
+}
+
+.encounter-detail-badges {
+  display: flex;
+  gap: 0.5rem;
+  margin-bottom: 1rem;
+}
+
+.encounter-inline-badge {
+  margin-left: 0.5rem;
+  vertical-align: middle;
 }
 
 .program-editor {

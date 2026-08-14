@@ -12,6 +12,7 @@ import { Medicines } from "./pages/Medicines";
 import { Patients } from "./pages/Patients";
 import { Records } from "./pages/Records";
 import { Rooms } from "./pages/Rooms";
+import { RoomTypes } from "./pages/RoomTypes";
 import { ServiceTypes } from "./pages/ServiceTypes";
 import { Services } from "./pages/Services";
 import { Users } from "./pages/Users";
@@ -76,6 +77,16 @@ export default function App() {
           <ProtectedRoute>
             <Layout>
               <Rooms />
+            </Layout>
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/rooms/types"
+        element={
+          <ProtectedRoute>
+            <Layout>
+              <RoomTypes />
             </Layout>
           </ProtectedRoute>
         }

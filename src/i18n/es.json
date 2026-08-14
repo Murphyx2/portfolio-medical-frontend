@@ -143,13 +143,13 @@
     "capacity": "Capacidad",
     "notes": "Notas",
     "allTypes": "Todos los tipos",
-    "allCenters": "Todos los centros",
-    "typeConsultation": "Consulta",
-    "typeProcedure": "Procedimiento",
-    "typeLaboratory": "Laboratorio",
-    "typeImaging": "Imágenes",
-    "typeWaiting": "Sala de espera",
-    "typeOther": "Otro"
+    "manageTypes": "Gestionar tipos de sala"
+  },
+  "roomTypes": {
+    "title": "Tipos de sala",
+    "new": "Nuevo tipo",
+    "name": "Nombre",
+    "back": "Volver a Salas"
   },
   "ars": {
     "title": "Aseguradoras ARS",

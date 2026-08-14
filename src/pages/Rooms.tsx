@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
+import { useNavigate } from "react-router-dom";
 
 import { Field, FormModal, Page, Pagination, SearchBar, Spinner, Table, type Column } from "../components/ui";
 import { useListControls } from "../hooks/useListControls";
@@ -8,12 +9,10 @@ import type { MedicalCenter, Paginated, Room, RoomType } from "../services/types
 import { useAuth } from "../store/auth";
 import { flattenError } from "../utils/errors";
 
-const ROOM_TYPES: RoomType[] = ["CONSULTATION", "PROCEDURE", "LABORATORY", "IMAGING", "WAITING", "OTHER"];
-
 const EMPTY = {
   code: "",
   name: "",
-  room_type: "CONSULTATION" as RoomType,
+  room_type: 0,
   center: 0,
   floor_area: "",
   capacity: "",
@@ -23,14 +22,15 @@ const EMPTY = {
 export function Rooms() {
   const { t } = useTranslation();
   const { user } = useAuth();
+  const navigate = useNavigate();
   const canCreate = user?.role === "ADMIN" || user?.role === "IT";
   const canEdit = canCreate || user?.role === "RECEPTIONIST";
   const canDelete = canCreate;
   const isAdmin = user?.role === "ADMIN";
   const [rows, setRows] = useState<Room[]>([]);
   const [centers, setCenters] = useState<MedicalCenter[]>([]);
+  const [types, setTypes] = useState<RoomType[]>([]);
   const [typeFilter, setTypeFilter] = useState("");
-  const [centerFilter, setCenterFilter] = useState("");
   const [modal, setModal] = useState(false);
   const [form, setForm] = useState(EMPTY);
   const [editId, setEditId] = useState<number | null>(null);
@@ -57,7 +57,6 @@ export function Rooms() {
   const qs = query({
     include_inactive: showInactive ? "true" : "",
     room_type: typeFilter,
-    center: centerFilter,
   });
 
   const load = useCallback(() => {
@@ -76,12 +75,13 @@ export function Rooms() {
 
   useEffect(() => {
     api.get<Paginated<MedicalCenter>>("/centers/?page_size=100").then((r) => setCenters(r.results)).catch(() => {});
+    // Type options: fetched once, not on every page/sort/search change.
+    api.get<Paginated<RoomType>>("/room-types/?page_size=100").then((r) => setTypes(r.results)).catch(() => {});
   }, []);
 
-  const roomTypeLabel = (rt: RoomType) => t(`rooms.type${rt[0]}${rt.slice(1).toLowerCase()}`);
-
   function openNew() {
-    setForm(EMPTY);
+    const defaultCenter = centers.find((c) => c.is_default);
+    setForm({ ...EMPTY, center: defaultCenter ? defaultCenter.id : 0 });
     setEditId(null);
     setFormError("");
     setModal(true);
@@ -108,7 +108,7 @@ export function Rooms() {
       const payload = {
         code: form.code,
         name: form.name,
-        room_type: form.room_type,
+        room_type: Number(form.room_type),
         center: Number(form.center),
         floor_area: form.floor_area,
         capacity: form.capacity === "" ? null : Number(form.capacity),
@@ -133,10 +133,18 @@ export function Rooms() {
     load();
   }
 
+  // If the room being edited references a type no longer in the active-only
+  // fetched list (deactivated after the room was created), keep it
+  // selectable so the form doesn't silently drop it.
+  const typeOptions =
+    editId && form.room_type && !types.some((ty) => ty.id === form.room_type)
+      ? [...types, { id: form.room_type, name: rows.find((r) => r.id === editId)?.room_type_name ?? "—", active: false }]
+      : types;
+
   const columns: Column<Room>[] = [
     { key: "code", header: t("rooms.code"), sortKey: "code" },
     { key: "name", header: t("rooms.name"), sortKey: "name" },
-    { key: "room_type", header: t("rooms.type"), sortKey: "room_type", render: (r) => roomTypeLabel(r.room_type) },
+    { key: "room_type_name", header: t("rooms.type"), sortKey: "room_type__name" },
     { key: "center_name", header: t("rooms.center"), sortKey: "center__name" },
     { key: "floor_area", header: t("rooms.floorArea"), sortKey: "floor_area" },
     { key: "capacity", header: t("rooms.capacity"), sortKey: "capacity", render: (r) => r.capacity ?? "—" },
@@ -160,9 +168,14 @@ export function Rooms() {
       title={t("rooms.title")}
       actions={
         canCreate && (
-          <button className="btn primary" onClick={openNew}>
-            + {t("rooms.new")}
-          </button>
+          <div className="page-actions-stack">
+            <button className="btn primary" onClick={openNew}>
+              + {t("rooms.new")}
+            </button>
+            <button className="btn ghost" onClick={() => navigate("/rooms/types")}>
+              {t("rooms.manageTypes")}
+            </button>
+          </div>
         )
       }
     >
@@ -180,14 +193,8 @@ export function Rooms() {
             />
             <select value={typeFilter} onChange={(e) => setTypeFilter(e.target.value)}>
               <option value="">{t("rooms.allTypes")}</option>
-              {ROOM_TYPES.map((rt) => (
-                <option key={rt} value={rt}>{roomTypeLabel(rt)}</option>
-              ))}
-            </select>
-            <select value={centerFilter} onChange={(e) => setCenterFilter(e.target.value)}>
-              <option value="">{t("rooms.allCenters")}</option>
-              {centers.map((c) => (
-                <option key={c.id} value={c.id}>{c.name}</option>
+              {types.map((ty) => (
+                <option key={ty.id} value={ty.id}>{ty.name}</option>
               ))}
             </select>
             {isAdmin && (
@@ -227,28 +234,32 @@ export function Rooms() {
           error={formError}
         >
           <Field label={t("rooms.code")}>
-            <input value={form.code} onChange={(e) => setForm({ ...form, code: e.target.value })} required />
+            <input
+              value={form.code}
+              onChange={(e) => setForm({ ...form, code: e.target.value.toUpperCase() })}
+              required
+            />
           </Field>
           <Field label={t("rooms.name")}>
             <input value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} required />
           </Field>
           <Field label={t("rooms.type")}>
-            <select value={form.room_type} onChange={(e) => setForm({ ...form, room_type: e.target.value as RoomType })}>
-              {ROOM_TYPES.map((rt) => (
-                <option key={rt} value={rt}>{roomTypeLabel(rt)}</option>
-              ))}
-            </select>
-          </Field>
-          <Field label={t("rooms.center")}>
-            <select value={form.center} onChange={(e) => setForm({ ...form, center: Number(e.target.value) })} required>
+            <select
+              value={form.room_type}
+              onChange={(e) => setForm({ ...form, room_type: Number(e.target.value) })}
+              required
+            >
               <option value={0} disabled>—</option>
-              {centers.map((c) => (
-                <option key={c.id} value={c.id}>{c.name}</option>
+              {typeOptions.map((ty) => (
+                <option key={ty.id} value={ty.id}>{ty.name}</option>
               ))}
             </select>
           </Field>
           <Field label={t("rooms.floorArea")}>
-            <input value={form.floor_area} onChange={(e) => setForm({ ...form, floor_area: e.target.value })} />
+            <input
+              value={form.floor_area}
+              onChange={(e) => setForm({ ...form, floor_area: e.target.value.toUpperCase() })}
+            />
           </Field>
           <Field label={t("rooms.capacity")}>
             <input

@@ -143,13 +143,13 @@
     "capacity": "Capacity",
     "notes": "Notes",
     "allTypes": "All types",
-    "allCenters": "All centers",
-    "typeConsultation": "Consultation",
-    "typeProcedure": "Procedure",
-    "typeLaboratory": "Laboratory",
-    "typeImaging": "Imaging",
-    "typeWaiting": "Waiting area",
-    "typeOther": "Other"
+    "manageTypes": "Manage room types"
+  },
+  "roomTypes": {
+    "title": "Room types",
+    "new": "New type",
+    "name": "Name",
+    "back": "Back to Rooms"
   },
   "ars": {
     "title": "ARS Insurers",

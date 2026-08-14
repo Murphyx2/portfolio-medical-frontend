@@ -185,19 +185,18 @@ export interface Service {
   active: boolean;
 }
 
-export type RoomType =
-  | "CONSULTATION"
-  | "PROCEDURE"
-  | "LABORATORY"
-  | "IMAGING"
-  | "WAITING"
-  | "OTHER";
+export interface RoomType {
+  id: number;
+  name: string;
+  active: boolean;
+}
 
 export interface Room {
   id: number;
   code: string;
   name: string;
-  room_type: RoomType;
+  room_type: number;
+  room_type_name: string;
   center: number;
   center_name: string;
   floor_area: string;

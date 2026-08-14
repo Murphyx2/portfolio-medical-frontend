@@ -2,6 +2,7 @@ import { useCallback, useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 
 import { Field, FormModal, Page, Pagination, SearchBar, Spinner, Table, type Column } from "../components/ui";
+import { RoleGate } from "../components/guards";
 import { useListControls } from "../hooks/useListControls";
 import { api, ApiError } from "../services/api";
 import type { MedicalCenter, Paginated } from "../services/types";
@@ -140,6 +141,7 @@ export function Centers() {
   ];
 
   return (
+    <RoleGate roles={["ADMIN", "DOCTOR", "IT", "NURSE", "CENTER_MANAGER"]}>
     <Page
       title={t("centers.title")}
       actions={
@@ -236,5 +238,6 @@ export function Centers() {
         </FormModal>
       )}
     </Page>
+    </RoleGate>
   );
 }

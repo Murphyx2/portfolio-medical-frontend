@@ -13,7 +13,8 @@ const EMPTY = { generic_name: "", commercial_name: "", concentration: "" };
 export function Medicines() {
   const { t } = useTranslation();
   const { user } = useAuth();
-  const canEdit = user?.role === "ADMIN" || user?.role === "IT";
+  const canWrite = user?.role === "ADMIN" || user?.role === "IT" || user?.role === "RECEPTIONIST";
+  const canDelete = user?.role === "ADMIN" || user?.role === "IT";
   const isAdmin = user?.role === "ADMIN";
   const [rows, setRows] = useState<Medicine[]>([]);
   const [modal, setModal] = useState(false);
@@ -114,7 +115,7 @@ export function Medicines() {
     <Page
       title={t("medicines.title")}
       actions={
-        canEdit && (
+        canWrite && (
           <button className="btn primary" onClick={openNew}>
             + {t("medicines.new")}
           </button>
@@ -148,8 +149,8 @@ export function Medicines() {
           <Table
             columns={columns}
             rows={rows}
-            onEdit={canEdit ? openEdit : undefined}
-            onDelete={canEdit ? remove : undefined}
+            onEdit={canWrite ? openEdit : undefined}
+            onDelete={canDelete ? remove : undefined}
             onRestore={isAdmin ? restore : undefined}
             getRowLabel={(m) => m.commercial_name || m.generic_name}
             isInactive={(m) => !m.active}

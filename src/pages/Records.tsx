@@ -2,6 +2,7 @@ import { useCallback, useEffect, useState, type FormEvent } from "react";
 import { useTranslation } from "react-i18next";
 
 import { Dialog, Field, FormModal, MaskedValue, Page, Pagination, SearchableSelect, SearchBar, Spinner, Table, type Column } from "../components/ui";
+import { RoleGate } from "../components/guards";
 import { useListControls } from "../hooks/useListControls";
 import { api, ApiError, upload } from "../services/api";
 import type { ConsultationLog, MedicalRecord, Paginated, Patient } from "../services/types";
@@ -262,6 +263,7 @@ export function Records() {
   }, []);
 
   return (
+    <RoleGate roles={["ADMIN", "DOCTOR", "IT", "NURSE", "CENTER_MANAGER"]}>
     <Page
       title={t("records.title")}
       actions={
@@ -438,5 +440,6 @@ export function Records() {
         </FormModal>
       )}
     </Page>
+    </RoleGate>
   );
 }

@@ -59,6 +59,7 @@ export function Patients() {
   const { t } = useTranslation();
   const { user } = useAuth();
   const isAdmin = user?.role === "ADMIN";
+  const canDelete = user?.role === "ADMIN" || user?.role === "DOCTOR";
   const [rows, setRows] = useState<Patient[]>([]);
   const [arsList, setArsList] = useState<ARS[]>([]);
   const [centersList, setCentersList] = useState<MedicalCenter[]>([]);
@@ -395,7 +396,7 @@ export function Patients() {
             columns={columns}
             rows={displayRows}
             onEdit={openEdit}
-            onDelete={remove}
+            onDelete={canDelete ? remove : undefined}
             onRestore={isAdmin ? restore : undefined}
             getRowLabel={(r) => r.full_name}
             isInactive={(r) => !r.active}
@@ -439,7 +440,7 @@ export function Patients() {
                   placeholder="000-0000000-0"
                   inputMode="numeric"
                   maxLength={13}
-                  required
+                  required={!isMinor || !form.has_guardian}
                   onChange={(e) => setForm({ ...form, cedula: formatCedula(e.target.value) })}
                 />
               </Field>

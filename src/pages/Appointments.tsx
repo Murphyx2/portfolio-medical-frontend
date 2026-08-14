@@ -27,6 +27,7 @@ export function Appointments() {
   const { t } = useTranslation();
   const { user } = useAuth();
   const canManage = user?.role === "DOCTOR" || user?.role === "RECEPTIONIST" || user?.role === "ADMIN";
+  const canDelete = user?.role === "ADMIN" || user?.role === "DOCTOR";
   const isAdmin = user?.role === "ADMIN";
   const [showInactive, setShowInactive] = useState(false);
   const [rows, setRows] = useState<Appointment[]>([]);
@@ -188,7 +189,7 @@ export function Appointments() {
               <button className="btn small danger" onClick={() => setConfirming({ type: "cancel", row: r })}>{t("appointments.cancel")}</button>
             </>
           )}
-          {canManage && r.active && (
+          {canDelete && r.active && (
             <button className="btn small danger" onClick={() => setConfirming({ type: "delete", row: r })}>{t("common.delete")}</button>
           )}
           {isAdmin && !r.active && (

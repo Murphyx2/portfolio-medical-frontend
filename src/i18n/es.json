@@ -60,6 +60,8 @@
     "restoreConfirmNamed": "¿Restaurar a {{name}}?",
     "active": "Activo",
     "inactive": "Inactivo",
+    "yes": "Sí",
+    "no": "No",
     "showInactive": "Mostrar inactivos",
     "restore": "Restaurar",
     "restoreConfirm": "¿Restaurar este registro?",
@@ -180,7 +182,9 @@
     "title": "Tipos de servicio",
     "new": "Nuevo tipo",
     "name": "Nombre",
-    "back": "Volver a Servicios"
+    "back": "Volver a Servicios",
+    "requiresDoctor": "Requiere médico",
+    "requiresDiagnosis": "Requiere diagnóstico"
   },
   "users": {
     "title": "Usuarios",
@@ -221,7 +225,7 @@
     "patient": "Paciente",
     "cedula": "Cédula",
     "doctor": "Médico",
-    "type": "Tipo de admisión",
+    "type": "Tipo de servicio",
     "room": "Sala",
     "priority": "Prioridad",
     "createdAt": "Creada",
@@ -262,7 +266,8 @@
     "authorizationNumber": "N.º de autorización",
     "arsLockedNote": "El paciente ya tiene ARS/programa en su ficha; no se pueden cambiar aquí.",
     "patientRequired": "Selecciona un paciente.",
-    "typeAndDoctorRequired": "Selecciona el tipo de admisión y el médico."
+    "typeAndDoctorRequired": "Selecciona el tipo de servicio y el médico.",
+    "servicesRequired": "Se requiere al menos un servicio."
   },
   "records": {
     "title": "Expedientes Médicos",

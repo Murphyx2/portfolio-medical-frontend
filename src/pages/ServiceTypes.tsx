@@ -9,7 +9,7 @@ import type { Paginated, ServiceType } from "../services/types";
 import { useAuth } from "../store/auth";
 import { flattenError } from "../utils/errors";
 
-const EMPTY = { name: "" };
+const EMPTY = { name: "", requires_doctor: false, requires_diagnosis: true };
 
 export function ServiceTypes() {
   const { t } = useTranslation();
@@ -65,7 +65,11 @@ export function ServiceTypes() {
   }
 
   function openEdit(t: ServiceType) {
-    setForm({ name: t.name });
+    setForm({
+      name: t.name,
+      requires_doctor: t.requires_doctor,
+      requires_diagnosis: t.requires_diagnosis,
+    });
     setEditId(t.id);
     setFormError("");
     setModal(true);
@@ -95,6 +99,24 @@ export function ServiceTypes() {
 
   const columns: Column<ServiceType>[] = [
     { key: "name", header: t("serviceTypes.name"), sortKey: "name" },
+    {
+      key: "requires_doctor",
+      header: t("serviceTypes.requiresDoctor"),
+      render: (row) => (
+        <span className={`badge status-${row.requires_doctor ? "active" : "inactive"}`}>
+          {row.requires_doctor ? t("common.yes") : t("common.no")}
+        </span>
+      ),
+    },
+    {
+      key: "requires_diagnosis",
+      header: t("serviceTypes.requiresDiagnosis"),
+      render: (row) => (
+        <span className={`badge status-${row.requires_diagnosis ? "active" : "inactive"}`}>
+          {row.requires_diagnosis ? t("common.yes") : t("common.no")}
+        </span>
+      ),
+    },
     ...(isAdmin
       ? [
           {
@@ -177,6 +199,22 @@ export function ServiceTypes() {
           <Field label={t("serviceTypes.name")}>
             <input value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} required />
           </Field>
+          <label className="show-inactive-toggle">
+            <input
+              type="checkbox"
+              checked={form.requires_doctor}
+              onChange={(e) => setForm({ ...form, requires_doctor: e.target.checked })}
+            />
+            {t("serviceTypes.requiresDoctor")}
+          </label>
+          <label className="show-inactive-toggle">
+            <input
+              type="checkbox"
+              checked={form.requires_diagnosis}
+              onChange={(e) => setForm({ ...form, requires_diagnosis: e.target.checked })}
+            />
+            {t("serviceTypes.requiresDiagnosis")}
+          </label>
         </FormModal>
       )}
     </Page>

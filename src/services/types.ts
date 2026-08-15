@@ -175,6 +175,8 @@ export type AppointmentStatus =
 export interface ServiceType {
   id: number;
   name: string;
+  requires_doctor: boolean;
+  requires_diagnosis: boolean;
   active: boolean;
 }
 
@@ -234,13 +236,6 @@ export type EncounterStatus = "DRAFT" | "ACTIVE" | "COMPLETED" | "CANCELLED";
 export type EncounterPriority = "ROUTINE" | "URGENT" | "EMERGENCY";
 export type EncounterServiceStatus = "PENDING" | "COMPLETED" | "CANCELLED";
 
-export interface EncounterType {
-  id: number;
-  name: string;
-  requires_diagnosis: boolean;
-  active: boolean;
-}
-
 export interface EncounterPatientSummary {
   id: number;
   full_name: string;
@@ -276,12 +271,12 @@ export interface EncounterService {
 export interface Encounter {
   id: number;
   encounter_number: string | null;
-  encounter_type: number;
-  encounter_type_name: string;
+  service_type: number;
+  service_type_name: string;
   patient: number;
   patient_info: EncounterPatientSummary;
-  doctor: number;
-  doctor_info: { id: number; code: string; full_name: string; specialty: string };
+  doctor: number | null;
+  doctor_info: { id: number; code: string; full_name: string; specialty: string } | null;
   referring_doctor_name: string;
   room: number | null;
   room_name: string | null;

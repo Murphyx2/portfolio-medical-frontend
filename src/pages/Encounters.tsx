@@ -27,18 +27,18 @@ import type {
   EncounterDiagnosis,
   EncounterPatientSummary,
   EncounterService,
-  EncounterType,
   Paginated,
   Patient,
   Room,
   Service,
+  ServiceType,
 } from "../services/types";
 import { useAuth } from "../store/auth";
 import { formatCedula } from "../utils/cedula";
 import { flattenError } from "../utils/errors";
 
 const EMPTY_FORM = {
-  encounter_type: 0,
+  service_type: 0,
   doctor: 0,
   referring_doctor_name: "",
   room: 0,
@@ -85,7 +85,7 @@ export function Encounters() {
   const [rows, setRows] = useState<Encounter[]>([]);
   const [doctors, setDoctors] = useState<DoctorProfile[]>([]);
   const [rooms, setRooms] = useState<Room[]>([]);
-  const [encounterTypes, setEncounterTypes] = useState<EncounterType[]>([]);
+  const [serviceTypes, setServiceTypes] = useState<ServiceType[]>([]);
   const [arsList, setArsList] = useState<ARS[]>([]);
   const [services, setServices] = useState<Service[]>([]);
   const [showInactive, setShowInactive] = useState(false);
@@ -151,7 +151,7 @@ export function Encounters() {
   useEffect(() => {
     api.get<Paginated<DoctorProfile>>("/doctors/profiles/?page_size=100").then((r) => setDoctors(r.results)).catch(() => {});
     api.get<Paginated<Room>>("/rooms/?page_size=100").then((r) => setRooms(r.results)).catch(() => {});
-    api.get<Paginated<EncounterType>>("/encounter-types/?page_size=100").then((r) => setEncounterTypes(r.results)).catch(() => {});
+    api.get<Paginated<ServiceType>>("/service-types/?page_size=100").then((r) => setServiceTypes(r.results)).catch(() => {});
     api.get<Paginated<ARS>>("/ars/?page_size=100").then((r) => setArsList(r.results)).catch(() => {});
     api.get<Paginated<Service>>("/services/?page_size=200").then((r) => setServices(r.results)).catch(() => {});
   }, []);
@@ -191,6 +191,16 @@ export function Encounters() {
   const effectiveArsProgram = arsProgramLocked ? String(patientSummary!.ars_program) : form.ars_program;
   const selectedArs = arsList.find((a) => String(a.id) === effectiveArs);
 
+  const selectedServiceType = serviceTypes.find((st) => st.id === form.service_type);
+  // Not every service needs a doctor present (e.g. a lab-only visit) --
+  // required unless the selected type explicitly says otherwise. Fails
+  // safe toward "required" before a type is even picked yet.
+  const doctorRequired = !selectedServiceType || selectedServiceType.requires_doctor;
+  // Selecting a type narrows the Services section to that type's services.
+  const availableServices = form.service_type
+    ? services.filter((sv) => sv.type === form.service_type)
+    : services;
+
   function openNew() {
     setEditingEncounter(null);
     setSelectedPatient(null);
@@ -203,8 +213,8 @@ export function Encounters() {
     setEditingEncounter(r);
     setSelectedPatient(null);
     setForm({
-      encounter_type: r.encounter_type,
-      doctor: r.doctor,
+      service_type: r.service_type,
+      doctor: r.doctor ?? 0,
       referring_doctor_name: r.referring_doctor_name,
       room: r.room ?? 0,
       chief_complaint: r.chief_complaint,
@@ -217,6 +227,19 @@ export function Encounters() {
     });
     setFormError("");
     setModal(true);
+  }
+
+  function handleServiceTypeChange(newType: number) {
+    setForm((f) => ({
+      ...f,
+      service_type: newType,
+      // Drop any already-picked service lines that don't belong to the
+      // newly-selected type instead of silently keeping a now-hidden choice.
+      services: f.services.filter((s) => {
+        const svc = services.find((sv) => sv.id === s.service);
+        return svc ? svc.type === newType : true;
+      }),
+    }));
   }
 
   function pickDoctor(doctorId: number) {
@@ -275,14 +298,18 @@ export function Encounters() {
       setFormError(t("encounters.patientRequired"));
       return;
     }
-    if (!form.encounter_type || !form.doctor) {
+    if (!form.service_type || (doctorRequired && !form.doctor)) {
       setFormError(t("encounters.typeAndDoctorRequired"));
+      return;
+    }
+    if (!form.services.some((s) => s.service)) {
+      setFormError(t("encounters.servicesRequired"));
       return;
     }
     const body = {
       patient: patientId,
-      encounter_type: Number(form.encounter_type),
-      doctor: Number(form.doctor),
+      service_type: Number(form.service_type),
+      doctor: form.doctor ? Number(form.doctor) : null,
       referring_doctor_name: form.referring_doctor_name,
       room: form.room || null,
       chief_complaint: form.chief_complaint,
@@ -415,8 +442,8 @@ export function Encounters() {
         );
       },
     },
-    { key: "doctor", header: t("encounters.doctor"), sortKey: "doctor__code", render: (r) => r.doctor_info.code },
-    { key: "encounter_type_name", header: t("encounters.type") },
+    { key: "doctor", header: t("encounters.doctor"), sortKey: "doctor__code", render: (r) => r.doctor_info?.code ?? "—" },
+    { key: "service_type_name", header: t("encounters.type") },
     { key: "room_name", header: t("encounters.room"), render: (r) => r.room_name ?? "—" },
     { key: "priority", header: t("encounters.priority"), sortKey: "priority", render: (r) => <span className={`badge status-${r.priority.toLowerCase()}`}>{priorityLabel(r.priority)}</span> },
     { key: "status", header: t("common.status"), sortKey: "status", render: (r) => <span className={`badge status-${r.status.toLowerCase()}`}>{statusLabel(r.status)}</span> },
@@ -556,16 +583,16 @@ export function Encounters() {
           <h4>{t("encounters.sectionAdmission")}</h4>
           <div className="form-columns">
             <Field label={t("encounters.type")}>
-              <select value={form.encounter_type} onChange={(e) => setForm({ ...form, encounter_type: Number(e.target.value) })} required>
+              <select value={form.service_type} onChange={(e) => handleServiceTypeChange(Number(e.target.value))} required>
                 <option value={0} disabled>—</option>
-                {encounterTypes.map((et) => (
-                  <option key={et.id} value={et.id}>{et.name}</option>
+                {serviceTypes.map((st) => (
+                  <option key={st.id} value={st.id}>{st.name}</option>
                 ))}
               </select>
             </Field>
             <Field label={t("encounters.doctor")}>
-              <select value={form.doctor} onChange={(e) => pickDoctor(Number(e.target.value))} required>
-                <option value={0} disabled>—</option>
+              <select value={form.doctor} onChange={(e) => pickDoctor(Number(e.target.value))} required={doctorRequired}>
+                <option value={0} disabled={doctorRequired}>—</option>
                 {doctors.map((d) => (
                   <option key={d.id} value={d.id}>{d.full_name}</option>
                 ))}
@@ -629,7 +656,7 @@ export function Encounters() {
               <Field label={t("encounters.service")}>
                 <select value={s.service} onChange={(e) => updateServiceLine(i, { service: Number(e.target.value) })}>
                   <option value={0} disabled>—</option>
-                  {services.map((sv) => (
+                  {availableServices.map((sv) => (
                     <option key={sv.id} value={sv.id}>{sv.name}</option>
                   ))}
                 </select>
@@ -725,8 +752,8 @@ export function Encounters() {
             <div>
               <h4>{t("encounters.sectionAdmission")}</h4>
               <div className="kv-grid">
-                <div><b>{t("encounters.doctor")}:</b> {detail.doctor_info.full_name} ({detail.doctor_info.specialty})</div>
-                <div><b>{t("encounters.type")}:</b> {detail.encounter_type_name}</div>
+                <div><b>{t("encounters.doctor")}:</b> {detail.doctor_info ? `${detail.doctor_info.full_name} (${detail.doctor_info.specialty})` : "—"}</div>
+                <div><b>{t("encounters.type")}:</b> {detail.service_type_name}</div>
                 <div><b>{t("encounters.room")}:</b> {detail.room_name ?? "—"}</div>
                 <div><b>{t("encounters.referringDoctor")}:</b> {detail.referring_doctor_name || "—"}</div>
                 <div><b>{t("encounters.createdAt")}:</b> {new Date(detail.created_at).toLocaleString()}</div>

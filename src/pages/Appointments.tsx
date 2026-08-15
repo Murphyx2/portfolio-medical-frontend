@@ -82,11 +82,11 @@ export function Appointments() {
     api.get<Paginated<MedicalCenter>>("/centers/?page_size=100").then((r) => setCenters(r.results)).catch(() => {});
   }, []);
 
-  const searchPatients = useCallback((q: string): Promise<Patient[]> => {
+  const searchPatients = useCallback((q: string): Promise<{ results: Patient[]; count: number }> => {
     return api
-      .get<Paginated<Patient>>(`/patients/?page_size=20${q ? `&search=${encodeURIComponent(q)}` : ""}`)
-      .then((r) => r.results)
-      .catch(() => []);
+      .get<Paginated<Patient>>(`/patients/?page_size=50${q ? `&search=${encodeURIComponent(q)}` : ""}`)
+      .then((r) => ({ results: r.results, count: r.count }))
+      .catch(() => ({ results: [], count: 0 }));
   }, []);
 
   function pickPatient(p: Patient) {

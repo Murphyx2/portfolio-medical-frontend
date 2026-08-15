@@ -169,7 +169,7 @@ export function FormModal({ title, onClose, onSubmit, children, submitLabel, err
  * instead of `window.alert` — a native OS dialog otherwise breaks out of
  * the design system at the exact moment a destructive action is confirmed.
  */
-export function ConfirmDialog({ title, message, confirmLabel, danger, error, pending, onConfirm, onCancel }: {
+export function ConfirmDialog({ title, message, confirmLabel, danger, error, pending, onConfirm, onCancel, children }: {
   title: string;
   message: string;
   confirmLabel: string;
@@ -178,11 +178,13 @@ export function ConfirmDialog({ title, message, confirmLabel, danger, error, pen
   pending?: boolean;
   onConfirm: () => void;
   onCancel: () => void;
+  children?: ReactNode;
 }) {
   const { t } = useTranslation();
   return (
     <Dialog title={title} onClose={onCancel} preventClose={pending}>
       <p>{message}</p>
+      {children}
       {error && (
         <p className="form-error" role="alert">
           {error}
@@ -216,7 +218,7 @@ export function Field({ label, children }: { label: string; children: ReactNode 
 
 export interface Column<T> {
   key: string;
-  header: string;
+  header: ReactNode;
   render?: (row: T) => ReactNode;
   sortKey?: string;
 }
@@ -416,6 +418,33 @@ export function MaskedValue({ value }: { value?: string | null }) {
   );
 }
 
+/** Marker shown before a guardian's cedula (icon + tooltip + sr-only label,
+ * same mechanism as MaskedValue's lock icon) so staff don't mistake it for
+ * the patient's own document. Shared by Patients.tsx and Encounters.tsx,
+ * wherever a minor's guardian cedula is displayed in place of their own. */
+export function GuardianCedulaIcon() {
+  const { t } = useTranslation();
+  const label = t("patients.guardianCedulaTooltip");
+  return (
+    <span className="masked-value" title={label}>
+      <svg
+        className="masked-value-icon"
+        width="12"
+        height="12"
+        viewBox="0 0 16 16"
+        fill="none"
+        stroke="currentColor"
+        strokeWidth="1.5"
+        aria-hidden="true"
+      >
+        <circle cx="8" cy="5.5" r="2.5" />
+        <path d="M3 13c0-2.7 2.2-4.75 5-4.75s5 2.05 5 4.75" />
+      </svg>
+      <span className="sr-only">{label}: </span>
+    </span>
+  );
+}
+
 export function SearchBar({ value, onChange, placeholder, label, onSubmit }: {
   value: string;
   onChange: (value: string) => void;
@@ -453,7 +482,7 @@ export function SearchableSelect<T extends { id: number }>({
 }: {
   value: T | null;
   onSelect: (item: T) => void;
-  search: (query: string) => Promise<T[]>;
+  search: (query: string) => Promise<{ results: T[]; count: number }>;
   placeholder: string;
   getLabel: (item: T) => string;
   getSublabel?: (item: T) => string;
@@ -465,6 +494,10 @@ export function SearchableSelect<T extends { id: number }>({
   const [open, setOpen] = useState(false);
   const [query, setQuery] = useState("");
   const [items, setItems] = useState<T[]>([]);
+  // Total matches on the server, not just this page -- lets the dropdown
+  // say "showing 20 of 57" instead of silently truncating with no
+  // indication more results exist (the bug this was added to fix).
+  const [totalCount, setTotalCount] = useState(0);
   const [loading, setLoading] = useState(false);
   const below = query.trim().length > 0 && query.trim().length < minChars;
 
@@ -476,10 +509,16 @@ export function SearchableSelect<T extends { id: number }>({
       try {
         const q = query.trim();
         if (q.length >= minChars || q.length === 0) {
-          const results = await search(q);
-          if (!cancelled) setItems(results);
+          const { results, count } = await search(q);
+          if (!cancelled) {
+            setItems(results);
+            setTotalCount(count);
+          }
         } else {
-          if (!cancelled) setItems([]);
+          if (!cancelled) {
+            setItems([]);
+            setTotalCount(0);
+          }
         }
       } finally {
         if (!cancelled) setLoading(false);
@@ -581,6 +620,11 @@ export function SearchableSelect<T extends { id: number }>({
                     </button>
                   </li>
                 ))}
+              {!below && !loading && totalCount > items.length && (
+                <li className="muted">
+                  {t("common.searchResultsLimited", { shown: items.length, count: totalCount })}
+                </li>
+              )}
             </ul>
           )}
         </div>

@@ -131,6 +131,7 @@ export function Doctors() {
       : userOptions.filter((u) => u.role === "DOCTOR");
 
   const columns: Column<DoctorProfile>[] = [
+    { key: "code", header: t("doctors.code"), sortKey: "code" },
     { key: "full_name", header: t("doctors.fullName"), sortKey: "user__last_name" },
     { key: "specialty", header: t("doctors.specialty"), sortKey: "specialty" },
     { key: "license_number", header: t("doctors.license"), sortKey: "license_number", render: (r) => <MaskedValue value={r.license_number} /> },

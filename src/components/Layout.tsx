@@ -8,6 +8,7 @@ import { LanguageSwitcher } from "./LanguageSwitcher";
 
 const NAV: { to: string; key: string; roles?: Role[] }[] = [
   { to: "/", key: "nav.dashboard" },
+  { to: "/encounters", key: "nav.encounters" },
   { to: "/patients", key: "nav.patients" },
   { to: "/doctors", key: "nav.doctors" },
   { to: "/services", key: "nav.services" },

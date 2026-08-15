@@ -355,9 +355,10 @@ describe("SearchableSelect", () => {
 
   function setup() {
     const onSelect = vi.fn();
-    const search = vi.fn(async (q: string) =>
-      options.filter((o) => o.full_name.toLowerCase().includes(q.toLowerCase())),
-    );
+    const search = vi.fn(async (q: string) => {
+      const results = options.filter((o) => o.full_name.toLowerCase().includes(q.toLowerCase()));
+      return { results, count: results.length };
+    });
     const utils = render(
       <SearchableSelect
         value={options[0]}
@@ -402,6 +403,28 @@ describe("SearchableSelect", () => {
       fireEvent.change(screen.getByRole("textbox"), { target: { value: "an" } });
       await vi.advanceTimersByTimeAsync(300);
       expect(screen.getByText("Escribe al menos 3 caracteres")).toBeInTheDocument();
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
+  it("shows a truncation hint when the server reports more matches than were returned", async () => {
+    vi.useFakeTimers();
+    try {
+      const onSelect = vi.fn();
+      const search = vi.fn(async () => ({ results: [options[0]], count: 57 }));
+      render(
+        <SearchableSelect
+          value={null}
+          onSelect={onSelect}
+          search={search}
+          placeholder="Buscar paciente"
+          getLabel={(p) => p.full_name}
+        />,
+      );
+      fireEvent.focus(screen.getByRole("textbox"));
+      await vi.advanceTimersByTimeAsync(300);
+      expect(screen.getByText("Mostrando 1 de 57 resultados. Refina tu búsqueda para ver más.")).toBeInTheDocument();
     } finally {
       vi.useRealTimers();
     }

@@ -218,7 +218,7 @@ export function Field({ label, children }: { label: string; children: ReactNode 
 
 export interface Column<T> {
   key: string;
-  header: string;
+  header: ReactNode;
   render?: (row: T) => ReactNode;
   sortKey?: string;
 }

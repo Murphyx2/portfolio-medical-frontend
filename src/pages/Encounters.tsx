@@ -385,7 +385,11 @@ export function Encounters() {
   );
 
   const columns: Column<Encounter>[] = [
-    { key: "encounter_number", header: t("encounters.number"), render: (r) => r.encounter_number ?? "—" },
+    {
+      key: "encounter_number",
+      header: <span title={t("encounters.numberFormatHint")}>{t("encounters.number")}</span>,
+      render: (r) => r.encounter_number ?? "—",
+    },
     {
       key: "patient",
       header: t("encounters.patient"),
@@ -695,6 +699,7 @@ export function Encounters() {
             <span className={`badge status-${detail.status.toLowerCase()}`}>{statusLabel(detail.status)}</span>
             <span className={`badge status-${detail.priority.toLowerCase()}`}>{priorityLabel(detail.priority)}</span>
           </div>
+          {detail.encounter_number && <p className="muted">{t("encounters.numberFormatHint")}</p>}
 
           <div className="form-columns">
             <div>

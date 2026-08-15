@@ -216,6 +216,7 @@
     "title": "Admisiones",
     "new": "Nueva admisión",
     "number": "N.º de admisión",
+    "numberFormatHint": "Fecha de admisión (AAAAMMDD) + número de orden del día, según la hora del centro.",
     "patient": "Paciente",
     "cedula": "Cédula",
     "doctor": "Médico",

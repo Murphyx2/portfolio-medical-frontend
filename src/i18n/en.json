@@ -216,6 +216,7 @@
     "title": "Admissions",
     "new": "New admission",
     "number": "Admission #",
+    "numberFormatHint": "Admission date (YYYYMMDD) + that day's order number, based on the clinic's local time.",
     "patient": "Patient",
     "cedula": "Cedula",
     "doctor": "Doctor",

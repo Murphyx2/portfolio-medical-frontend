@@ -47,6 +47,7 @@
     "search": "Buscar",
     "searchPlaceholder": "Buscar (mín. 3 caracteres)",
     "minChars": "Escribe al menos 3 caracteres",
+    "searchResultsLimited": "Mostrando {{shown}} de {{count}} resultados. Refina tu búsqueda para ver más.",
     "actions": "Acciones",
     "loading": "Cargando...",
     "noData": "No se encontraron datos",

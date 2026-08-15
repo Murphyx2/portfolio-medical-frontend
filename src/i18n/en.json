@@ -47,6 +47,7 @@
     "search": "Search",
     "searchPlaceholder": "Search (min 3 characters)",
     "minChars": "Type at least 3 characters",
+    "searchResultsLimited": "Showing {{shown}} of {{count}} results. Refine your search to see more.",
     "actions": "Actions",
     "loading": "Loading...",
     "noData": "No data found",

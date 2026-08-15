@@ -286,11 +286,11 @@ export function Records() {
     setForm({ ...form, patient: p.id, title: recordTitleFor(p) });
   }
 
-  const searchPatients = useCallback((q: string): Promise<Patient[]> => {
+  const searchPatients = useCallback((q: string): Promise<{ results: Patient[]; count: number }> => {
     return api
-      .get<Paginated<Patient>>(`/patients/?page_size=20${q ? `&search=${encodeURIComponent(q)}` : ""}`)
-      .then((r) => r.results)
-      .catch(() => []);
+      .get<Paginated<Patient>>(`/patients/?page_size=50${q ? `&search=${encodeURIComponent(q)}` : ""}`)
+      .then((r) => ({ results: r.results, count: r.count }))
+      .catch(() => ({ results: [], count: 0 }));
   }, []);
 
   return (

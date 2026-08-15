@@ -156,11 +156,11 @@ export function Encounters() {
     api.get<Paginated<Service>>("/services/?page_size=200").then((r) => setServices(r.results)).catch(() => {});
   }, []);
 
-  const searchPatients = useCallback((q: string): Promise<Patient[]> => {
+  const searchPatients = useCallback((q: string): Promise<{ results: Patient[]; count: number }> => {
     return api
-      .get<Paginated<Patient>>(`/patients/?page_size=20${q ? `&search=${encodeURIComponent(q)}` : ""}`)
-      .then((r) => r.results)
-      .catch(() => []);
+      .get<Paginated<Patient>>(`/patients/?page_size=50${q ? `&search=${encodeURIComponent(q)}` : ""}`)
+      .then((r) => ({ results: r.results, count: r.count }))
+      .catch(() => ({ results: [], count: 0 }));
   }, []);
 
   const patientSummary: EncounterPatientSummary | null = editingEncounter

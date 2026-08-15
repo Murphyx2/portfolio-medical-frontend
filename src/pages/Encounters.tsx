@@ -726,7 +726,6 @@ export function Encounters() {
             <span className={`badge status-${detail.status.toLowerCase()}`}>{statusLabel(detail.status)}</span>
             <span className={`badge status-${detail.priority.toLowerCase()}`}>{priorityLabel(detail.priority)}</span>
           </div>
-          {detail.encounter_number && <p className="muted">{t("encounters.numberFormatHint")}</p>}
 
           <div className="form-columns">
             <div>

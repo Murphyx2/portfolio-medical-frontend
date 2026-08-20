@@ -71,7 +71,9 @@
     "phone": "Phone",
     "email": "Email",
     "address": "Address",
-    "status": "Status"
+    "status": "Status",
+    "toastSaved": "Saved successfully",
+    "toastDeleted": "Deleted successfully"
   },
   "patients": {
     "title": "Patients",
@@ -235,6 +237,7 @@
     "priority": "Priority",
     "createdAt": "Created",
     "date": "Date",
+    "noDataForDate": "No admissions for {{date}}. Change the date or status to see more.",
     "allStatuses": "All statuses",
     "statusDraft": "Draft",
     "statusPending": "Pending",

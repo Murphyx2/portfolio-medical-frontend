@@ -71,7 +71,9 @@
     "phone": "Teléfono",
     "email": "Correo",
     "address": "Dirección",
-    "status": "Estado"
+    "status": "Estado",
+    "toastSaved": "Guardado correctamente",
+    "toastDeleted": "Eliminado correctamente"
   },
   "patients": {
     "title": "Pacientes",
@@ -235,6 +237,7 @@
     "priority": "Prioridad",
     "createdAt": "Creada",
     "date": "Fecha",
+    "noDataForDate": "No hay admisiones para el {{date}}. Cambia la fecha o el estado para ver más.",
     "allStatuses": "Todos los estados",
     "statusDraft": "Borrador",
     "statusPending": "Pendiente",

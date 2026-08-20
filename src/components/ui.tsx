@@ -3,12 +3,50 @@ import type { FormEvent, ReactNode } from "react";
 import { useTranslation } from "react-i18next";
 
 import { MIN_SEARCH_CHARS } from "../hooks/useListControls";
-import { ApiError } from "../services/api";
+import { ApiError, onMutationSuccess } from "../services/api";
 import { flattenError } from "../utils/errors";
 import { toSentenceCase } from "../utils/text";
 
 function actionErrorMessage(err: unknown): string {
   return err instanceof ApiError ? flattenError(err.message) : String(err);
+}
+
+/** Shared "confirm before running a row action" state machine -- extracted
+ * so pages with more confirm types than Table's built-in delete/restore
+ * (Appointments' complete/cancel, Encounters' admit/complete/cancel) don't
+ * each hand-roll their own confirming/error/pending triple. Table itself
+ * keeps its own internal copy for delete/restore since it owns that flow
+ * end-to-end; this is for pages driving `ConfirmDialog` themselves. */
+export function useRowConfirm<K extends string, T>() {
+  const [confirming, setConfirming] = useState<{ type: K; row: T } | null>(null);
+  const [error, setError] = useState("");
+  const [pending, setPending] = useState(false);
+
+  function open(type: K, row: T) {
+    setConfirming({ type, row });
+    setError("");
+  }
+
+  function close() {
+    setConfirming(null);
+    setError("");
+  }
+
+  async function run(handler: (type: K, row: T) => void | Promise<void>) {
+    if (!confirming) return;
+    setPending(true);
+    setError("");
+    try {
+      await handler(confirming.type, confirming.row);
+      setConfirming(null);
+    } catch (err) {
+      setError(actionErrorMessage(err));
+    } finally {
+      setPending(false);
+    }
+  }
+
+  return { confirming, error, pending, open, close, run };
 }
 
 export function Page({ title, actions, children }: {
@@ -840,6 +878,40 @@ export function Pagination({ page, count, pageSize, onChange, onPageSizeChange }
           {t("pagination.pageOf", { page, total })} · {t("pagination.records", { count })}
         </span>
       )}
+    </div>
+  );
+}
+
+interface Toast {
+  id: number;
+  message: string;
+}
+
+let toastId = 0;
+
+/** Mounted once in `Layout`. Every successful save/delete/upload across the
+ * app fires a toast from `api.ts`'s `onMutationSuccess` subscription -- the
+ * app previously gave zero positive confirmation that a mutating action
+ * landed, so this is wired centrally rather than per page. */
+export function ToastHost() {
+  const [toasts, setToasts] = useState<Toast[]>([]);
+
+  useEffect(() => {
+    return onMutationSuccess((message) => {
+      const id = ++toastId;
+      setToasts((prev) => [...prev, { id, message }]);
+      setTimeout(() => setToasts((prev) => prev.filter((t) => t.id !== id)), 3000);
+    });
+  }, []);
+
+  if (!toasts.length) return null;
+  return (
+    <div className="toast-host" role="status" aria-live="polite">
+      {toasts.map((t) => (
+        <div key={t.id} className="toast">
+          {t.message}
+        </div>
+      ))}
     </div>
   );
 }

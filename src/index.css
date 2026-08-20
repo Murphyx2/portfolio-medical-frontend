@@ -1000,3 +1000,35 @@ input[type="radio"]:focus-visible {
   border-top: 1px dashed var(--mc-border);
   padding-top: 0.75rem;
 }
+
+/* ---------- toast ---------- */
+.toast-host {
+  position: fixed;
+  right: 1.25rem;
+  bottom: 1.25rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  z-index: 1000;
+}
+
+.toast {
+  background: var(--mc-primary-dark);
+  color: #fff;
+  padding: 0.6rem 1rem;
+  border-radius: 8px;
+  font-size: 0.85rem;
+  box-shadow: 0 4px 14px rgba(13, 33, 55, 0.25);
+  animation: toast-in 150ms ease-out;
+}
+
+@keyframes toast-in {
+  from {
+    opacity: 0;
+    transform: translateY(6px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}

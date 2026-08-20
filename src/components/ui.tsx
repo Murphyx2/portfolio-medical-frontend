@@ -5,6 +5,7 @@ import { useTranslation } from "react-i18next";
 import { MIN_SEARCH_CHARS } from "../hooks/useListControls";
 import { ApiError } from "../services/api";
 import { flattenError } from "../utils/errors";
+import { toSentenceCase } from "../utils/text";
 
 function actionErrorMessage(err: unknown): string {
   return err instanceof ApiError ? flattenError(err.message) : String(err);
@@ -437,13 +438,13 @@ export function ServiceChipList({ items, max = 3 }: { items: { id: number; name:
     <span className="service-chip-list">
       {visible.map((s) => (
         <span key={s.id} className="service-chip">
-          {s.name}
+          {toSentenceCase(s.name)}
         </span>
       ))}
       {overflow.length > 0 && (
         <span
           className="service-chip service-chip-overflow"
-          title={overflow.map((s) => s.name).join(", ")}
+          title={overflow.map((s) => toSentenceCase(s.name)).join(", ")}
         >
           {t("doctors.moreServices", { count: overflow.length })}
         </span>
@@ -515,7 +516,7 @@ export function ServiceCheckboxList({
           <option value="">{t("doctors.allServiceTypes")}</option>
           {types.map((ty) => (
             <option key={ty.id} value={ty.id}>
-              {ty.name}
+              {toSentenceCase(ty.name)}
             </option>
           ))}
         </select>
@@ -527,9 +528,9 @@ export function ServiceCheckboxList({
             <input type="checkbox" checked={selected.includes(s.id)} onChange={() => toggle(s.id)} />
             <span className="service-checkbox-info">
               <span>
-                {s.name} <span className="service-checkbox-simon">#{s.simon}</span>
+                {toSentenceCase(s.name)} <span className="service-checkbox-simon">#{s.simon}</span>
               </span>
-              <span className="cell-sublabel">{s.type_name}</span>
+              <span className="cell-sublabel">{toSentenceCase(s.type_name)}</span>
             </span>
           </label>
         ))}

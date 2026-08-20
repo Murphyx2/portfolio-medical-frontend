@@ -36,6 +36,7 @@ import type {
 import { useAuth } from "../store/auth";
 import { formatCedula } from "../utils/cedula";
 import { flattenError } from "../utils/errors";
+import { toSentenceCase } from "../utils/text";
 
 const EMPTY_FORM = {
   service_type: 0,
@@ -443,7 +444,7 @@ export function Encounters() {
       },
     },
     { key: "doctor", header: t("encounters.doctor"), sortKey: "doctor__code", render: (r) => r.doctor_info?.code ?? "—" },
-    { key: "service_type_name", header: t("encounters.type") },
+    { key: "service_type_name", header: t("encounters.type"), render: (r) => toSentenceCase(r.service_type_name) },
     { key: "room_name", header: t("encounters.room"), render: (r) => r.room_name ?? "—" },
     { key: "priority", header: t("encounters.priority"), sortKey: "priority", render: (r) => <span className={`badge status-${r.priority.toLowerCase()}`}>{priorityLabel(r.priority)}</span> },
     { key: "status", header: t("common.status"), sortKey: "status", render: (r) => <span className={`badge status-${r.status.toLowerCase()}`}>{statusLabel(r.status)}</span> },
@@ -587,7 +588,7 @@ export function Encounters() {
               <select value={form.service_type} onChange={(e) => handleServiceTypeChange(Number(e.target.value))} required>
                 <option value={0} disabled>—</option>
                 {serviceTypes.map((st) => (
-                  <option key={st.id} value={st.id}>{st.name}</option>
+                  <option key={st.id} value={st.id}>{toSentenceCase(st.name)}</option>
                 ))}
               </select>
             </Field>
@@ -658,7 +659,7 @@ export function Encounters() {
                 <select value={s.service} onChange={(e) => updateServiceLine(i, { service: Number(e.target.value) })}>
                   <option value={0} disabled>—</option>
                   {availableServices.map((sv) => (
-                    <option key={sv.id} value={sv.id}>{sv.name}</option>
+                    <option key={sv.id} value={sv.id}>{toSentenceCase(sv.name)}</option>
                   ))}
                 </select>
               </Field>
@@ -753,7 +754,7 @@ export function Encounters() {
               <h4>{t("encounters.sectionAdmission")}</h4>
               <div className="kv-grid">
                 <div><b>{t("encounters.doctor")}:</b> {detail.doctor_info?.full_name ?? "—"}</div>
-                <div><b>{t("encounters.type")}:</b> {detail.service_type_name}</div>
+                <div><b>{t("encounters.type")}:</b> {toSentenceCase(detail.service_type_name)}</div>
                 <div><b>{t("encounters.room")}:</b> {detail.room_name ?? "—"}</div>
                 <div><b>{t("encounters.referringDoctor")}:</b> {detail.referring_doctor_name || "—"}</div>
                 <div><b>{t("encounters.createdAt")}:</b> {new Date(detail.created_at).toLocaleString()}</div>

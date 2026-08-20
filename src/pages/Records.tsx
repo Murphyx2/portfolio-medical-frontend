@@ -8,6 +8,7 @@ import { useListControls } from "../hooks/useListControls";
 import { api, ApiError, upload } from "../services/api";
 import type { ConsultationLog, MedicalRecord, Paginated, Patient } from "../services/types";
 import { useAuth } from "../store/auth";
+import { formatCedula } from "../utils/cedula";
 import { flattenError } from "../utils/errors";
 
 const EMPTY_RECORD = {
@@ -27,13 +28,6 @@ const EMPTY_LOG = {
   plan: "",
   notes: "",
 };
-
-function formatCedula(value: string): string {
-  const digits = value.replace(/\D/g, "").slice(0, 11);
-  if (digits.length <= 3) return digits;
-  if (digits.length <= 10) return `${digits.slice(0, 3)}-${digits.slice(3)}`;
-  return `${digits.slice(0, 3)}-${digits.slice(3, 10)}-${digits.slice(10)}`;
-}
 
 function recordTitleFor(patient: Patient): string {
   return `${patient.full_name} — ${new Date().toLocaleDateString()}`;

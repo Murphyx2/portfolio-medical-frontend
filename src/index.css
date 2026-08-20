@@ -15,6 +15,13 @@
   box-sizing: border-box;
 }
 
+button,
+input,
+select,
+textarea {
+  font-family: inherit;
+}
+
 body {
   margin: 0;
   font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
@@ -185,6 +192,7 @@ body {
   border-radius: 8px;
   padding: 0.5rem 1rem;
   cursor: pointer;
+  font-family: inherit;
   font-size: 0.9rem;
   background: var(--mc-light);
   color: var(--mc-text);

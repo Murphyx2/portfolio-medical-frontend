@@ -41,19 +41,25 @@ export interface MedicalCenter {
   active: boolean;
 }
 
+export interface ServiceLite {
+  id: number;
+  name: string;
+}
+
 export interface DoctorProfile {
   id: number;
   code: string;
   user_id: number;
   username: string;
   full_name: string;
-  specialty: string;
   license_number: string;
   contact_phone: string;
   contact_email: string;
   bio: string;
   default_room: number | null;
   default_room_name: string | null;
+  services: number[];
+  services_detail: ServiceLite[];
   active: boolean;
 }
 
@@ -219,7 +225,7 @@ export interface Appointment {
   patient: number;
   patient_info: { id: number; full_name: string; gender: string };
   doctor: number;
-  doctor_info: { id: number; full_name: string; specialty: string };
+  doctor_info: { id: number; full_name: string };
   center: number | null;
   center_name: string | null;
   date_time: string;
@@ -276,7 +282,7 @@ export interface Encounter {
   patient: number;
   patient_info: EncounterPatientSummary;
   doctor: number | null;
-  doctor_info: { id: number; code: string; full_name: string; specialty: string } | null;
+  doctor_info: { id: number; code: string; full_name: string } | null;
   referring_doctor_name: string;
   room: number | null;
   room_name: string | null;

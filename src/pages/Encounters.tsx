@@ -403,7 +403,7 @@ export function Encounters() {
 
   // Matches Patients.tsx's click-to-detail pattern: the patient name opens a
   // read-only "full admission details" dialog instead of cramming doctor
-  // full name/specialty, referring doctor, diagnoses, services, coverage,
+  // full name, referring doctor, diagnoses, services, coverage,
   // and timestamps into the list table.
   const openDetailLink = (r: Encounter, content: ReactNode) => (
     <button type="button" className="row-link" onClick={() => setDetail(r)}>
@@ -751,7 +751,7 @@ export function Encounters() {
             <div>
               <h4>{t("encounters.sectionAdmission")}</h4>
               <div className="kv-grid">
-                <div><b>{t("encounters.doctor")}:</b> {detail.doctor_info ? `${detail.doctor_info.full_name} (${detail.doctor_info.specialty})` : "—"}</div>
+                <div><b>{t("encounters.doctor")}:</b> {detail.doctor_info?.full_name ?? "—"}</div>
                 <div><b>{t("encounters.type")}:</b> {detail.service_type_name}</div>
                 <div><b>{t("encounters.room")}:</b> {detail.room_name ?? "—"}</div>
                 <div><b>{t("encounters.referringDoctor")}:</b> {detail.referring_doctor_name || "—"}</div>

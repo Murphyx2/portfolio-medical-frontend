@@ -259,6 +259,7 @@ export function Doctors() {
           onSubmit={submit}
           submitLabel={t("common.save")}
           error={formError}
+          wide
         >
           <Field label={t("doctors.user")}>
             <select

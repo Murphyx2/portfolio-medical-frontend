@@ -533,6 +533,7 @@ export function Encounters() {
             sortKey={sortKey}
             sortDir={sortDir}
             onSort={handleSort}
+            emptyLabel={t("encounters.noDataForDate", { date: new Date(`${dateFilter}T00:00:00`).toLocaleDateString() })}
           />
           <Pagination page={page} count={count} pageSize={pageSize} onChange={setPage} onPageSizeChange={changePageSize} />
         </>

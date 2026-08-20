@@ -5,6 +5,7 @@ import { NavLink, useNavigate } from "react-router-dom";
 import { useAuth } from "../store/auth";
 import type { Role } from "../services/types";
 import { LanguageSwitcher } from "./LanguageSwitcher";
+import { ToastHost } from "./ui";
 
 const NAV: { to: string; key: string; roles?: Role[] }[] = [
   { to: "/", key: "nav.dashboard" },
@@ -67,6 +68,7 @@ export function Layout({ children }: { children: ReactNode }) {
         </header>
         <main className="content">{children}</main>
       </div>
+      <ToastHost />
     </div>
   );
 }

@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 
-import { ConfirmDialog, Field, FormModal, Page, Pagination, SearchableSelect, SearchBar, Spinner, Table, type Column } from "../components/ui";
+import { ConfirmDialog, Field, FormModal, Page, Pagination, SearchableSelect, SearchBar, Spinner, Table, useRowConfirm, type Column } from "../components/ui";
 import { useListControls } from "../hooks/useListControls";
 import { api, ApiError } from "../services/api";
 import type {
@@ -31,9 +31,7 @@ export function Appointments() {
   const [modal, setModal] = useState(false);
   const [form, setForm] = useState(EMPTY);
   const [formError, setFormError] = useState("");
-  const [confirming, setConfirming] = useState<{ type: "complete" | "cancel" | "delete" | "restore"; row: Appointment } | null>(null);
-  const [actionError, setActionError] = useState("");
-  const [actionPending, setActionPending] = useState(false);
+  const confirm = useRowConfirm<"complete" | "cancel" | "delete" | "restore", Appointment>();
   const {
     page,
     setPage,
@@ -105,36 +103,20 @@ export function Appointments() {
     }
   }
 
-  function closeConfirm() {
-    setConfirming(null);
-    setActionError("");
-  }
-
   async function runConfirmedAction() {
-    if (!confirming) return;
-    const { type, row } = confirming;
-    const endpoint =
-      type === "delete" ? { method: "delete" as const, path: `/appointments/${row.id}/` } : { method: "post" as const, path: `/appointments/${row.id}/${type}/` };
-    setActionPending(true);
-    setActionError("");
-    try {
-      if (endpoint.method === "delete") {
-        await api.delete(endpoint.path);
+    await confirm.run(async (type, row) => {
+      if (type === "delete") {
+        await api.delete(`/appointments/${row.id}/`);
       } else {
-        await api.post(endpoint.path, {});
+        await api.post(`/appointments/${row.id}/${type}/`, {});
       }
-      setConfirming(null);
       load();
-    } catch (err) {
-      setActionError(err instanceof ApiError ? flattenError(err.message) : String(err));
-    } finally {
-      setActionPending(false);
-    }
+    });
   }
 
-  const confirmCopy = confirming
+  const confirmCopy = confirm.confirming
     ? (() => {
-        const { type, row } = confirming;
+        const { type, row } = confirm.confirming!;
         const time = new Date(row.date_time).toLocaleString();
         const patient = row.patient_info.full_name;
         switch (type) {
@@ -180,15 +162,15 @@ export function Appointments() {
         <div className="row-actions">
           {canManage && r.status === "SCHEDULED" && (
             <>
-              <button className="btn small" onClick={() => setConfirming({ type: "complete", row: r })}>{t("appointments.complete")}</button>
-              <button className="btn small danger" onClick={() => setConfirming({ type: "cancel", row: r })}>{t("appointments.cancel")}</button>
+              <button className="btn small" onClick={() => confirm.open("complete", r)}>{t("appointments.complete")}</button>
+              <button className="btn small danger" onClick={() => confirm.open("cancel", r)}>{t("appointments.cancel")}</button>
             </>
           )}
           {canDelete && r.active && (
-            <button className="btn small danger" onClick={() => setConfirming({ type: "delete", row: r })}>{t("common.delete")}</button>
+            <button className="btn small danger" onClick={() => confirm.open("delete", r)}>{t("common.delete")}</button>
           )}
           {isAdmin && !r.active && (
-            <button className="btn small" onClick={() => setConfirming({ type: "restore", row: r })}>
+            <button className="btn small" onClick={() => confirm.open("restore", r)}>
               {t("common.restore")}
             </button>
           )}
@@ -300,16 +282,16 @@ export function Appointments() {
         </FormModal>
       )}
 
-      {confirming && confirmCopy && (
+      {confirm.confirming && confirmCopy && (
         <ConfirmDialog
           title={confirmCopy.title}
           message={confirmCopy.message}
           confirmLabel={confirmCopy.confirmLabel}
           danger={confirmCopy.danger}
-          error={actionError}
-          pending={actionPending}
+          error={confirm.error}
+          pending={confirm.pending}
           onConfirm={runConfirmedAction}
-          onCancel={closeConfirm}
+          onCancel={confirm.close}
         />
       )}
     </Page>

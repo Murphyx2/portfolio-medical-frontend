@@ -114,12 +114,17 @@
     "code": "Código",
     "user": "Cuenta de usuario",
     "userRequired": "Selecciona una cuenta de médico.",
-    "specialty": "Especialidad",
     "license": "Número de licencia",
     "contactPhone": "Teléfono de contacto",
     "contactEmail": "Correo de contacto",
     "bio": "Biografía",
-    "fullName": "Nombre completo"
+    "fullName": "Nombre completo",
+    "services": "Servicios",
+    "manageServices": "Gestionar servicios",
+    "noServices": "No hay servicios activos disponibles.",
+    "noServicesMatch": "Ningún servicio coincide con tu búsqueda.",
+    "allServiceTypes": "Todos los tipos de servicio",
+    "moreServices": "+{{count}} más"
   },
   "centers": {
     "title": "Centros Médicos",

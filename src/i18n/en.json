@@ -114,12 +114,17 @@
     "code": "Code",
     "user": "User account",
     "userRequired": "Select a doctor account.",
-    "specialty": "Specialty",
     "license": "License number",
     "contactPhone": "Contact phone",
     "contactEmail": "Contact email",
     "bio": "Bio",
-    "fullName": "Full name"
+    "fullName": "Full name",
+    "services": "Services",
+    "manageServices": "Manage services",
+    "noServices": "No active services available.",
+    "noServicesMatch": "No services match your search.",
+    "allServiceTypes": "All service types",
+    "moreServices": "+{{count}} more"
   },
   "centers": {
     "title": "Medical Centers",

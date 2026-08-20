@@ -619,6 +619,84 @@ input[type="radio"]:focus-visible {
   flex-shrink: 0;
 }
 
+.services-cell {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 0.3rem;
+}
+
+.service-chip-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.3rem;
+}
+
+.service-chip {
+  display: inline-block;
+  border-radius: 999px;
+  padding: 0.15rem 0.6rem;
+  font-size: 0.75rem;
+  background: var(--mc-lightest);
+  color: var(--mc-text);
+  white-space: nowrap;
+}
+
+.service-chip-overflow {
+  background: transparent;
+  border: 1px solid var(--mc-border);
+  color: var(--mc-muted);
+  cursor: help;
+}
+
+/* Nested inside .field (unlike Rooms.tsx's own page-level .list-toolbar
+   select), so .field select's width:100% must be reset here or the type
+   filter fights the flex row for space against the search bar. */
+.service-picker-toolbar select {
+  width: auto;
+  flex-shrink: 0;
+}
+
+.service-checkbox-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+  max-height: 220px;
+  overflow-y: auto;
+  border: 1px solid var(--mc-border);
+  border-radius: 8px;
+  padding: 0.65rem 0.75rem;
+}
+
+.service-checkbox-row {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.5rem;
+  padding: 0.2rem 0;
+  font-size: 0.9rem;
+}
+
+.service-checkbox-row input[type="checkbox"] {
+  width: auto;
+  padding: 0;
+  border: none;
+  border-radius: 0;
+  flex-shrink: 0;
+  margin-top: 0.15rem;
+}
+
+.service-checkbox-info {
+  display: flex;
+  flex-direction: column;
+  gap: 0.05rem;
+}
+
+.service-checkbox-simon {
+  color: var(--mc-muted);
+  font-size: 0.8rem;
+  font-variant-numeric: tabular-nums;
+}
+
 .field-error {
   display: block;
   color: var(--mc-danger);

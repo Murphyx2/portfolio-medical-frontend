@@ -221,6 +221,7 @@ export interface Column<T> {
   header: ReactNode;
   render?: (row: T) => ReactNode;
   sortKey?: string;
+  align?: "center";
 }
 
 export type SortDir = "asc" | "desc";
@@ -290,6 +291,7 @@ export function Table<T extends { id: number }>({
                 <th
                   key={c.key}
                   scope="col"
+                  className={c.align === "center" ? "col-center" : undefined}
                   aria-sort={
                     sortable
                       ? active
@@ -317,7 +319,7 @@ export function Table<T extends { id: number }>({
                 </th>
               );
             })}
-            {hasActions && <th scope="col">{t("common.actions")}</th>}
+            {hasActions && <th scope="col" className="col-center">{t("common.actions")}</th>}
           </tr>
         </thead>
         <tbody>
@@ -331,37 +333,41 @@ export function Table<T extends { id: number }>({
           {rows.map((row) => (
             <tr key={row.id}>
               {columns.map((c) => (
-                <td key={c.key}>{c.render ? c.render(row) : String((row as never)[c.key] ?? "")}</td>
+                <td key={c.key} className={c.align === "center" ? "col-center" : undefined}>
+                  {c.render ? c.render(row) : String((row as never)[c.key] ?? "")}
+                </td>
               ))}
               {hasActions && (
-                <td className="row-actions">
-                  {onEdit && (
-                    <button
-                      className="btn small"
-                      onClick={() => onEdit(row)}
-                      aria-label={`${t("common.edit")} ${getRowLabel?.(row) ?? row.id}`}
-                    >
-                      {t("common.edit")}
-                    </button>
-                  )}
-                  {onDelete && (
-                    <button
-                      className="btn small danger"
-                      onClick={() => setConfirming({ type: "delete", row })}
-                      aria-label={`${t("common.delete")} ${getRowLabel?.(row) ?? row.id}`}
-                    >
-                      {t("common.delete")}
-                    </button>
-                  )}
-                  {onRestore && isInactive?.(row) && (
-                    <button
-                      className="btn small"
-                      onClick={() => setConfirming({ type: "restore", row })}
-                      aria-label={`${t("common.restore")} ${getRowLabel?.(row) ?? row.id}`}
-                    >
-                      {t("common.restore")}
-                    </button>
-                  )}
+                <td className="col-center">
+                  <div className="row-actions">
+                    {onEdit && (
+                      <button
+                        className="btn small"
+                        onClick={() => onEdit(row)}
+                        aria-label={`${t("common.edit")} ${getRowLabel?.(row) ?? row.id}`}
+                      >
+                        {t("common.edit")}
+                      </button>
+                    )}
+                    {onDelete && (
+                      <button
+                        className="btn small danger"
+                        onClick={() => setConfirming({ type: "delete", row })}
+                        aria-label={`${t("common.delete")} ${getRowLabel?.(row) ?? row.id}`}
+                      >
+                        {t("common.delete")}
+                      </button>
+                    )}
+                    {onRestore && isInactive?.(row) && (
+                      <button
+                        className="btn small"
+                        onClick={() => setConfirming({ type: "restore", row })}
+                        aria-label={`${t("common.restore")} ${getRowLabel?.(row) ?? row.id}`}
+                      >
+                        {t("common.restore")}
+                      </button>
+                    )}
+                  </div>
                 </td>
               )}
             </tr>

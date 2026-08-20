@@ -181,8 +181,9 @@ export function Appointments() {
     {
       key: "actions",
       header: t("common.actions"),
+      align: "center",
       render: (r) => (
-        <>
+        <div className="row-actions">
           {canManage && r.status === "SCHEDULED" && (
             <>
               <button className="btn small" onClick={() => setConfirming({ type: "complete", row: r })}>{t("appointments.complete")}</button>
@@ -197,7 +198,7 @@ export function Appointments() {
               {t("common.restore")}
             </button>
           )}
-        </>
+        </div>
       ),
     },
   ];

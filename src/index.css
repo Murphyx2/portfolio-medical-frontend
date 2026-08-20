@@ -383,6 +383,7 @@ body {
   padding: 0.6rem 0.9rem;
   border-top: 1px solid var(--mc-border);
   font-size: 0.9rem;
+  vertical-align: middle;
   white-space: nowrap;
 }
 
@@ -391,8 +392,19 @@ body {
 }
 
 .row-actions {
-  display: flex;
+  display: grid;
+  grid-template-columns: repeat(2, auto);
+  justify-content: center;
   gap: 0.4rem;
+}
+
+.row-actions > *:last-child:nth-child(odd) {
+  grid-column: 1 / -1;
+  justify-self: center;
+}
+
+.col-center {
+  text-align: center;
 }
 
 .row-link {

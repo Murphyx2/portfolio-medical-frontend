@@ -451,8 +451,9 @@ export function Encounters() {
     {
       key: "actions",
       header: t("common.actions"),
+      align: "center",
       render: (r) => (
-        <>
+        <div className="row-actions">
           {canEditRow(r) && (
             <button className="btn small ghost" onClick={() => openEdit(r)}>{t("common.edit")}</button>
           )}
@@ -474,7 +475,7 @@ export function Encounters() {
           {isAdmin && !r.active && (
             <button className="btn small" onClick={() => setConfirming({ type: "restore", row: r })}>{t("common.restore")}</button>
           )}
-        </>
+        </div>
       ),
     },
   ];

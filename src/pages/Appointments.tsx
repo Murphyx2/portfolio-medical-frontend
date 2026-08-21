@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 
 import { ListPage } from "../components/ListPage";
-import { ConfirmDialog, Field, FormModal, SearchableSelect, useRowConfirm, Page, type Column } from "../components/ui";
+import { ConfirmDialog, Field, FormModal, MaskedValue, SearchableSelect, useRowConfirm, Page, type Column } from "../components/ui";
 import { useListPage } from "../hooks/useListPage";
 import { api, ApiError } from "../services/api";
 import { searchPatients } from "../services/patients";
@@ -14,21 +14,34 @@ import type {
   Patient,
 } from "../services/types";
 import { useAuth } from "../store/auth";
+import { can } from "../utils/can";
 import { formatCedula } from "../utils/cedula";
 import { flattenError } from "../utils/errors";
 
 const EMPTY = { patient: 0, doctor: 0, center: 0, date_time: "", duration_minutes: 30, notes: "" };
 
+// Renders an ISO timestamp as the local "YYYY-MM-DDTHH:mm" value a
+// `datetime-local` input expects, so editing an existing appointment
+// prefills the picker in the visitor's own timezone (mirrors `submit()`'s
+// own `new Date(form.date_time).toISOString()` round-trip back out).
+function toDateTimeLocalInput(iso: string): string {
+  const d = new Date(iso);
+  const pad = (n: number) => String(n).padStart(2, "0");
+  return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
+}
+
 export function Appointments() {
   const { t } = useTranslation();
   const { user } = useAuth();
-  const canManage = user?.role === "DOCTOR" || user?.role === "RECEPTIONIST" || user?.role === "ADMIN";
-  const canDelete = user?.role === "ADMIN" || user?.role === "DOCTOR";
-  const isAdmin = user?.role === "ADMIN";
+  const canManage = can(user?.role, "manage", "appointments");
+  const canEdit = can(user?.role, "edit", "appointments");
+  const canDelete = can(user?.role, "delete", "appointments");
+  const isAdmin = can(user?.role, "restore", "appointments");
   const [selectedPatient, setSelectedPatient] = useState<Patient | null>(null);
   const [doctors, setDoctors] = useState<DoctorProfile[]>([]);
   const [centers, setCenters] = useState<MedicalCenter[]>([]);
   const [modal, setModal] = useState(false);
+  const [editingAppointment, setEditingAppointment] = useState<Appointment | null>(null);
   const [form, setForm] = useState(EMPTY);
   const [formError, setFormError] = useState("");
   const confirm = useRowConfirm<"complete" | "cancel" | "delete" | "restore", Appointment>();
@@ -64,16 +77,33 @@ export function Appointments() {
     setForm({ ...form, patient: p.id });
   }
 
+  function openEdit(a: Appointment) {
+    setEditingAppointment(a);
+    setSelectedPatient(null);
+    setForm({
+      patient: a.patient,
+      doctor: a.doctor,
+      center: a.center ?? 0,
+      date_time: toDateTimeLocalInput(a.date_time),
+      duration_minutes: a.duration_minutes,
+      notes: a.notes,
+    });
+    setFormError("");
+    setModal(true);
+  }
+
   async function submit() {
     setFormError("");
+    const body = {
+      ...form,
+      patient: Number(form.patient),
+      doctor: Number(form.doctor),
+      center: Number(form.center) || null,
+      date_time: new Date(form.date_time).toISOString(),
+    };
     try {
-      await api.post("/appointments/", {
-        ...form,
-        patient: Number(form.patient),
-        doctor: Number(form.doctor),
-        center: Number(form.center) || null,
-        date_time: new Date(form.date_time).toISOString(),
-      });
+      if (editingAppointment) await api.patch(`/appointments/${editingAppointment.id}/`, body);
+      else await api.post("/appointments/", body);
       setModal(false);
       load();
     } catch (err) {
@@ -138,6 +168,9 @@ export function Appointments() {
       align: "center",
       render: (r) => (
         <div className="row-actions">
+          {canEdit && r.active && (
+            <button className="btn small ghost" onClick={() => openEdit(r)}>{t("common.edit")}</button>
+          )}
           {canManage && r.status === "SCHEDULED" && (
             <>
               <button className="btn small" onClick={() => confirm.open("complete", r)}>{t("appointments.complete")}</button>
@@ -162,7 +195,10 @@ export function Appointments() {
       title={t("appointments.title")}
       actions={
         canManage && (
-          <button className="btn primary" onClick={() => { setForm(EMPTY); setSelectedPatient(null); setFormError(""); setModal(true); }}>
+          <button
+            className="btn primary"
+            onClick={() => { setEditingAppointment(null); setForm(EMPTY); setSelectedPatient(null); setFormError(""); setModal(true); }}
+          >
             + {t("appointments.new")}
           </button>
         )
@@ -190,22 +226,26 @@ export function Appointments() {
 
       {modal && (
         <FormModal
-          title={t("appointments.new")}
+          title={editingAppointment ? t("common.edit") : t("appointments.new")}
           onClose={() => setModal(false)}
           onSubmit={submit}
           submitLabel={t("common.save")}
           error={formError}
         >
-          <Field label={t("appointments.patient")}>
-            <SearchableSelect<Patient>
-              value={selectedPatient}
-              onSelect={pickPatient}
-              search={searchPatients}
-              placeholder={t("records.patientPickerPlaceholder")}
-              getLabel={(p) => p.full_name}
-              getSublabel={(p) => `${formatCedula(p.cedula)} · NSS ${p.nss || "—"}`}
-            />
-          </Field>
+          {editingAppointment ? (
+            <p><MaskedValue value={editingAppointment.patient_info.full_name} /></p>
+          ) : (
+            <Field label={t("appointments.patient")}>
+              <SearchableSelect<Patient>
+                value={selectedPatient}
+                onSelect={pickPatient}
+                search={searchPatients}
+                placeholder={t("records.patientPickerPlaceholder")}
+                getLabel={(p) => p.full_name}
+                getSublabel={(p) => `${formatCedula(p.cedula)} · NSS ${p.nss || "—"}`}
+              />
+            </Field>
+          )}
           <Field label={t("appointments.doctor")}>
             <select value={form.doctor} onChange={(e) => setForm({ ...form, doctor: Number(e.target.value) })} required>
               <option value={0} disabled>—</option>

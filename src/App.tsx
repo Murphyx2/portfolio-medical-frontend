@@ -1,7 +1,9 @@
+import type { ReactNode } from "react";
 import { Route, Routes } from "react-router-dom";
 
 import { Layout } from "./components/Layout";
 import { ProtectedRoute } from "./components/guards";
+import type { Resource } from "./utils/can";
 import { Appointments } from "./pages/Appointments";
 import { Ars } from "./pages/Ars";
 import { Centers } from "./pages/Centers";
@@ -18,150 +20,46 @@ import { ServiceTypes } from "./pages/ServiceTypes";
 import { Services } from "./pages/Services";
 import { Users } from "./pages/Users";
 
+/**
+ * Data-driven route table. Each entry's `resource` (when present) is the
+ * single thing `ProtectedRoute` checks via `can(role, "view", resource)` --
+ * replaces the previous hand-written per-route JSX plus the 4 page-local
+ * `RoleGate` wraps (Users, Ars, Centers, Records). Routes with no `resource`
+ * stay open to all authenticated roles, matching current nav/page behavior
+ * (Dashboard has no resource of its own).
+ */
+const ROUTES: { path: string; element: ReactNode; resource?: Resource }[] = [
+  { path: "/", element: <Dashboard /> },
+  { path: "/patients", element: <Patients />, resource: "patients" },
+  { path: "/doctors", element: <Doctors />, resource: "doctors" },
+  { path: "/centers", element: <Centers />, resource: "centers" },
+  { path: "/medicines", element: <Medicines />, resource: "medicines" },
+  { path: "/rooms", element: <Rooms />, resource: "rooms" },
+  { path: "/rooms/types", element: <RoomTypes />, resource: "roomTypes" },
+  { path: "/ars", element: <Ars />, resource: "ars" },
+  { path: "/appointments", element: <Appointments />, resource: "appointments" },
+  { path: "/encounters", element: <Encounters />, resource: "encounters" },
+  { path: "/records", element: <Records />, resource: "records" },
+  { path: "/services", element: <Services />, resource: "services" },
+  { path: "/services/types", element: <ServiceTypes />, resource: "serviceTypes" },
+  { path: "/users", element: <Users />, resource: "users" },
+];
+
 export default function App() {
   return (
     <Routes>
       <Route path="/login" element={<Login />} />
-      <Route
-        path="/"
-        element={
-          <ProtectedRoute>
-            <Layout>
-              <Dashboard />
-            </Layout>
-          </ProtectedRoute>
-        }
-      />
-      <Route
-        path="/patients"
-        element={
-          <ProtectedRoute>
-            <Layout>
-              <Patients />
-            </Layout>
-          </ProtectedRoute>
-        }
-      />
-      <Route
-        path="/doctors"
-        element={
-          <ProtectedRoute>
-            <Layout>
-              <Doctors />
-            </Layout>
-          </ProtectedRoute>
-        }
-      />
-      <Route
-        path="/centers"
-        element={
-          <ProtectedRoute>
-            <Layout>
-              <Centers />
-            </Layout>
-          </ProtectedRoute>
-        }
-      />
-      <Route
-        path="/medicines"
-        element={
-          <ProtectedRoute>
-            <Layout>
-              <Medicines />
-            </Layout>
-          </ProtectedRoute>
-        }
-      />
-      <Route
-        path="/rooms"
-        element={
-          <ProtectedRoute>
-            <Layout>
-              <Rooms />
-            </Layout>
-          </ProtectedRoute>
-        }
-      />
-      <Route
-        path="/rooms/types"
-        element={
-          <ProtectedRoute>
-            <Layout>
-              <RoomTypes />
-            </Layout>
-          </ProtectedRoute>
-        }
-      />
-      <Route
-        path="/ars"
-        element={
-          <ProtectedRoute>
-            <Layout>
-              <Ars />
-            </Layout>
-          </ProtectedRoute>
-        }
-      />
-      <Route
-        path="/appointments"
-        element={
-          <ProtectedRoute>
-            <Layout>
-              <Appointments />
-            </Layout>
-          </ProtectedRoute>
-        }
-      />
-      <Route
-        path="/encounters"
-        element={
-          <ProtectedRoute>
-            <Layout>
-              <Encounters />
-            </Layout>
-          </ProtectedRoute>
-        }
-      />
-      <Route
-        path="/records"
-        element={
-          <ProtectedRoute>
-            <Layout>
-              <Records />
-            </Layout>
-          </ProtectedRoute>
-        }
-      />
-      <Route
-        path="/services"
-        element={
-          <ProtectedRoute>
-            <Layout>
-              <Services />
-            </Layout>
-          </ProtectedRoute>
-        }
-      />
-      <Route
-        path="/services/types"
-        element={
-          <ProtectedRoute>
-            <Layout>
-              <ServiceTypes />
-            </Layout>
-          </ProtectedRoute>
-        }
-      />
-      <Route
-        path="/users"
-        element={
-          <ProtectedRoute>
-            <Layout>
-              <Users />
-            </Layout>
-          </ProtectedRoute>
-        }
-      />
+      {ROUTES.map(({ path, element, resource }) => (
+        <Route
+          key={path}
+          path={path}
+          element={
+            <ProtectedRoute resource={resource}>
+              <Layout>{element}</Layout>
+            </ProtectedRoute>
+          }
+        />
+      ))}
     </Routes>
   );
 }

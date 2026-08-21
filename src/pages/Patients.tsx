@@ -8,14 +8,17 @@ import { useListPage } from "../hooks/useListPage";
 import { api } from "../services/api";
 import type { Patient } from "../services/types";
 import { useAuth } from "../store/auth";
+import { can } from "../utils/can";
 import { formatCedula } from "../utils/cedula";
 import { formatPhone } from "../utils/phone";
 
 export function Patients() {
   const { t } = useTranslation();
   const { user } = useAuth();
-  const isAdmin = user?.role === "ADMIN";
-  const canDelete = user?.role === "ADMIN" || user?.role === "DOCTOR";
+  const isAdmin = can(user?.role, "restore", "patients");
+  const canCreate = can(user?.role, "create", "patients");
+  const canEdit = can(user?.role, "edit", "patients");
+  const canDelete = can(user?.role, "delete", "patients");
   const [modal, setModal] = useState(false);
   const [editingPatient, setEditingPatient] = useState<Patient | null>(null);
   const [detail, setDetail] = useState<Patient | null>(null);
@@ -182,9 +185,11 @@ export function Patients() {
     <Page
       title={t("patients.title")}
       actions={
-        <button className="btn primary" onClick={openNew}>
-          + {t("patients.new")}
-        </button>
+        canCreate && (
+          <button className="btn primary" onClick={openNew}>
+            + {t("patients.new")}
+          </button>
+        )
       }
     >
       <ListPage<Patient>
@@ -203,7 +208,7 @@ export function Patients() {
         columns={columns}
         activeAccessor={(r) => r.active}
         rows={displayRows}
-        onEdit={openEdit}
+        onEdit={canEdit ? openEdit : undefined}
         onDelete={canDelete ? remove : undefined}
         onRestore={isAdmin ? restore : undefined}
         getRowLabel={(r) => r.full_name}

@@ -32,6 +32,7 @@ import type {
   ServiceType,
 } from "../services/types";
 import { useAuth } from "../store/auth";
+import { can } from "../utils/can";
 import { formatCedula } from "../utils/cedula";
 import { flattenError } from "../utils/errors";
 import { toSentenceCase } from "../utils/text";
@@ -72,14 +73,9 @@ export function Encounters() {
   const { t } = useTranslation();
   const { user } = useAuth();
   const navigate = useNavigate();
-  const canManage =
-    user?.role === "ADMIN" ||
-    user?.role === "DOCTOR" ||
-    user?.role === "RECEPTIONIST" ||
-    user?.role === "NURSE" ||
-    user?.role === "CENTER_MANAGER";
-  const isAdmin = user?.role === "ADMIN";
-  const canDelete = user?.role === "ADMIN" || user?.role === "IT";
+  const canManage = can(user?.role, "manage", "encounters");
+  const isAdmin = can(user?.role, "restore", "encounters");
+  const canDelete = can(user?.role, "delete", "encounters");
 
   const [doctors, setDoctors] = useState<DoctorProfile[]>([]);
   const [rooms, setRooms] = useState<Room[]>([]);

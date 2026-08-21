@@ -3,11 +3,11 @@ import { useTranslation } from "react-i18next";
 
 import { ListPage } from "../components/ListPage";
 import { FormModal, Page, type Column } from "../components/ui";
-import { RoleGate } from "../components/guards";
 import { useListPage } from "../hooks/useListPage";
 import { api, ApiError } from "../services/api";
 import type { ARS, ARSProgram } from "../services/types";
 import { useAuth } from "../store/auth";
+import { can } from "../utils/can";
 import { flattenError } from "../utils/errors";
 
 interface ProgramDraft {
@@ -24,7 +24,8 @@ const EMPTY: { ars_id: string; name: string; programs: ProgramDraft[] } = {
 export function Ars() {
   const { t } = useTranslation();
   const { user } = useAuth();
-  const isAdmin = user?.role === "ADMIN";
+  const isAdmin = can(user?.role, "showInactive", "ars");
+  const canWrite = can(user?.role, "create", "ars");
   const [modal, setModal] = useState(false);
   const [form, setForm] = useState(EMPTY);
   const [editId, setEditId] = useState<number | null>(null);
@@ -104,11 +105,10 @@ export function Ars() {
   ];
 
   return (
-    <RoleGate roles={["ADMIN", "RECEPTIONIST"]}>
       <Page
         title={t("ars.title")}
         actions={
-          isAdmin && (
+          canWrite && (
             <button className="btn primary" onClick={openNew}>
               + {t("ars.new")}
             </button>
@@ -131,8 +131,8 @@ export function Ars() {
           columns={columns}
           activeAccessor={(r) => r.active}
           rows={rows}
-          onEdit={isAdmin ? openEdit : undefined}
-          onDelete={isAdmin ? remove : undefined}
+          onEdit={canWrite ? openEdit : undefined}
+          onDelete={canWrite ? remove : undefined}
           onRestore={isAdmin ? restore : undefined}
           getRowLabel={(r) => r.name}
           isInactive={(r) => !r.active}
@@ -205,6 +205,5 @@ export function Ars() {
           </FormModal>
         )}
       </Page>
-    </RoleGate>
   );
 }

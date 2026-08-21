@@ -8,6 +8,7 @@ import { useListPage } from "../hooks/useListPage";
 import { api, ApiError } from "../services/api";
 import type { ServiceType } from "../services/types";
 import { useAuth } from "../store/auth";
+import { can } from "../utils/can";
 import { flattenError } from "../utils/errors";
 
 const EMPTY = { name: "", requires_doctor: false, requires_diagnosis: true };
@@ -16,8 +17,8 @@ export function ServiceTypes() {
   const { t } = useTranslation();
   const { user } = useAuth();
   const navigate = useNavigate();
-  const canEdit = user?.role === "ADMIN" || user?.role === "CENTER_MANAGER";
-  const isAdmin = user?.role === "ADMIN";
+  const canEdit = can(user?.role, "edit", "serviceTypes");
+  const isAdmin = can(user?.role, "restore", "serviceTypes");
   const [modal, setModal] = useState(false);
   const [form, setForm] = useState(EMPTY);
   const [editId, setEditId] = useState<number | null>(null);

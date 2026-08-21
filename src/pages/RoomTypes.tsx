@@ -8,6 +8,7 @@ import { useListPage } from "../hooks/useListPage";
 import { api, ApiError } from "../services/api";
 import type { RoomType } from "../services/types";
 import { useAuth } from "../store/auth";
+import { can } from "../utils/can";
 import { flattenError } from "../utils/errors";
 
 const EMPTY = { name: "" };
@@ -16,10 +17,10 @@ export function RoomTypes() {
   const { t } = useTranslation();
   const { user } = useAuth();
   const navigate = useNavigate();
-  const canCreate = user?.role === "ADMIN" || user?.role === "IT";
-  const canEdit = canCreate || user?.role === "RECEPTIONIST";
-  const canDelete = canCreate;
-  const isAdmin = user?.role === "ADMIN";
+  const canCreate = can(user?.role, "create", "roomTypes");
+  const canEdit = can(user?.role, "edit", "roomTypes");
+  const canDelete = can(user?.role, "delete", "roomTypes");
+  const isAdmin = can(user?.role, "restore", "roomTypes");
   const [modal, setModal] = useState(false);
   const [form, setForm] = useState(EMPTY);
   const [editId, setEditId] = useState<number | null>(null);

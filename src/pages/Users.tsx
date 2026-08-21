@@ -3,11 +3,11 @@ import { useTranslation } from "react-i18next";
 
 import { ListPage } from "../components/ListPage";
 import { Field, FormModal, Page, type Column } from "../components/ui";
-import { RoleGate } from "../components/guards";
 import { useListPage } from "../hooks/useListPage";
 import { api, ApiError } from "../services/api";
 import type { User } from "../services/types";
 import { useAuth } from "../store/auth";
+import { can } from "../utils/can";
 import { flattenError } from "../utils/errors";
 
 const EMPTY = { username: "", email: "", first_name: "", last_name: "", password: "", role: "RECEPTIONIST" };
@@ -15,7 +15,9 @@ const EMPTY = { username: "", email: "", first_name: "", last_name: "", password
 export function Users() {
   const { t } = useTranslation();
   const { user } = useAuth();
-  const isAdmin = user?.role === "ADMIN";
+  const isAdmin = can(user?.role, "assignAdminRole", "users");
+  const canEdit = can(user?.role, "edit", "users");
+  const canDelete = can(user?.role, "delete", "users");
   const [modal, setModal] = useState(false);
   const [form, setForm] = useState(EMPTY);
   const [editId, setEditId] = useState<number | null>(null);
@@ -100,13 +102,14 @@ export function Users() {
   ];
 
   return (
-    <RoleGate roles={["ADMIN", "IT"]}>
       <Page
         title={t("users.title")}
         actions={
-          <button className="btn primary" onClick={openNew}>
-            + {t("users.new")}
-          </button>
+          can(user?.role, "create", "users") && (
+            <button className="btn primary" onClick={openNew}>
+              + {t("users.new")}
+            </button>
+          )
         }
       >
         <ListPage<User>
@@ -124,8 +127,8 @@ export function Users() {
           onPageSizeChange={changePageSize}
           columns={columns}
           rows={rows}
-          onEdit={openEdit}
-          onDelete={remove}
+          onEdit={canEdit ? openEdit : undefined}
+          onDelete={canDelete ? remove : undefined}
           onRestore={isAdmin ? restore : undefined}
           getRowLabel={(r) => r.full_name || r.username}
           isInactive={(r) => !r.is_active}
@@ -171,6 +174,5 @@ export function Users() {
           </FormModal>
         )}
       </Page>
-    </RoleGate>
   );
 }

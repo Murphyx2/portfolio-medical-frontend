@@ -4,12 +4,12 @@ import { useSearchParams } from "react-router-dom";
 
 import { ListPage } from "../components/ListPage";
 import { Dialog, Field, FormModal, MaskedValue, SearchableSelect, Page, type Column } from "../components/ui";
-import { RoleGate } from "../components/guards";
 import { useListPage } from "../hooks/useListPage";
 import { api, ApiError, upload } from "../services/api";
 import { searchPatients } from "../services/patients";
 import type { ConsultationLog, MedicalRecord, Paginated, Patient } from "../services/types";
 import { useAuth } from "../store/auth";
+import { can } from "../utils/can";
 import { formatCedula } from "../utils/cedula";
 import { flattenError } from "../utils/errors";
 
@@ -38,8 +38,9 @@ function recordTitleFor(patient: Patient): string {
 export function Records() {
   const { t } = useTranslation();
   const { user } = useAuth();
-  const canCreate = user?.role === "DOCTOR" || user?.role === "NURSE" || user?.role === "ADMIN";
-  const isAdmin = user?.role === "ADMIN";
+  const canCreate = can(user?.role, "create", "records");
+  const canDelete = can(user?.role, "delete", "records");
+  const isAdmin = can(user?.role, "restore", "records");
   const [patients, setPatients] = useState<Patient[]>([]);
   const [detail, setDetail] = useState<MedicalRecord | null>(null);
   const [logs, setLogs] = useState<ConsultationLog[]>([]);
@@ -253,7 +254,6 @@ export function Records() {
   }
 
   return (
-    <RoleGate roles={["ADMIN", "DOCTOR", "IT", "NURSE", "CENTER_MANAGER"]}>
     <Page
       title={t("records.title")}
       actions={
@@ -280,7 +280,7 @@ export function Records() {
         columns={columns}
         activeAccessor={(r) => r.active}
         rows={rows}
-        onDelete={canCreate ? removeRecord : undefined}
+        onDelete={canDelete ? removeRecord : undefined}
         onRestore={isAdmin ? restoreRecord : undefined}
         getRowLabel={(r) => r.patient_info.full_name}
         isInactive={(r) => !r.active}
@@ -416,6 +416,5 @@ export function Records() {
         </FormModal>
       )}
     </Page>
-    </RoleGate>
   );
 }

@@ -7,6 +7,7 @@ import { useListPage } from "../hooks/useListPage";
 import { api, ApiError } from "../services/api";
 import type { Medicine } from "../services/types";
 import { useAuth } from "../store/auth";
+import { can } from "../utils/can";
 import { flattenError } from "../utils/errors";
 
 const EMPTY = { generic_name: "", commercial_name: "", concentration: "" };
@@ -14,9 +15,9 @@ const EMPTY = { generic_name: "", commercial_name: "", concentration: "" };
 export function Medicines() {
   const { t } = useTranslation();
   const { user } = useAuth();
-  const canWrite = user?.role === "ADMIN" || user?.role === "IT" || user?.role === "RECEPTIONIST";
-  const canDelete = user?.role === "ADMIN" || user?.role === "IT";
-  const isAdmin = user?.role === "ADMIN";
+  const canWrite = can(user?.role, "edit", "medicines");
+  const canDelete = can(user?.role, "delete", "medicines");
+  const isAdmin = can(user?.role, "restore", "medicines");
   const [modal, setModal] = useState(false);
   const [form, setForm] = useState(EMPTY);
   const [editId, setEditId] = useState<number | null>(null);

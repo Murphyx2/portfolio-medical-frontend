@@ -7,6 +7,7 @@ import { useListPage } from "../hooks/useListPage";
 import { api, ApiError } from "../services/api";
 import type { DoctorProfile, Paginated, Service, User } from "../services/types";
 import { useAuth } from "../store/auth";
+import { can } from "../utils/can";
 import { flattenError } from "../utils/errors";
 import { formatPhone, formatPhoneInput, isValidRequiredPhone } from "../utils/phone";
 
@@ -15,9 +16,9 @@ const EMPTY = { user: 0, license_number: "", contact_phone: "", contact_email: "
 export function Doctors() {
   const { t } = useTranslation();
   const { user } = useAuth();
-  const canEdit = user?.role === "ADMIN" || user?.role === "IT";
-  const canEditServices = user?.role === "ADMIN" || user?.role === "CENTER_MANAGER";
-  const isAdmin = user?.role === "ADMIN";
+  const canEdit = can(user?.role, "edit", "doctors");
+  const canEditServices = can(user?.role, "manageServices", "doctors");
+  const isAdmin = can(user?.role, "restore", "doctors");
   const [userOptions, setUserOptions] = useState<User[]>([]);
   const [services, setServices] = useState<Service[]>([]);
   const [modal, setModal] = useState(false);

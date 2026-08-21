@@ -3,11 +3,11 @@ import { useTranslation } from "react-i18next";
 
 import { ListPage } from "../components/ListPage";
 import { Field, FormModal, Page, type Column } from "../components/ui";
-import { RoleGate } from "../components/guards";
 import { useListPage } from "../hooks/useListPage";
 import { api, ApiError } from "../services/api";
 import type { MedicalCenter } from "../services/types";
 import { useAuth } from "../store/auth";
+import { can } from "../utils/can";
 import { flattenError } from "../utils/errors";
 import { formatPhone, formatPhoneInput, isValidRequiredPhone } from "../utils/phone";
 
@@ -16,8 +16,8 @@ const EMPTY = { name: "", code: "", address: "", phone: "", email: "", is_defaul
 export function Centers() {
   const { t } = useTranslation();
   const { user } = useAuth();
-  const canEdit = user?.role === "ADMIN" || user?.role === "IT";
-  const isAdmin = user?.role === "ADMIN";
+  const canEdit = can(user?.role, "edit", "centers");
+  const isAdmin = can(user?.role, "restore", "centers");
   const [modal, setModal] = useState(false);
   const [form, setForm] = useState(EMPTY);
   const [editId, setEditId] = useState<number | null>(null);
@@ -112,7 +112,6 @@ export function Centers() {
   ];
 
   return (
-    <RoleGate roles={["ADMIN", "DOCTOR", "IT", "NURSE", "CENTER_MANAGER"]}>
     <Page
       title={t("centers.title")}
       actions={
@@ -195,6 +194,5 @@ export function Centers() {
         </FormModal>
       )}
     </Page>
-    </RoleGate>
   );
 }

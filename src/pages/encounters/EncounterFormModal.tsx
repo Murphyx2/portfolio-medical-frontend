@@ -123,6 +123,15 @@ export function EncounterFormModal({
   // required unless the derived type explicitly says otherwise. Fails safe
   // toward "required" before any service is picked yet.
   const doctorRequired = !derivedServiceType || derivedServiceType.requires_doctor;
+  // Surfaced as an early warning in the Diagnoses column below -- the
+  // backend only enforces this at admit time (Encounter.ready_for_active()),
+  // so a DRAFT can still be saved without one; this just lets the user see
+  // it coming while they're still filling out the draft instead of only
+  // discovering it when the admit attempt fails. Mirrors the backend's
+  // exact check (a primary diagnosis with a non-blank description), not
+  // just "any diagnosis line."
+  const diagnosisRequired = !!derivedServiceType?.requires_diagnosis;
+  const hasPrimaryDiagnosis = form.diagnoses.some((d) => d.is_primary && d.description.trim());
 
   // Only service types that actually need a specific doctor present
   // participate in doctor<->service filtering -- e.g. lab/vaccination-style
@@ -369,6 +378,9 @@ export function EncounterFormModal({
       <div className="form-columns">
         <div>
           <h4>{t("encounters.sectionDiagnoses")}</h4>
+          {diagnosisRequired && !hasPrimaryDiagnosis && (
+            <p className="encounter-alert-warning">{t("encounters.diagnosisRequiredWarning")}</p>
+          )}
           {form.diagnoses.map((d, i) => (
             <div key={i} className="form-columns encounter-line-row">
               <Field label={t("encounters.diagnosisDescription")}>

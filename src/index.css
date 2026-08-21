@@ -7,6 +7,9 @@
   --mc-muted: #4f6f92;
   --mc-border: #d3e4f7;
   --mc-danger: #d32f2f;
+  --mc-warning: #ef6c00;
+  --mc-warning-bg: #fff4e5;
+  --mc-warning-text: #7a3e00;
   --mc-white: #ffffff;
   --mc-topbar-height: 3.25rem;
 }
@@ -954,6 +957,26 @@ input[type="radio"]:focus-visible {
 .encounter-alert {
   color: var(--mc-danger);
   font-weight: 600;
+}
+
+.encounter-alert-warning {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.4rem;
+  color: var(--mc-warning-text);
+  background: var(--mc-warning-bg);
+  border: 1px solid var(--mc-warning);
+  border-radius: 6px;
+  padding: 0.5rem 0.6rem;
+  margin: 0 0 0.75rem;
+  font-size: 0.85rem;
+  font-weight: 500;
+}
+
+.encounter-alert-warning::before {
+  content: "⚠";
+  line-height: 1.3;
+  color: var(--mc-warning);
 }
 
 .encounter-line-row {

@@ -281,7 +281,8 @@
     "arsLockedNote": "This patient already has an ARS/Program on file; they can't be changed here.",
     "patientRequired": "Select a patient.",
     "typeAndDoctorRequired": "Select the service type and doctor.",
-    "servicesRequired": "At least one service is required."
+    "servicesRequired": "At least one service is required.",
+    "diagnosisRequiredWarning": "This service requires a primary diagnosis before the patient can be admitted."
   },
   "records": {
     "title": "Medical Records",

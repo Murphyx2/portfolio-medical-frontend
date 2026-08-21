@@ -2,7 +2,8 @@ import { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 
 import { ListPage } from "../components/ListPage";
-import { Field, FormModal, MaskedValue, ServiceChipList, ServiceCheckboxList, Page, type Column } from "../components/ui";
+import { Field, FormModal, MaskedValue, Page, type Column } from "../components/ui";
+import { ServiceChipList, ServiceCheckboxList } from "./doctors/ServicePickers";
 import { useListPage } from "../hooks/useListPage";
 import { api, ApiError } from "../services/api";
 import type { DoctorProfile, Paginated, Service, User } from "../services/types";

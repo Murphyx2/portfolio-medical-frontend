@@ -328,6 +328,10 @@ body {
   width: min(860px, 94vw);
 }
 
+.modal.xwide {
+  width: min(1100px, 96vw);
+}
+
 .form-columns {
   display: grid;
   grid-template-columns: 1fr 1fr;

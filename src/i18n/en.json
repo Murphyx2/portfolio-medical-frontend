@@ -126,7 +126,13 @@
     "noServices": "No active services available.",
     "noServicesMatch": "No services match your search.",
     "allServiceTypes": "All service types",
-    "moreServices": "+{{count}} more"
+    "moreServices": "+{{count}} more",
+    "rooms": "Rooms",
+    "manageRooms": "Manage rooms",
+    "noRooms": "No active rooms available.",
+    "noRoomsMatch": "No rooms match your search.",
+    "allRoomTypes": "All room types",
+    "moreRooms": "+{{count}} more"
   },
   "centers": {
     "title": "Medical Centers",

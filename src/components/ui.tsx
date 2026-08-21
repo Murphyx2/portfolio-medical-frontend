@@ -77,11 +77,12 @@ const DIALOG_FOCUSABLE_SELECTOR =
  * the focus trap. Composed by FormModal; also used directly by dialogs that
  * don't fit the single-submit/cancel shape (e.g. Records' detail view).
  */
-export function Dialog({ title, onClose, children, wide, preventClose }: {
+export function Dialog({ title, onClose, children, wide, xwide, preventClose }: {
   title: ReactNode;
   onClose: () => void;
   children: ReactNode;
   wide?: boolean;
+  xwide?: boolean;
   preventClose?: boolean;
 }) {
   const pressOnBackdrop = useRef(false);
@@ -139,7 +140,7 @@ export function Dialog({ title, onClose, children, wide, preventClose }: {
     >
       <div
         ref={modalRef}
-        className={wide ? "modal wide" : "modal"}
+        className={xwide ? "modal xwide" : wide ? "modal wide" : "modal"}
         role="dialog"
         aria-modal="true"
         aria-labelledby={titleId}
@@ -157,13 +158,14 @@ export function Dialog({ title, onClose, children, wide, preventClose }: {
   );
 }
 
-export function FormModal({ title, onClose, onSubmit, children, submitLabel, error, wide }: {
+export function FormModal({ title, onClose, onSubmit, children, submitLabel, error, wide, xwide }: {
   title: string;
   onClose: () => void;
   onSubmit: () => void | Promise<void>;
   submitLabel: string;
   error?: string;
   wide?: boolean;
+  xwide?: boolean;
   children: ReactNode;
 }) {
   const [submitting, setSubmitting] = useState(false);
@@ -181,7 +183,7 @@ export function FormModal({ title, onClose, onSubmit, children, submitLabel, err
   }
 
   return (
-    <Dialog title={title} onClose={onClose} preventClose={submitting} wide={wide}>
+    <Dialog title={title} onClose={onClose} preventClose={submitting} wide={wide} xwide={xwide}>
       <form onSubmit={handleSubmit}>
         {children}
         {error && (

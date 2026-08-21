@@ -4,24 +4,35 @@ import { useTranslation } from "react-i18next";
 import { ListPage } from "../components/ListPage";
 import { Field, FormModal, MaskedValue, Page, type Column } from "../components/ui";
 import { ServiceChipList, ServiceCheckboxList } from "./doctors/ServicePickers";
+import { RoomChipList, RoomCheckboxList } from "./doctors/RoomPickers";
 import { useListPage } from "../hooks/useListPage";
 import { api, ApiError } from "../services/api";
-import type { DoctorProfile, Paginated, Service, User } from "../services/types";
+import type { DoctorProfile, Paginated, Room, Service, User } from "../services/types";
 import { useAuth } from "../store/auth";
 import { can } from "../utils/can";
 import { flattenError } from "../utils/errors";
 import { formatPhone, formatPhoneInput, isValidRequiredPhone } from "../utils/phone";
 
-const EMPTY = { user: 0, license_number: "", contact_phone: "", contact_email: "", bio: "", services: [] as number[] };
+const EMPTY = {
+  user: 0,
+  license_number: "",
+  contact_phone: "",
+  contact_email: "",
+  bio: "",
+  services: [] as number[],
+  rooms: [] as number[],
+};
 
 export function Doctors() {
   const { t } = useTranslation();
   const { user } = useAuth();
   const canEdit = can(user?.role, "edit", "doctors");
   const canEditServices = can(user?.role, "manageServices", "doctors");
+  const canEditRooms = can(user?.role, "manageRooms", "doctors");
   const isAdmin = can(user?.role, "restore", "doctors");
   const [userOptions, setUserOptions] = useState<User[]>([]);
   const [services, setServices] = useState<Service[]>([]);
+  const [rooms, setRooms] = useState<Room[]>([]);
   const [modal, setModal] = useState(false);
   const [form, setForm] = useState(EMPTY);
   const [editId, setEditId] = useState<number | null>(null);
@@ -31,6 +42,9 @@ export function Doctors() {
   const [servicesModalDoctor, setServicesModalDoctor] = useState<DoctorProfile | null>(null);
   const [servicesSelected, setServicesSelected] = useState<number[]>([]);
   const [servicesError, setServicesError] = useState("");
+  const [roomsModalDoctor, setRoomsModalDoctor] = useState<DoctorProfile | null>(null);
+  const [roomsSelected, setRoomsSelected] = useState<number[]>([]);
+  const [roomsError, setRoomsError] = useState("");
   const {
     rows,
     page,
@@ -64,6 +78,11 @@ export function Doctors() {
     api.get<Paginated<Service>>("/services/?page_size=200").then((r) => setServices(r.results)).catch(() => {});
   }, [canEdit, canEditServices]);
 
+  useEffect(() => {
+    if (!canEdit && !canEditRooms) return;
+    api.get<Paginated<Room>>("/rooms/?page_size=100").then((r) => setRooms(r.results)).catch(() => {});
+  }, [canEdit, canEditRooms]);
+
   function openNew() {
     setForm(EMPTY);
     setEditId(null);
@@ -81,6 +100,7 @@ export function Doctors() {
       contact_email: d.contact_email,
       bio: d.bio,
       services: d.services,
+      rooms: d.rooms,
     });
     setEditId(d.id);
     setPhoneError("");
@@ -99,13 +119,14 @@ export function Doctors() {
       return;
     }
     setFormError("");
-    const { services: formServices, ...rest } = form;
+    const { services: formServices, rooms: formRooms, ...rest } = form;
     const body: Record<string, unknown> = { ...rest, contact_phone: form.contact_phone.replace(/\D/g, "") };
     // Only ADMIN sees the services field in this form (IT has canEdit but
     // not canEditServices) -- omit the key entirely for IT rather than
     // sending an empty list, since the backend treats key-presence itself
     // as "this request is trying to change services."
     if (canEditServices) body.services = formServices;
+    if (canEditRooms) body.rooms = formRooms;
     try {
       if (editId) await api.patch(`/doctors/profiles/${editId}/`, body);
       else await api.post("/doctors/profiles/", body);
@@ -130,6 +151,23 @@ export function Doctors() {
       load();
     } catch (err) {
       setServicesError(err instanceof ApiError ? flattenError(err.message) : String(err));
+    }
+  }
+
+  function openRoomsModal(d: DoctorProfile) {
+    setRoomsModalDoctor(d);
+    setRoomsSelected(d.rooms);
+    setRoomsError("");
+  }
+
+  async function submitRooms() {
+    if (!roomsModalDoctor) return;
+    try {
+      await api.patch(`/doctors/profiles/${roomsModalDoctor.id}/`, { rooms: roomsSelected });
+      setRoomsModalDoctor(null);
+      load();
+    } catch (err) {
+      setRoomsError(err instanceof ApiError ? flattenError(err.message) : String(err));
     }
   }
 
@@ -164,6 +202,20 @@ export function Doctors() {
           {canEditServices && (
             <button type="button" className="btn ghost small" onClick={() => openServicesModal(r)}>
               {t("doctors.manageServices")}
+            </button>
+          )}
+        </div>
+      ),
+    },
+    {
+      key: "rooms",
+      header: t("doctors.rooms"),
+      render: (r) => (
+        <div className="services-cell">
+          <RoomChipList items={r.rooms_detail} />
+          {canEditRooms && (
+            <button type="button" className="btn ghost small" onClick={() => openRoomsModal(r)}>
+              {t("doctors.manageRooms")}
             </button>
           )}
         </div>
@@ -288,6 +340,16 @@ export function Doctors() {
               />
             </div>
           )}
+          {canEditRooms && (
+            <div className="field">
+              <span>{t("doctors.rooms")}</span>
+              <RoomCheckboxList
+                rooms={rooms}
+                selected={form.rooms}
+                onChange={(ids) => setForm({ ...form, rooms: ids })}
+              />
+            </div>
+          )}
         </FormModal>
       )}
 
@@ -303,6 +365,22 @@ export function Doctors() {
           <div className="field">
             <span>{servicesModalDoctor.full_name}</span>
             <ServiceCheckboxList services={services} selected={servicesSelected} onChange={setServicesSelected} />
+          </div>
+        </FormModal>
+      )}
+
+      {roomsModalDoctor && (
+        <FormModal
+          title={t("doctors.manageRooms")}
+          onClose={() => setRoomsModalDoctor(null)}
+          onSubmit={submitRooms}
+          submitLabel={t("common.save")}
+          error={roomsError}
+          wide
+        >
+          <div className="field">
+            <span>{roomsModalDoctor.full_name}</span>
+            <RoomCheckboxList rooms={rooms} selected={roomsSelected} onChange={setRoomsSelected} />
           </div>
         </FormModal>
       )}

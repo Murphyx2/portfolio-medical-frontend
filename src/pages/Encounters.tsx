@@ -143,8 +143,12 @@ export function Encounters() {
       header: t("encounters.cedula"),
       render: (r) => openDetailLink(r, <GuardianAwareCedula info={r.patient_info} />),
     },
-    { key: "doctor", header: t("encounters.doctor"), sortKey: "doctor__code", render: (r) => r.doctor_info?.code ?? "—" },
-    { key: "service_type_name", header: t("encounters.type"), render: (r) => toSentenceCase(r.service_type_name) },
+    { key: "doctor", header: t("encounters.doctor"), sortKey: "doctor__code", render: (r) => r.doctor_info?.full_name ?? "—" },
+    {
+      key: "services",
+      header: t("encounters.sectionServices"),
+      render: (r) => (r.services.length ? r.services.map((s) => toSentenceCase(s.service_name ?? "")).join(", ") : "—"),
+    },
     { key: "room_name", header: t("encounters.room"), render: (r) => r.room_name ?? "—" },
     { key: "priority", header: t("encounters.priority"), sortKey: "priority", render: (r) => <span className={`badge status-${r.priority.toLowerCase()}`}>{priorityLabel(r.priority)}</span> },
     { key: "status", header: t("common.status"), sortKey: "status", render: (r) => <span className={`badge status-${r.status.toLowerCase()}`}>{statusLabel(r.status)}</span> },
@@ -239,7 +243,13 @@ export function Encounters() {
         />
       )}
 
-      {detail && <EncounterDetailDialog detail={detail} onClose={() => setDetail(null)} />}
+      {detail && (
+        <EncounterDetailDialog
+          detail={detail}
+          onClose={() => setDetail(null)}
+          onOpenRecord={(row) => navigate(`/records?patient=${row.patient}`)}
+        />
+      )}
 
       {patientModal && (
         <PatientFormModal

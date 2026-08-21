@@ -126,7 +126,13 @@
     "noServices": "No hay servicios activos disponibles.",
     "noServicesMatch": "Ningún servicio coincide con tu búsqueda.",
     "allServiceTypes": "Todos los tipos de servicio",
-    "moreServices": "+{{count}} más"
+    "moreServices": "+{{count}} más",
+    "rooms": "Salas",
+    "manageRooms": "Gestionar salas",
+    "noRooms": "No hay salas activas disponibles.",
+    "noRoomsMatch": "Ninguna sala coincide con tu búsqueda.",
+    "allRoomTypes": "Todos los tipos de sala",
+    "moreRooms": "+{{count}} más"
   },
   "centers": {
     "title": "Centros Médicos",

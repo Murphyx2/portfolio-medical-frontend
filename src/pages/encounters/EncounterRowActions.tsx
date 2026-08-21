@@ -44,12 +44,12 @@ export function EncounterRowActions({
       {canManage && row.status === "ACTIVE" && (
         <button className="btn small" onClick={() => onConfirm("complete", row)}>{t("encounters.complete")}</button>
       )}
-      {canManage && (row.status === "DRAFT" || row.status === "ACTIVE") && (
-        <button className="btn small danger" onClick={() => onConfirm("cancel", row)}>{t("encounters.cancel")}</button>
-      )}
       <button className="btn small ghost" onClick={() => onOpenRecord(row)}>
         {t("encounters.openRecord")}
       </button>
+      {canManage && (row.status === "DRAFT" || row.status === "ACTIVE") && (
+        <button className="btn small danger" onClick={() => onConfirm("cancel", row)}>{t("encounters.cancel")}</button>
+      )}
       {canDelete && row.active && (
         <button className="btn small danger" onClick={() => onConfirm("delete", row)}>{t("common.delete")}</button>
       )}

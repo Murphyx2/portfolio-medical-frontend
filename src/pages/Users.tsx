@@ -1,11 +1,12 @@
-import { useCallback, useEffect, useState } from "react";
+import { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 
-import { Field, FormModal, Page, Pagination, SearchBar, Spinner, Table, type Column } from "../components/ui";
+import { ListPage } from "../components/ListPage";
+import { Field, FormModal, Page, type Column } from "../components/ui";
 import { RoleGate } from "../components/guards";
-import { useListControls } from "../hooks/useListControls";
+import { useListPage } from "../hooks/useListPage";
 import { api, ApiError } from "../services/api";
-import type { Paginated, User } from "../services/types";
+import type { User } from "../services/types";
 import { useAuth } from "../store/auth";
 import { flattenError } from "../utils/errors";
 
@@ -15,19 +16,17 @@ export function Users() {
   const { t } = useTranslation();
   const { user } = useAuth();
   const isAdmin = user?.role === "ADMIN";
-  const [rows, setRows] = useState<User[]>([]);
   const [modal, setModal] = useState(false);
   const [form, setForm] = useState(EMPTY);
   const [editId, setEditId] = useState<number | null>(null);
   const [roles, setRoles] = useState<{ value: string; label: string }[]>([]);
   const [formError, setFormError] = useState("");
-  const [showInactive, setShowInactive] = useState(false);
   const {
+    rows,
     page,
     setPage,
     pageSize,
     count,
-    setCount,
     search,
     setSearch,
     searchSubmit,
@@ -36,30 +35,15 @@ export function Users() {
     handleSort,
     changePageSize,
     initialLoading,
-    runList,
-    query,
-  } = useListControls();
-
-  const qs = query({ include_inactive: showInactive ? "true" : "" });
+    showInactive,
+    setShowInactive,
+    load,
+  } = useListPage<User>("/auth/users/");
 
   // Non-admins (IT) may not assign the ADMIN role — the backend rejects it,
   // but omitting it from the picker prevents the error instead of just
   // explaining it after submit.
   const availableRoles = isAdmin ? roles : roles.filter((r) => r.value !== "ADMIN");
-
-  const load = useCallback(() => {
-    runList((signal) => api.get<Paginated<User>>(`/auth/users/?${qs}`, { signal }))
-      .then((r) => {
-        if (!r) return;
-        setRows(r.results);
-        setCount(r.count);
-        const total = Math.ceil(r.count / pageSize);
-        if (total > 0 && page > total) setPage(total);
-      })
-      .catch(() => {});
-  }, [qs, page, pageSize, setCount, setPage, runList]);
-
-  useEffect(load, [load]);
 
   useEffect(() => {
     // Role choices for the "new user" form: fetched once, not on every
@@ -125,45 +109,30 @@ export function Users() {
           </button>
         }
       >
-        {initialLoading ? (
-          <Spinner />
-        ) : (
-          <>
-            <div className="list-toolbar">
-              <SearchBar
-                value={search}
-                onChange={setSearch}
-                onSubmit={searchSubmit}
-                placeholder={t("common.searchPlaceholder")}
-                label={t("common.search")}
-              />
-              {isAdmin && (
-                <label className="show-inactive-toggle">
-                  <input
-                    type="checkbox"
-                    checked={showInactive}
-                    onChange={(e) => setShowInactive(e.target.checked)}
-                  />
-                  {t("common.showInactive")}
-                </label>
-              )}
-            </div>
-            <Pagination page={page} count={count} pageSize={pageSize} onChange={setPage} onPageSizeChange={changePageSize} />
-            <Table
-              columns={columns}
-              rows={rows}
-              onEdit={openEdit}
-              onDelete={remove}
-              onRestore={isAdmin ? restore : undefined}
-              getRowLabel={(r) => r.full_name || r.username}
-              isInactive={(r) => !r.is_active}
-              sortKey={sortKey}
-              sortDir={sortDir}
-              onSort={handleSort}
-            />
-            <Pagination page={page} count={count} pageSize={pageSize} onChange={setPage} onPageSizeChange={changePageSize} />
-          </>
-        )}
+        <ListPage<User>
+          initialLoading={initialLoading}
+          search={search}
+          setSearch={setSearch}
+          searchSubmit={searchSubmit}
+          isAdmin={isAdmin}
+          showInactive={showInactive}
+          onToggleInactive={setShowInactive}
+          page={page}
+          count={count}
+          pageSize={pageSize}
+          onPageChange={setPage}
+          onPageSizeChange={changePageSize}
+          columns={columns}
+          rows={rows}
+          onEdit={openEdit}
+          onDelete={remove}
+          onRestore={isAdmin ? restore : undefined}
+          getRowLabel={(r) => r.full_name || r.username}
+          isInactive={(r) => !r.is_active}
+          sortKey={sortKey}
+          sortDir={sortDir}
+          onSort={handleSort}
+        />
 
         {modal && (
           <FormModal

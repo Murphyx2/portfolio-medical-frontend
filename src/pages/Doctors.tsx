@@ -1,8 +1,9 @@
-import { useCallback, useEffect, useState } from "react";
+import { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 
-import { Field, FormModal, MaskedValue, Page, Pagination, SearchBar, ServiceChipList, ServiceCheckboxList, Spinner, Table, type Column } from "../components/ui";
-import { useListControls } from "../hooks/useListControls";
+import { ListPage } from "../components/ListPage";
+import { Field, FormModal, MaskedValue, ServiceChipList, ServiceCheckboxList, Page, type Column } from "../components/ui";
+import { useListPage } from "../hooks/useListPage";
 import { api, ApiError } from "../services/api";
 import type { DoctorProfile, Paginated, Service, User } from "../services/types";
 import { useAuth } from "../store/auth";
@@ -17,7 +18,6 @@ export function Doctors() {
   const canEdit = user?.role === "ADMIN" || user?.role === "IT";
   const canEditServices = user?.role === "ADMIN" || user?.role === "CENTER_MANAGER";
   const isAdmin = user?.role === "ADMIN";
-  const [rows, setRows] = useState<DoctorProfile[]>([]);
   const [userOptions, setUserOptions] = useState<User[]>([]);
   const [services, setServices] = useState<Service[]>([]);
   const [modal, setModal] = useState(false);
@@ -26,16 +26,15 @@ export function Doctors() {
   const [phoneError, setPhoneError] = useState("");
   const [userError, setUserError] = useState("");
   const [formError, setFormError] = useState("");
-  const [showInactive, setShowInactive] = useState(false);
   const [servicesModalDoctor, setServicesModalDoctor] = useState<DoctorProfile | null>(null);
   const [servicesSelected, setServicesSelected] = useState<number[]>([]);
   const [servicesError, setServicesError] = useState("");
   const {
+    rows,
     page,
     setPage,
     pageSize,
     count,
-    setCount,
     search,
     setSearch,
     searchSubmit,
@@ -44,25 +43,10 @@ export function Doctors() {
     handleSort,
     changePageSize,
     initialLoading,
-    runList,
-    query,
-  } = useListControls();
-
-  const qs = query({ include_inactive: showInactive ? "true" : "" });
-
-  const load = useCallback(() => {
-    runList((signal) => api.get<Paginated<DoctorProfile>>(`/doctors/profiles/?${qs}`, { signal }))
-      .then((r) => {
-        if (!r) return;
-        setRows(r.results);
-        setCount(r.count);
-        const total = Math.ceil(r.count / pageSize);
-        if (total > 0 && page > total) setPage(total);
-      })
-      .catch(() => {});
-  }, [qs, page, pageSize, setCount, setPage, runList]);
-
-  useEffect(load, [load]);
+    showInactive,
+    setShowInactive,
+    load,
+  } = useListPage<DoctorProfile>("/doctors/profiles/");
 
   useEffect(() => {
     // User options for the "assign profile" picker: fetched once, not on
@@ -186,19 +170,6 @@ export function Doctors() {
     { key: "license_number", header: t("doctors.license"), sortKey: "license_number", render: (r) => <MaskedValue value={r.license_number} /> },
     { key: "contact_phone", header: t("doctors.contactPhone"), sortKey: "contact_phone", render: (r) => <MaskedValue value={formatPhone(r.contact_phone)} /> },
     { key: "contact_email", header: t("doctors.contactEmail"), sortKey: "contact_email", render: (r) => <MaskedValue value={r.contact_email} /> },
-    ...(isAdmin
-      ? [
-          {
-            key: "active",
-            header: t("common.status"),
-            render: (r: DoctorProfile) => (
-              <span className={`badge status-${r.active ? "active" : "inactive"}`}>
-                {r.active ? t("common.active") : t("common.inactive")}
-              </span>
-            ),
-          } as Column<DoctorProfile>,
-        ]
-      : []),
   ];
 
   return (
@@ -212,45 +183,31 @@ export function Doctors() {
         )
       }
     >
-      {initialLoading ? (
-        <Spinner />
-      ) : (
-        <>
-          <div className="list-toolbar">
-            <SearchBar
-              value={search}
-              onChange={setSearch}
-              onSubmit={searchSubmit}
-              placeholder={t("common.searchPlaceholder")}
-              label={t("common.search")}
-            />
-            {isAdmin && (
-              <label className="show-inactive-toggle">
-                <input
-                  type="checkbox"
-                  checked={showInactive}
-                  onChange={(e) => setShowInactive(e.target.checked)}
-                />
-                {t("common.showInactive")}
-              </label>
-            )}
-          </div>
-          <Pagination page={page} count={count} pageSize={pageSize} onChange={setPage} onPageSizeChange={changePageSize} />
-          <Table
-            columns={columns}
-            rows={rows}
-            onEdit={canEdit ? openEdit : undefined}
-            onDelete={canEdit ? remove : undefined}
-            onRestore={isAdmin ? restore : undefined}
-            getRowLabel={(r) => r.full_name}
-            isInactive={(r) => !r.active}
-            sortKey={sortKey}
-            sortDir={sortDir}
-            onSort={handleSort}
-          />
-          <Pagination page={page} count={count} pageSize={pageSize} onChange={setPage} onPageSizeChange={changePageSize} />
-        </>
-      )}
+      <ListPage<DoctorProfile>
+        initialLoading={initialLoading}
+        search={search}
+        setSearch={setSearch}
+        searchSubmit={searchSubmit}
+        isAdmin={isAdmin}
+        showInactive={showInactive}
+        onToggleInactive={setShowInactive}
+        page={page}
+        count={count}
+        pageSize={pageSize}
+        onPageChange={setPage}
+        onPageSizeChange={changePageSize}
+        columns={columns}
+        activeAccessor={(r) => r.active}
+        rows={rows}
+        onEdit={canEdit ? openEdit : undefined}
+        onDelete={canEdit ? remove : undefined}
+        onRestore={isAdmin ? restore : undefined}
+        getRowLabel={(r) => r.full_name}
+        isInactive={(r) => !r.active}
+        sortKey={sortKey}
+        sortDir={sortDir}
+        onSort={handleSort}
+      />
 
       {modal && (
         <FormModal

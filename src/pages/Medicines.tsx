@@ -1,10 +1,11 @@
-import { useCallback, useEffect, useState } from "react";
+import { useState } from "react";
 import { useTranslation } from "react-i18next";
 
-import { Field, FormModal, Page, Pagination, SearchBar, Spinner, Table, type Column } from "../components/ui";
-import { useListControls } from "../hooks/useListControls";
+import { ListPage } from "../components/ListPage";
+import { Field, FormModal, Page, type Column } from "../components/ui";
+import { useListPage } from "../hooks/useListPage";
 import { api, ApiError } from "../services/api";
-import type { Medicine, Paginated } from "../services/types";
+import type { Medicine } from "../services/types";
 import { useAuth } from "../store/auth";
 import { flattenError } from "../utils/errors";
 
@@ -16,18 +17,16 @@ export function Medicines() {
   const canWrite = user?.role === "ADMIN" || user?.role === "IT" || user?.role === "RECEPTIONIST";
   const canDelete = user?.role === "ADMIN" || user?.role === "IT";
   const isAdmin = user?.role === "ADMIN";
-  const [rows, setRows] = useState<Medicine[]>([]);
   const [modal, setModal] = useState(false);
   const [form, setForm] = useState(EMPTY);
   const [editId, setEditId] = useState<number | null>(null);
   const [formError, setFormError] = useState("");
-  const [showInactive, setShowInactive] = useState(false);
   const {
+    rows,
     page,
     setPage,
     pageSize,
     count,
-    setCount,
     search,
     setSearch,
     searchSubmit,
@@ -36,25 +35,10 @@ export function Medicines() {
     handleSort,
     changePageSize,
     initialLoading,
-    runList,
-    query,
-  } = useListControls();
-
-  const qs = query({ include_inactive: showInactive ? "true" : "" });
-
-  const load = useCallback(() => {
-    runList((signal) => api.get<Paginated<Medicine>>(`/medicines/?${qs}`, { signal }))
-      .then((r) => {
-        if (!r) return;
-        setRows(r.results);
-        setCount(r.count);
-        const total = Math.ceil(r.count / pageSize);
-        if (total > 0 && page > total) setPage(total);
-      })
-      .catch(() => {});
-  }, [qs, page, pageSize, setCount, setPage, runList]);
-
-  useEffect(load, [load]);
+    showInactive,
+    setShowInactive,
+    load,
+  } = useListPage<Medicine>("/medicines/");
 
   function openNew() {
     setForm(EMPTY);
@@ -96,19 +80,6 @@ export function Medicines() {
     { key: "generic_name", header: t("medicines.genericName"), sortKey: "generic_name" },
     { key: "commercial_name", header: t("medicines.commercialName"), sortKey: "commercial_name" },
     { key: "concentration", header: t("medicines.concentration"), sortKey: "concentration" },
-    ...(isAdmin
-      ? [
-          {
-            key: "active",
-            header: t("common.status"),
-            render: (m: Medicine) => (
-              <span className={`badge status-${m.active ? "active" : "inactive"}`}>
-                {m.active ? t("common.active") : t("common.inactive")}
-              </span>
-            ),
-          } as Column<Medicine>,
-        ]
-      : []),
   ];
 
   return (
@@ -122,45 +93,31 @@ export function Medicines() {
         )
       }
     >
-      {initialLoading ? (
-        <Spinner />
-      ) : (
-        <>
-          <div className="list-toolbar">
-            <SearchBar
-              value={search}
-              onChange={setSearch}
-              onSubmit={searchSubmit}
-              placeholder={t("common.searchPlaceholder")}
-              label={t("common.search")}
-            />
-            {isAdmin && (
-              <label className="show-inactive-toggle">
-                <input
-                  type="checkbox"
-                  checked={showInactive}
-                  onChange={(e) => setShowInactive(e.target.checked)}
-                />
-                {t("common.showInactive")}
-              </label>
-            )}
-          </div>
-          <Pagination page={page} count={count} pageSize={pageSize} onChange={setPage} onPageSizeChange={changePageSize} />
-          <Table
-            columns={columns}
-            rows={rows}
-            onEdit={canWrite ? openEdit : undefined}
-            onDelete={canDelete ? remove : undefined}
-            onRestore={isAdmin ? restore : undefined}
-            getRowLabel={(m) => m.commercial_name || m.generic_name}
-            isInactive={(m) => !m.active}
-            sortKey={sortKey}
-            sortDir={sortDir}
-            onSort={handleSort}
-          />
-          <Pagination page={page} count={count} pageSize={pageSize} onChange={setPage} onPageSizeChange={changePageSize} />
-        </>
-      )}
+      <ListPage<Medicine>
+        initialLoading={initialLoading}
+        search={search}
+        setSearch={setSearch}
+        searchSubmit={searchSubmit}
+        isAdmin={isAdmin}
+        showInactive={showInactive}
+        onToggleInactive={setShowInactive}
+        page={page}
+        count={count}
+        pageSize={pageSize}
+        onPageChange={setPage}
+        onPageSizeChange={changePageSize}
+        columns={columns}
+        activeAccessor={(m) => m.active}
+        rows={rows}
+        onEdit={canWrite ? openEdit : undefined}
+        onDelete={canDelete ? remove : undefined}
+        onRestore={isAdmin ? restore : undefined}
+        getRowLabel={(m) => m.commercial_name || m.generic_name}
+        isInactive={(m) => !m.active}
+        sortKey={sortKey}
+        sortDir={sortDir}
+        onSort={handleSort}
+      />
 
       {modal && (
         <FormModal

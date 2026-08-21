@@ -1,9 +1,10 @@
-import { useCallback, useEffect, useState } from "react";
+import { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { useNavigate } from "react-router-dom";
 
-import { Field, FormModal, Page, Pagination, SearchBar, Spinner, Table, type Column } from "../components/ui";
-import { useListControls } from "../hooks/useListControls";
+import { ListPage } from "../components/ListPage";
+import { Field, FormModal, Page, type Column } from "../components/ui";
+import { useListPage } from "../hooks/useListPage";
 import { api, ApiError } from "../services/api";
 import type { MedicalCenter, Paginated, Room, RoomType } from "../services/types";
 import { useAuth } from "../store/auth";
@@ -27,7 +28,6 @@ export function Rooms() {
   const canEdit = canCreate || user?.role === "RECEPTIONIST";
   const canDelete = canCreate;
   const isAdmin = user?.role === "ADMIN";
-  const [rows, setRows] = useState<Room[]>([]);
   const [centers, setCenters] = useState<MedicalCenter[]>([]);
   const [types, setTypes] = useState<RoomType[]>([]);
   const [typeFilter, setTypeFilter] = useState("");
@@ -35,13 +35,12 @@ export function Rooms() {
   const [form, setForm] = useState(EMPTY);
   const [editId, setEditId] = useState<number | null>(null);
   const [formError, setFormError] = useState("");
-  const [showInactive, setShowInactive] = useState(false);
   const {
+    rows,
     page,
     setPage,
     pageSize,
     count,
-    setCount,
     search,
     setSearch,
     searchSubmit,
@@ -50,28 +49,10 @@ export function Rooms() {
     handleSort,
     changePageSize,
     initialLoading,
-    runList,
-    query,
-  } = useListControls();
-
-  const qs = query({
-    include_inactive: showInactive ? "true" : "",
-    room_type: typeFilter,
-  });
-
-  const load = useCallback(() => {
-    runList((signal) => api.get<Paginated<Room>>(`/rooms/?${qs}`, { signal }))
-      .then((r) => {
-        if (!r) return;
-        setRows(r.results);
-        setCount(r.count);
-        const total = Math.ceil(r.count / pageSize);
-        if (total > 0 && page > total) setPage(total);
-      })
-      .catch(() => {});
-  }, [qs, page, pageSize, setCount, setPage, runList]);
-
-  useEffect(load, [load]);
+    showInactive,
+    setShowInactive,
+    load,
+  } = useListPage<Room>("/rooms/", { extraParams: { room_type: typeFilter } });
 
   useEffect(() => {
     api.get<Paginated<MedicalCenter>>("/centers/?page_size=100").then((r) => setCenters(r.results)).catch(() => {});
@@ -148,19 +129,6 @@ export function Rooms() {
     { key: "center_name", header: t("rooms.center"), sortKey: "center__name" },
     { key: "floor_area", header: t("rooms.floorArea"), sortKey: "floor_area" },
     { key: "capacity", header: t("rooms.capacity"), sortKey: "capacity", render: (r) => r.capacity ?? "—" },
-    ...(isAdmin
-      ? [
-          {
-            key: "active",
-            header: t("common.status"),
-            render: (r: Room) => (
-              <span className={`badge status-${r.active ? "active" : "inactive"}`}>
-                {r.active ? t("common.active") : t("common.inactive")}
-              </span>
-            ),
-          } as Column<Room>,
-        ]
-      : []),
   ];
 
   return (
@@ -179,51 +147,39 @@ export function Rooms() {
         )
       }
     >
-      {initialLoading ? (
-        <Spinner />
-      ) : (
-        <>
-          <div className="list-toolbar">
-            <SearchBar
-              value={search}
-              onChange={setSearch}
-              onSubmit={searchSubmit}
-              placeholder={t("common.searchPlaceholder")}
-              label={t("common.search")}
-            />
-            <select value={typeFilter} onChange={(e) => setTypeFilter(e.target.value)}>
-              <option value="">{t("rooms.allTypes")}</option>
-              {types.map((ty) => (
-                <option key={ty.id} value={ty.id}>{ty.name}</option>
-              ))}
-            </select>
-            {isAdmin && (
-              <label className="show-inactive-toggle">
-                <input
-                  type="checkbox"
-                  checked={showInactive}
-                  onChange={(e) => setShowInactive(e.target.checked)}
-                />
-                {t("common.showInactive")}
-              </label>
-            )}
-          </div>
-          <Pagination page={page} count={count} pageSize={pageSize} onChange={setPage} onPageSizeChange={changePageSize} />
-          <Table
-            columns={columns}
-            rows={rows}
-            onEdit={canEdit ? openEdit : undefined}
-            onDelete={canDelete ? remove : undefined}
-            onRestore={isAdmin ? restore : undefined}
-            getRowLabel={(r) => r.name || r.code}
-            isInactive={(r) => !r.active}
-            sortKey={sortKey}
-            sortDir={sortDir}
-            onSort={handleSort}
-          />
-          <Pagination page={page} count={count} pageSize={pageSize} onChange={setPage} onPageSizeChange={changePageSize} />
-        </>
-      )}
+      <ListPage<Room>
+        initialLoading={initialLoading}
+        search={search}
+        setSearch={setSearch}
+        searchSubmit={searchSubmit}
+        toolbarAfter={
+          <select value={typeFilter} onChange={(e) => setTypeFilter(e.target.value)}>
+            <option value="">{t("rooms.allTypes")}</option>
+            {types.map((ty) => (
+              <option key={ty.id} value={ty.id}>{ty.name}</option>
+            ))}
+          </select>
+        }
+        isAdmin={isAdmin}
+        showInactive={showInactive}
+        onToggleInactive={setShowInactive}
+        page={page}
+        count={count}
+        pageSize={pageSize}
+        onPageChange={setPage}
+        onPageSizeChange={changePageSize}
+        columns={columns}
+        activeAccessor={(r) => r.active}
+        rows={rows}
+        onEdit={canEdit ? openEdit : undefined}
+        onDelete={canDelete ? remove : undefined}
+        onRestore={isAdmin ? restore : undefined}
+        getRowLabel={(r) => r.name || r.code}
+        isInactive={(r) => !r.active}
+        sortKey={sortKey}
+        sortDir={sortDir}
+        onSort={handleSort}
+      />
 
       {modal && (
         <FormModal

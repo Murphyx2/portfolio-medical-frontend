@@ -1,11 +1,12 @@
-import { useCallback, useEffect, useMemo, useState, type ReactNode } from "react";
+import { useMemo, useState, type ReactNode } from "react";
 import { useTranslation } from "react-i18next";
 
+import { ListPage } from "../components/ListPage";
 import { PatientFormModal } from "../components/PatientFormModal";
-import { Dialog, GuardianCedulaIcon, MaskedValue, Page, Pagination, SearchBar, Spinner, Table, type Column, type SortDir } from "../components/ui";
-import { useListControls } from "../hooks/useListControls";
+import { Dialog, GuardianCedulaIcon, MaskedValue, Page, type Column, type SortDir } from "../components/ui";
+import { useListPage } from "../hooks/useListPage";
 import { api } from "../services/api";
-import type { Paginated, Patient } from "../services/types";
+import type { Patient } from "../services/types";
 import { useAuth } from "../store/auth";
 import { formatCedula } from "../utils/cedula";
 import { formatPhone } from "../utils/phone";
@@ -15,18 +16,16 @@ export function Patients() {
   const { user } = useAuth();
   const isAdmin = user?.role === "ADMIN";
   const canDelete = user?.role === "ADMIN" || user?.role === "DOCTOR";
-  const [rows, setRows] = useState<Patient[]>([]);
   const [modal, setModal] = useState(false);
   const [editingPatient, setEditingPatient] = useState<Patient | null>(null);
   const [detail, setDetail] = useState<Patient | null>(null);
   const [openingId, setOpeningId] = useState<number | null>(null);
-  const [showInactive, setShowInactive] = useState(false);
   const {
+    rows,
     page,
     setPage,
     pageSize,
     count,
-    setCount,
     search,
     setSearch,
     searchSubmit,
@@ -35,25 +34,10 @@ export function Patients() {
     handleSort,
     changePageSize,
     initialLoading,
-    runList,
-    query,
-  } = useListControls();
-
-  const qs = query({ include_inactive: showInactive ? "true" : "" });
-
-  const load = useCallback(() => {
-    runList((signal) => api.get<Paginated<Patient>>(`/patients/?${qs}`, { signal }))
-      .then((r) => {
-        if (!r) return;
-        setRows(r.results);
-        setCount(r.count);
-        const total = Math.ceil(r.count / pageSize);
-        if (total > 0 && page > total) setPage(total);
-      })
-      .catch(() => {});
-  }, [qs, page, pageSize, setCount, setPage, runList]);
-
-  useEffect(load, [load]);
+    showInactive,
+    setShowInactive,
+    load,
+  } = useListPage<Patient>("/patients/");
 
   // cedula/nss/phone/email/age are encrypted at rest: the backend can't sort
   // them in SQL and simply ignores an `?ordering=` request for them (falls
@@ -192,19 +176,6 @@ export function Patients() {
     { key: "ars_name", header: t("patients.ars"), sortKey: "ars__name" },
     { key: "ars_program_name", header: t("patients.arsProgram"), sortKey: "ars_program__name" },
     { key: "center_name", header: t("patients.center"), sortKey: "center__code", render: (r) => r.center_code ?? "—" },
-    ...(isAdmin
-      ? [
-          {
-            key: "active",
-            header: t("common.status"),
-            render: (r: Patient) => (
-              <span className={`badge status-${r.active ? "active" : "inactive"}`}>
-                {r.active ? t("common.active") : t("common.inactive")}
-              </span>
-            ),
-          } as Column<Patient>,
-        ]
-      : []),
   ];
 
   return (
@@ -216,45 +187,31 @@ export function Patients() {
         </button>
       }
     >
-      {initialLoading ? (
-        <Spinner />
-      ) : (
-        <>
-          <div className="list-toolbar">
-            <SearchBar
-              value={search}
-              onChange={setSearch}
-              onSubmit={searchSubmit}
-              placeholder={t("common.searchPlaceholder")}
-              label={t("common.search")}
-            />
-            {isAdmin && (
-              <label className="show-inactive-toggle">
-                <input
-                  type="checkbox"
-                  checked={showInactive}
-                  onChange={(e) => setShowInactive(e.target.checked)}
-                />
-                {t("common.showInactive")}
-              </label>
-            )}
-          </div>
-          <Pagination page={page} count={count} pageSize={pageSize} onChange={setPage} onPageSizeChange={changePageSize} />
-          <Table
-            columns={columns}
-            rows={displayRows}
-            onEdit={openEdit}
-            onDelete={canDelete ? remove : undefined}
-            onRestore={isAdmin ? restore : undefined}
-            getRowLabel={(r) => r.full_name}
-            isInactive={(r) => !r.active}
-            sortKey={clientSort?.key ?? sortKey}
-            sortDir={clientSort?.dir ?? sortDir}
-            onSort={handleColumnSort}
-          />
-          <Pagination page={page} count={count} pageSize={pageSize} onChange={setPage} onPageSizeChange={changePageSize} />
-        </>
-      )}
+      <ListPage<Patient>
+        initialLoading={initialLoading}
+        search={search}
+        setSearch={setSearch}
+        searchSubmit={searchSubmit}
+        isAdmin={isAdmin}
+        showInactive={showInactive}
+        onToggleInactive={setShowInactive}
+        page={page}
+        count={count}
+        pageSize={pageSize}
+        onPageChange={setPage}
+        onPageSizeChange={changePageSize}
+        columns={columns}
+        activeAccessor={(r) => r.active}
+        rows={displayRows}
+        onEdit={openEdit}
+        onDelete={canDelete ? remove : undefined}
+        onRestore={isAdmin ? restore : undefined}
+        getRowLabel={(r) => r.full_name}
+        isInactive={(r) => !r.active}
+        sortKey={clientSort?.key ?? sortKey}
+        sortDir={clientSort?.dir ?? sortDir}
+        onSort={handleColumnSort}
+      />
 
       {modal && (
         <PatientFormModal

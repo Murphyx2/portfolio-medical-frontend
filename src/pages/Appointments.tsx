@@ -1,9 +1,11 @@
-import { useCallback, useEffect, useState } from "react";
+import { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 
-import { ConfirmDialog, Field, FormModal, Page, Pagination, SearchableSelect, SearchBar, Spinner, Table, useRowConfirm, type Column } from "../components/ui";
-import { useListControls } from "../hooks/useListControls";
+import { ListPage } from "../components/ListPage";
+import { ConfirmDialog, Field, FormModal, SearchableSelect, useRowConfirm, Page, type Column } from "../components/ui";
+import { useListPage } from "../hooks/useListPage";
 import { api, ApiError } from "../services/api";
+import { searchPatients } from "../services/patients";
 import type {
   Appointment,
   DoctorProfile,
@@ -23,8 +25,6 @@ export function Appointments() {
   const canManage = user?.role === "DOCTOR" || user?.role === "RECEPTIONIST" || user?.role === "ADMIN";
   const canDelete = user?.role === "ADMIN" || user?.role === "DOCTOR";
   const isAdmin = user?.role === "ADMIN";
-  const [showInactive, setShowInactive] = useState(false);
-  const [rows, setRows] = useState<Appointment[]>([]);
   const [selectedPatient, setSelectedPatient] = useState<Patient | null>(null);
   const [doctors, setDoctors] = useState<DoctorProfile[]>([]);
   const [centers, setCenters] = useState<MedicalCenter[]>([]);
@@ -33,11 +33,11 @@ export function Appointments() {
   const [formError, setFormError] = useState("");
   const confirm = useRowConfirm<"complete" | "cancel" | "delete" | "restore", Appointment>();
   const {
+    rows,
     page,
     setPage,
     pageSize,
     count,
-    setCount,
     search,
     setSearch,
     searchSubmit,
@@ -46,25 +46,10 @@ export function Appointments() {
     handleSort,
     changePageSize,
     initialLoading,
-    runList,
-    query,
-  } = useListControls({ key: "date_time", dir: "asc" });
-
-  const qs = query({ include_inactive: showInactive ? "true" : "" });
-
-  const load = useCallback(() => {
-    runList((signal) => api.get<Paginated<Appointment>>(`/appointments/?${qs}`, { signal }))
-      .then((r) => {
-        if (!r) return;
-        setRows(r.results);
-        setCount(r.count);
-        const total = Math.ceil(r.count / pageSize);
-        if (total > 0 && page > total) setPage(total);
-      })
-      .catch(() => {});
-  }, [qs, page, pageSize, setCount, setPage, runList]);
-
-  useEffect(load, [load]);
+    showInactive,
+    setShowInactive,
+    load,
+  } = useListPage<Appointment>("/appointments/", { initialSort: { key: "date_time", dir: "asc" } });
 
   useEffect(() => {
     // Form-picker options: fetched once, not on every page/sort/search
@@ -72,13 +57,6 @@ export function Appointments() {
     // on demand instead (SearchableSelect), not preloaded in bulk.
     api.get<Paginated<DoctorProfile>>("/doctors/profiles/?page_size=100").then((r) => setDoctors(r.results)).catch(() => {});
     api.get<Paginated<MedicalCenter>>("/centers/?page_size=100").then((r) => setCenters(r.results)).catch(() => {});
-  }, []);
-
-  const searchPatients = useCallback((q: string): Promise<{ results: Patient[]; count: number }> => {
-    return api
-      .get<Paginated<Patient>>(`/patients/?page_size=50${q ? `&search=${encodeURIComponent(q)}` : ""}`)
-      .then((r) => ({ results: r.results, count: r.count }))
-      .catch(() => ({ results: [], count: 0 }));
   }, []);
 
   function pickPatient(p: Patient) {
@@ -190,40 +168,25 @@ export function Appointments() {
         )
       }
     >
-      {initialLoading ? (
-        <Spinner />
-      ) : (
-        <>
-          <div className="list-toolbar">
-            <SearchBar
-              value={search}
-              onChange={setSearch}
-              onSubmit={searchSubmit}
-              placeholder={t("common.searchPlaceholder")}
-              label={t("common.search")}
-            />
-            {isAdmin && (
-              <label className="show-inactive-toggle">
-                <input
-                  type="checkbox"
-                  checked={showInactive}
-                  onChange={(e) => setShowInactive(e.target.checked)}
-                />
-                {t("common.showInactive")}
-              </label>
-            )}
-          </div>
-          <Pagination page={page} count={count} pageSize={pageSize} onChange={setPage} onPageSizeChange={changePageSize} />
-          <Table
-            columns={columns}
-            rows={rows}
-            sortKey={sortKey}
-            sortDir={sortDir}
-            onSort={handleSort}
-          />
-          <Pagination page={page} count={count} pageSize={pageSize} onChange={setPage} onPageSizeChange={changePageSize} />
-        </>
-      )}
+      <ListPage<Appointment>
+        initialLoading={initialLoading}
+        search={search}
+        setSearch={setSearch}
+        searchSubmit={searchSubmit}
+        isAdmin={isAdmin}
+        showInactive={showInactive}
+        onToggleInactive={setShowInactive}
+        page={page}
+        count={count}
+        pageSize={pageSize}
+        onPageChange={setPage}
+        onPageSizeChange={changePageSize}
+        columns={columns}
+        rows={rows}
+        sortKey={sortKey}
+        sortDir={sortDir}
+        onSort={handleSort}
+      />
 
       {modal && (
         <FormModal

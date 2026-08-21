@@ -3,6 +3,8 @@ import type { FormEvent, ReactNode } from "react";
 import { useTranslation } from "react-i18next";
 
 import { MIN_SEARCH_CHARS } from "../hooks/useListControls";
+import type { SortDir } from "../hooks/useListControls";
+export type { SortDir };
 import { ApiError, onMutationSuccess } from "../services/api";
 import { flattenError } from "../utils/errors";
 import { toSentenceCase } from "../utils/text";
@@ -262,8 +264,6 @@ export interface Column<T> {
   sortKey?: string;
   align?: "center";
 }
-
-export type SortDir = "asc" | "desc";
 
 export function Table<T extends { id: number }>({
   columns,

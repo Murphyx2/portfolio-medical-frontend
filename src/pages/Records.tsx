@@ -1,11 +1,13 @@
-import { useCallback, useEffect, useState, type FormEvent } from "react";
+import { useEffect, useState, type FormEvent } from "react";
 import { useTranslation } from "react-i18next";
 import { useSearchParams } from "react-router-dom";
 
-import { Dialog, Field, FormModal, MaskedValue, Page, Pagination, SearchableSelect, SearchBar, Spinner, Table, type Column } from "../components/ui";
+import { ListPage } from "../components/ListPage";
+import { Dialog, Field, FormModal, MaskedValue, SearchableSelect, Page, type Column } from "../components/ui";
 import { RoleGate } from "../components/guards";
-import { useListControls } from "../hooks/useListControls";
+import { useListPage } from "../hooks/useListPage";
 import { api, ApiError, upload } from "../services/api";
+import { searchPatients } from "../services/patients";
 import type { ConsultationLog, MedicalRecord, Paginated, Patient } from "../services/types";
 import { useAuth } from "../store/auth";
 import { formatCedula } from "../utils/cedula";
@@ -38,8 +40,6 @@ export function Records() {
   const { user } = useAuth();
   const canCreate = user?.role === "DOCTOR" || user?.role === "NURSE" || user?.role === "ADMIN";
   const isAdmin = user?.role === "ADMIN";
-  const [showInactive, setShowInactive] = useState(false);
-  const [rows, setRows] = useState<MedicalRecord[]>([]);
   const [patients, setPatients] = useState<Patient[]>([]);
   const [detail, setDetail] = useState<MedicalRecord | null>(null);
   const [logs, setLogs] = useState<ConsultationLog[]>([]);
@@ -56,11 +56,11 @@ export function Records() {
   const [uploading, setUploading] = useState(false);
   const [searchParams] = useSearchParams();
   const {
+    rows,
     page,
     setPage,
     pageSize,
     count,
-    setCount,
     search,
     setSearch,
     searchSubmit,
@@ -69,25 +69,10 @@ export function Records() {
     handleSort,
     changePageSize,
     initialLoading,
-    runList,
-    query,
-  } = useListControls({ key: "date", dir: "desc" });
-
-  const qs = query({ include_inactive: showInactive ? "true" : "" });
-
-  const load = useCallback(() => {
-    runList((signal) => api.get<Paginated<MedicalRecord>>(`/medical-records/?${qs}`, { signal }))
-      .then((r) => {
-        if (!r) return;
-        setRows(r.results);
-        setCount(r.count);
-        const total = Math.ceil(r.count / pageSize);
-        if (total > 0 && page > total) setPage(total);
-      })
-      .catch(() => {});
-  }, [qs, page, pageSize, setCount, setPage, runList]);
-
-  useEffect(load, [load]);
+    showInactive,
+    setShowInactive,
+    load,
+  } = useListPage<MedicalRecord>("/medical-records/", { initialSort: { key: "date", dir: "desc" } });
 
   useEffect(() => {
     // Patient options for the "new record" picker: fetched once, not on
@@ -248,19 +233,6 @@ export function Records() {
     { key: "title", header: t("records.recordTitle"), sortKey: "title" },
     { key: "date", header: t("records.date"), sortKey: "date", render: (r) => new Date(r.date).toLocaleString() },
     { key: "created_by_name", header: t("records.doctor"), sortKey: "created_by__username" },
-    ...(isAdmin
-      ? [
-          {
-            key: "active",
-            header: t("common.status"),
-            render: (r: MedicalRecord) => (
-              <span className={`badge status-${r.active ? "active" : "inactive"}`}>
-                {r.active ? t("common.active") : t("common.inactive")}
-              </span>
-            ),
-          } as Column<MedicalRecord>,
-        ]
-      : []),
   ];
 
   function openRecordForm() {
@@ -280,13 +252,6 @@ export function Records() {
     setForm({ ...form, patient: p.id, title: recordTitleFor(p) });
   }
 
-  const searchPatients = useCallback((q: string): Promise<{ results: Patient[]; count: number }> => {
-    return api
-      .get<Paginated<Patient>>(`/patients/?page_size=50${q ? `&search=${encodeURIComponent(q)}` : ""}`)
-      .then((r) => ({ results: r.results, count: r.count }))
-      .catch(() => ({ results: [], count: 0 }));
-  }, []);
-
   return (
     <RoleGate roles={["ADMIN", "DOCTOR", "IT", "NURSE", "CENTER_MANAGER"]}>
     <Page
@@ -299,44 +264,30 @@ export function Records() {
         )
       }
     >
-      {initialLoading ? (
-        <Spinner />
-      ) : (
-        <>
-          <div className="list-toolbar">
-            <SearchBar
-              value={search}
-              onChange={setSearch}
-              onSubmit={searchSubmit}
-              placeholder={t("common.searchPlaceholder")}
-              label={t("common.search")}
-            />
-            {isAdmin && (
-              <label className="show-inactive-toggle">
-                <input
-                  type="checkbox"
-                  checked={showInactive}
-                  onChange={(e) => setShowInactive(e.target.checked)}
-                />
-                {t("common.showInactive")}
-              </label>
-            )}
-          </div>
-          <Pagination page={page} count={count} pageSize={pageSize} onChange={setPage} onPageSizeChange={changePageSize} />
-          <Table
-            columns={columns}
-            rows={rows}
-            onDelete={canCreate ? removeRecord : undefined}
-            onRestore={isAdmin ? restoreRecord : undefined}
-            getRowLabel={(r) => r.patient_info.full_name}
-            isInactive={(r) => !r.active}
-            sortKey={sortKey}
-            sortDir={sortDir}
-            onSort={handleSort}
-          />
-          <Pagination page={page} count={count} pageSize={pageSize} onChange={setPage} onPageSizeChange={changePageSize} />
-        </>
-      )}
+      <ListPage<MedicalRecord>
+        initialLoading={initialLoading}
+        search={search}
+        setSearch={setSearch}
+        searchSubmit={searchSubmit}
+        isAdmin={isAdmin}
+        showInactive={showInactive}
+        onToggleInactive={setShowInactive}
+        page={page}
+        count={count}
+        pageSize={pageSize}
+        onPageChange={setPage}
+        onPageSizeChange={changePageSize}
+        columns={columns}
+        activeAccessor={(r) => r.active}
+        rows={rows}
+        onDelete={canCreate ? removeRecord : undefined}
+        onRestore={isAdmin ? restoreRecord : undefined}
+        getRowLabel={(r) => r.patient_info.full_name}
+        isInactive={(r) => !r.active}
+        sortKey={sortKey}
+        sortDir={sortDir}
+        onSort={handleSort}
+      />
 
       {detail && (
         <Dialog

@@ -1,7 +1,8 @@
-import { useCallback, useEffect, useState, type ReactNode } from "react";
+import { useEffect, useState, type ReactNode } from "react";
 import { useTranslation } from "react-i18next";
 import { useNavigate } from "react-router-dom";
 
+import { ListPage } from "../components/ListPage";
 import { PatientFormModal } from "../components/PatientFormModal";
 import {
   ConfirmDialog,
@@ -10,16 +11,13 @@ import {
   FormModal,
   GuardianCedulaIcon,
   MaskedValue,
-  Page,
-  Pagination,
   SearchableSelect,
-  SearchBar,
-  Spinner,
-  Table,
+  Page,
   type Column,
 } from "../components/ui";
-import { useListControls } from "../hooks/useListControls";
+import { useListPage } from "../hooks/useListPage";
 import { api, ApiError } from "../services/api";
+import { searchPatients } from "../services/patients";
 import type {
   ARS,
   DoctorProfile,
@@ -83,13 +81,11 @@ export function Encounters() {
   const isAdmin = user?.role === "ADMIN";
   const canDelete = user?.role === "ADMIN" || user?.role === "IT";
 
-  const [rows, setRows] = useState<Encounter[]>([]);
   const [doctors, setDoctors] = useState<DoctorProfile[]>([]);
   const [rooms, setRooms] = useState<Room[]>([]);
   const [serviceTypes, setServiceTypes] = useState<ServiceType[]>([]);
   const [arsList, setArsList] = useState<ARS[]>([]);
   const [services, setServices] = useState<Service[]>([]);
-  const [showInactive, setShowInactive] = useState(false);
   const [statusFilter, setStatusFilter] = useState("");
   const [dateFilter, setDateFilter] = useState(todayLocalISO);
   const [detail, setDetail] = useState<Encounter | null>(null);
@@ -111,11 +107,11 @@ export function Encounters() {
   const [conflictPrompt, setConflictPrompt] = useState(false);
 
   const {
+    rows,
     page,
     setPage,
     pageSize,
     count,
-    setCount,
     search,
     setSearch,
     searchSubmit,
@@ -124,30 +120,17 @@ export function Encounters() {
     handleSort,
     changePageSize,
     initialLoading,
-    runList,
-    query,
-  } = useListControls({ key: "created_at", dir: "desc" });
-
-  const qs = query({
-    include_inactive: showInactive ? "true" : "",
-    status: statusFilter,
-    created_at__gte: `${dateFilter}T00:00:00`,
-    created_at__lt: `${nextLocalISO(dateFilter)}T00:00:00`,
+    showInactive,
+    setShowInactive,
+    load,
+  } = useListPage<Encounter>("/encounters/", {
+    initialSort: { key: "created_at", dir: "desc" },
+    extraParams: {
+      status: statusFilter,
+      created_at__gte: `${dateFilter}T00:00:00`,
+      created_at__lt: `${nextLocalISO(dateFilter)}T00:00:00`,
+    },
   });
-
-  const load = useCallback(() => {
-    runList((signal) => api.get<Paginated<Encounter>>(`/encounters/?${qs}`, { signal }))
-      .then((r) => {
-        if (!r) return;
-        setRows(r.results);
-        setCount(r.count);
-        const total = Math.ceil(r.count / pageSize);
-        if (total > 0 && page > total) setPage(total);
-      })
-      .catch(() => {});
-  }, [qs, page, pageSize, setCount, setPage, runList]);
-
-  useEffect(load, [load]);
 
   useEffect(() => {
     api.get<Paginated<DoctorProfile>>("/doctors/profiles/?page_size=100").then((r) => setDoctors(r.results)).catch(() => {});
@@ -155,13 +138,6 @@ export function Encounters() {
     api.get<Paginated<ServiceType>>("/service-types/?page_size=100").then((r) => setServiceTypes(r.results)).catch(() => {});
     api.get<Paginated<ARS>>("/ars/?page_size=100").then((r) => setArsList(r.results)).catch(() => {});
     api.get<Paginated<Service>>("/services/?page_size=200").then((r) => setServices(r.results)).catch(() => {});
-  }, []);
-
-  const searchPatients = useCallback((q: string): Promise<{ results: Patient[]; count: number }> => {
-    return api
-      .get<Paginated<Patient>>(`/patients/?page_size=50${q ? `&search=${encodeURIComponent(q)}` : ""}`)
-      .then((r) => ({ results: r.results, count: r.count }))
-      .catch(() => ({ results: [], count: 0 }));
   }, []);
 
   const patientSummary: EncounterPatientSummary | null = editingEncounter
@@ -492,52 +468,46 @@ export function Encounters() {
         )
       }
     >
-      {initialLoading ? (
-        <Spinner />
-      ) : (
-        <>
-          <div className="list-toolbar">
-            <input
-              type="date"
-              className="date-filter"
-              aria-label={t("encounters.date")}
-              value={dateFilter}
-              onChange={(e) => setDateFilter(e.target.value || todayLocalISO())}
-            />
-            <SearchBar
-              value={search}
-              onChange={setSearch}
-              onSubmit={searchSubmit}
-              placeholder={t("common.searchPlaceholder")}
-              label={t("common.search")}
-            />
-            <select value={statusFilter} onChange={(e) => setStatusFilter(e.target.value)}>
-              <option value="">{t("encounters.allStatuses")}</option>
-              {(["DRAFT", "ACTIVE", "COMPLETED", "CANCELLED"] as const).map((s) => (
-                <option key={s} value={s}>{statusLabel(s)}</option>
-              ))}
-            </select>
-            {isAdmin && (
-              <label className="show-inactive-toggle">
-                <input type="checkbox" checked={showInactive} onChange={(e) => setShowInactive(e.target.checked)} />
-                {t("common.showInactive")}
-              </label>
-            )}
-          </div>
-          <Pagination page={page} count={count} pageSize={pageSize} onChange={setPage} onPageSizeChange={changePageSize} />
-          <Table
-            columns={columns}
-            rows={rows}
-            getRowLabel={(r) => r.encounter_number ?? r.patient_info.full_name}
-            isInactive={(r) => !r.active}
-            sortKey={sortKey}
-            sortDir={sortDir}
-            onSort={handleSort}
-            emptyLabel={t("encounters.noDataForDate", { date: new Date(`${dateFilter}T00:00:00`).toLocaleDateString() })}
+      <ListPage<Encounter>
+        initialLoading={initialLoading}
+        search={search}
+        setSearch={setSearch}
+        searchSubmit={searchSubmit}
+        toolbarBefore={
+          <input
+            type="date"
+            className="date-filter"
+            aria-label={t("encounters.date")}
+            value={dateFilter}
+            onChange={(e) => setDateFilter(e.target.value || todayLocalISO())}
           />
-          <Pagination page={page} count={count} pageSize={pageSize} onChange={setPage} onPageSizeChange={changePageSize} />
-        </>
-      )}
+        }
+        toolbarAfter={
+          <select value={statusFilter} onChange={(e) => setStatusFilter(e.target.value)}>
+            <option value="">{t("encounters.allStatuses")}</option>
+            {(["DRAFT", "ACTIVE", "COMPLETED", "CANCELLED"] as const).map((s) => (
+              <option key={s} value={s}>{statusLabel(s)}</option>
+            ))}
+          </select>
+        }
+        isAdmin={isAdmin}
+        showInactive={showInactive}
+        onToggleInactive={setShowInactive}
+        page={page}
+        count={count}
+        pageSize={pageSize}
+        onPageChange={setPage}
+        onPageSizeChange={changePageSize}
+        columns={columns}
+        showActiveColumn={false}
+        rows={rows}
+        getRowLabel={(r) => r.encounter_number ?? r.patient_info.full_name}
+        isInactive={(r) => !r.active}
+        sortKey={sortKey}
+        sortDir={sortDir}
+        onSort={handleSort}
+        emptyLabel={t("encounters.noDataForDate", { date: new Date(`${dateFilter}T00:00:00`).toLocaleDateString() })}
+      />
 
       {modal && (
         <FormModal

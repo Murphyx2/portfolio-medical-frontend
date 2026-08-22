@@ -10,6 +10,7 @@ import type { Patient } from "../services/types";
 import { useAuth } from "../store/auth";
 import { can } from "../utils/can";
 import { formatCedula } from "../utils/cedula";
+import { formatDate } from "../utils/date";
 import { formatPhone } from "../utils/phone";
 
 export function Patients() {
@@ -240,7 +241,7 @@ export function Patients() {
                   <MaskedValue value={detail.cedula ? (detail.cedula.includes("•") ? detail.cedula : formatCedula(detail.cedula)) : ""} />
                 </div>
                 <div>
-                  <b>{t("patients.birthDate")}:</b> {detail.birth_date ?? "—"}
+                  <b>{t("patients.birthDate")}:</b> {detail.birth_date ? formatDate(`${detail.birth_date}T00:00:00`) : "—"}
                 </div>
                 <div>
                   <b>{t("patients.age")}:</b> {detail.age ?? "—"}

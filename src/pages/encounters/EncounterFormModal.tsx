@@ -8,7 +8,6 @@ import type {
   ARS,
   DoctorProfile,
   Encounter,
-  EncounterDiagnosis,
   EncounterPatientSummary,
   EncounterService,
   Patient,
@@ -28,7 +27,6 @@ const EMPTY_FORM = {
   ars: "",
   ars_program: "",
   authorization_number: "",
-  diagnoses: [] as EncounterDiagnosis[],
   services: [] as EncounterService[],
 };
 
@@ -45,7 +43,6 @@ function initialFormFor(editingEncounter: Encounter | null) {
     ars: r.ars ? String(r.ars) : "",
     ars_program: r.ars_program ? String(r.ars_program) : "",
     authorization_number: r.authorization_number,
-    diagnoses: r.diagnoses,
     services: r.services,
   };
 }
@@ -123,15 +120,6 @@ export function EncounterFormModal({
   // required unless the derived type explicitly says otherwise. Fails safe
   // toward "required" before any service is picked yet.
   const doctorRequired = !derivedServiceType || derivedServiceType.requires_doctor;
-  // Surfaced as an early warning in the Diagnoses column below -- the
-  // backend only enforces this at admit time (Encounter.ready_for_active()),
-  // so a DRAFT can still be saved without one; this just lets the user see
-  // it coming while they're still filling out the draft instead of only
-  // discovering it when the admit attempt fails. Mirrors the backend's
-  // exact check (a primary diagnosis with a non-blank description), not
-  // just "any diagnosis line."
-  const diagnosisRequired = !!derivedServiceType?.requires_diagnosis;
-  const hasPrimaryDiagnosis = form.diagnoses.some((d) => d.is_primary && d.description.trim());
 
   // Only service types that actually need a specific doctor present
   // participate in doctor<->service filtering -- e.g. lab/vaccination-style
@@ -212,24 +200,6 @@ export function EncounterFormModal({
     });
   }
 
-  function addDiagnosis() {
-    setForm((f) => ({
-      ...f,
-      diagnoses: [...f.diagnoses, { description: "", is_primary: f.diagnoses.length === 0 }],
-    }));
-  }
-
-  function updateDiagnosis(index: number, patch: Partial<EncounterDiagnosis>) {
-    setForm((f) => ({
-      ...f,
-      diagnoses: f.diagnoses.map((d, i) => (i === index ? { ...d, ...patch } : d)),
-    }));
-  }
-
-  function removeDiagnosis(index: number) {
-    setForm((f) => ({ ...f, diagnoses: f.diagnoses.filter((_, i) => i !== index) }));
-  }
-
   function addServiceLine() {
     setForm((f) => ({
       ...f,
@@ -288,7 +258,6 @@ export function EncounterFormModal({
       ars: effectiveArs ? Number(effectiveArs) : null,
       ars_program: effectiveArsProgram ? Number(effectiveArsProgram) : null,
       authorization_number: form.authorization_number,
-      diagnoses: form.diagnoses.filter((d) => d.description.trim()),
       services: form.services.filter((s) => s.service),
     };
     try {
@@ -308,7 +277,7 @@ export function EncounterFormModal({
       onSubmit={submit}
       submitLabel={t("common.save")}
       error={formError}
-      xwide
+      wide
     >
       <h4>{t("encounters.sectionPatient")}</h4>
       {editingEncounter ? (
@@ -331,19 +300,35 @@ export function EncounterFormModal({
         </>
       )}
 
-      {patientSummary && (
-        <div className="kv-grid encounter-summary-card">
-          <div><b>{t("patients.age")}:</b> {patientSummary.age ?? "—"}</div>
-          <div><b>{t("patients.gender")}:</b> {patientSummary.gender ?? "—"}</div>
-          <div><b>{t("patients.ars")}:</b> {patientSummary.ars_name ?? "—"}</div>
-          {patientSummary.allergies && (
-            <div className="encounter-alert"><b>{t("patients.allergies")}:</b> <MaskedValue value={patientSummary.allergies} /></div>
-          )}
-          {patientSummary.critical_conditions && (
-            <div className="encounter-alert"><b>{t("patients.criticalConditions")}:</b> <MaskedValue value={patientSummary.critical_conditions} /></div>
-          )}
+      <h4>{t("encounters.sectionServices")}</h4>
+      {form.services.map((s, i) => (
+        <div key={i} className="form-columns encounter-line-row">
+          <Field label={t("encounters.service")}>
+            <SearchableSelect<Service>
+              value={availableServices.find((sv) => sv.id === s.service) ?? null}
+              onSelect={(sv) => updateServiceLine(i, { service: sv.id })}
+              search={async (query) => {
+                const q = query.trim().toLowerCase();
+                const results = q ? availableServices.filter((sv) => sv.name.toLowerCase().includes(q)) : availableServices;
+                return { results, count: results.length };
+              }}
+              minChars={1}
+              placeholder={t("encounters.service")}
+              getLabel={(sv) => toSentenceCase(sv.name)}
+              getSublabel={(sv) => toSentenceCase(sv.type_name)}
+            />
+          </Field>
+          <Field label={t("encounters.serviceNotes")}>
+            <input value={s.notes} onChange={(e) => updateServiceLine(i, { notes: e.target.value })} />
+          </Field>
+          <button type="button" className="btn ghost small" onClick={() => removeServiceLine(i)}>
+            {t("common.delete")}
+          </button>
         </div>
-      )}
+      ))}
+      <button type="button" className="btn ghost small" onClick={addServiceLine}>
+        + {t("encounters.addService")}
+      </button>
 
       <h4>{t("encounters.sectionAdmission")}</h4>
       <div className="form-columns">
@@ -374,77 +359,6 @@ export function EncounterFormModal({
       <Field label={t("encounters.chiefComplaint")}>
         <textarea value={form.chief_complaint} onChange={(e) => setForm({ ...form, chief_complaint: e.target.value })} />
       </Field>
-
-      <div className="form-columns">
-        <div>
-          <h4>{t("encounters.sectionDiagnoses")}</h4>
-          {diagnosisRequired && !hasPrimaryDiagnosis && (
-            <p className="encounter-alert-warning">{t("encounters.diagnosisRequiredWarning")}</p>
-          )}
-          {form.diagnoses.map((d, i) => (
-            <div key={i} className="form-columns encounter-line-row">
-              <Field label={t("encounters.diagnosisDescription")}>
-                <input value={d.description} onChange={(e) => updateDiagnosis(i, { description: e.target.value })} />
-              </Field>
-              <label className="show-inactive-toggle">
-                <input
-                  type="radio"
-                  name="primary-diagnosis"
-                  checked={d.is_primary}
-                  onChange={() =>
-                    setForm((f) => ({
-                      ...f,
-                      diagnoses: f.diagnoses.map((dd, ii) => ({ ...dd, is_primary: ii === i })),
-                    }))
-                  }
-                />
-                {t("encounters.primary")}
-              </label>
-              <button type="button" className="btn ghost small" onClick={() => removeDiagnosis(i)}>
-                {t("common.delete")}
-              </button>
-            </div>
-          ))}
-          <button type="button" className="btn ghost small" onClick={addDiagnosis}>
-            + {t("encounters.addDiagnosis")}
-          </button>
-        </div>
-
-        <div>
-          <h4>{t("encounters.sectionServices")}</h4>
-          {form.services.map((s, i) => (
-            <div key={i} className="form-columns encounter-line-row">
-              <Field label={t("encounters.service")}>
-                <SearchableSelect<Service>
-                  value={availableServices.find((sv) => sv.id === s.service) ?? null}
-                  onSelect={(sv) => updateServiceLine(i, { service: sv.id })}
-                  search={async (query) => {
-                    const q = query.trim().toLowerCase();
-                    const results = q ? availableServices.filter((sv) => sv.name.toLowerCase().includes(q)) : availableServices;
-                    return { results, count: results.length };
-                  }}
-                  minChars={1}
-                  placeholder={t("encounters.service")}
-                  getLabel={(sv) => toSentenceCase(sv.name)}
-                  getSublabel={(sv) => toSentenceCase(sv.type_name)}
-                />
-              </Field>
-              <Field label={t("encounters.quantity")}>
-                <input type="number" min={1} value={s.quantity} onChange={(e) => updateServiceLine(i, { quantity: Number(e.target.value) })} />
-              </Field>
-              <Field label={t("encounters.serviceNotes")}>
-                <input value={s.notes} onChange={(e) => updateServiceLine(i, { notes: e.target.value })} />
-              </Field>
-              <button type="button" className="btn ghost small" onClick={() => removeServiceLine(i)}>
-                {t("common.delete")}
-              </button>
-            </div>
-          ))}
-          <button type="button" className="btn ghost small" onClick={addServiceLine}>
-            + {t("encounters.addService")}
-          </button>
-        </div>
-      </div>
 
       <h4>{t("encounters.sectionCoverage")}</h4>
       {(arsLocked || arsProgramLocked) && (

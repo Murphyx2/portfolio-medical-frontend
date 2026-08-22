@@ -16,6 +16,7 @@ import type {
 import { useAuth } from "../store/auth";
 import { can } from "../utils/can";
 import { formatCedula } from "../utils/cedula";
+import { formatDateTime } from "../utils/date";
 import { flattenError } from "../utils/errors";
 
 const EMPTY = { patient: 0, doctor: 0, center: 0, date_time: "", duration_minutes: 30, notes: "" };
@@ -125,7 +126,7 @@ export function Appointments() {
   const confirmCopy = confirm.confirming
     ? (() => {
         const { type, row } = confirm.confirming!;
-        const time = new Date(row.date_time).toLocaleString();
+        const time = formatDateTime(row.date_time);
         const patient = row.patient_info.full_name;
         switch (type) {
           case "complete":
@@ -143,7 +144,7 @@ export function Appointments() {
   const statusLabel = (s: string) => t(`appointments.status${s[0]}${s.slice(1).toLowerCase()}`);
 
   const columns: Column<Appointment>[] = [
-    { key: "date_time", header: t("appointments.dateTime"), sortKey: "date_time", render: (r) => new Date(r.date_time).toLocaleString() },
+    { key: "date_time", header: t("appointments.dateTime"), sortKey: "date_time", render: (r) => formatDateTime(r.date_time) },
     { key: "patient", header: t("appointments.patient"), sortKey: "patient__search_name", render: (r) => r.patient_info.full_name },
     { key: "doctor", header: t("appointments.doctor"), sortKey: "doctor__user__last_name", render: (r) => r.doctor_info.full_name },
     { key: "center", header: t("appointments.center"), sortKey: "center__name", render: (r) => r.center_name ?? "—" },

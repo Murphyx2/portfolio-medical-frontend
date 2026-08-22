@@ -4,6 +4,7 @@ import { ListPage } from "../../components/ListPage";
 import { MaskedValue, type Column, type SortDir } from "../../components/ui";
 import type { MedicalRecord } from "../../services/types";
 import { formatCedula } from "../../utils/cedula";
+import { formatDateTime } from "../../utils/date";
 
 /** Records list: toolbar/table/columns, wired onto F1's `ListPage` shell.
  * Records does NOT run a custom confirm-action flow (unlike Encounters) --
@@ -93,7 +94,7 @@ export function RecordList({
       ),
     },
     { key: "title", header: t("records.recordTitle"), sortKey: "title" },
-    { key: "date", header: t("records.date"), sortKey: "date", render: (r) => new Date(r.date).toLocaleString() },
+    { key: "date", header: t("records.date"), sortKey: "date", render: (r) => formatDateTime(r.date) },
     { key: "created_by_name", header: t("records.doctor"), sortKey: "created_by__username" },
   ];
 

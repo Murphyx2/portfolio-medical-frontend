@@ -13,6 +13,7 @@ export function EncounterRowActions({
   canManage,
   canDelete,
   isAdmin,
+  canViewRecords,
   onEdit,
   onConfirm,
   onOpenRecord,
@@ -21,6 +22,7 @@ export function EncounterRowActions({
   canManage: boolean;
   canDelete: boolean;
   isAdmin: boolean;
+  canViewRecords: boolean;
   onEdit: (row: Encounter) => void;
   onConfirm: (type: EncounterConfirmAction, row: Encounter) => void;
   onOpenRecord: (row: Encounter) => void;
@@ -44,9 +46,11 @@ export function EncounterRowActions({
       {canManage && row.status === "ACTIVE" && (
         <button className="btn small" onClick={() => onConfirm("complete", row)}>{t("encounters.complete")}</button>
       )}
-      <button className="btn small ghost" onClick={() => onOpenRecord(row)}>
-        {t("encounters.openRecord")}
-      </button>
+      {canViewRecords && (
+        <button className="btn small ghost" onClick={() => onOpenRecord(row)}>
+          {t("encounters.openRecord")}
+        </button>
+      )}
       {canManage && (row.status === "DRAFT" || row.status === "ACTIVE") && (
         <button className="btn small danger" onClick={() => onConfirm("cancel", row)}>{t("encounters.cancel")}</button>
       )}

@@ -6,6 +6,7 @@ import { api, ApiError } from "../../services/api";
 import { searchPatients } from "../../services/patients";
 import type { Patient } from "../../services/types";
 import { formatCedula } from "../../utils/cedula";
+import { formatDate } from "../../utils/date";
 import { flattenError } from "../../utils/errors";
 
 const EMPTY_RECORD = {
@@ -18,7 +19,7 @@ const EMPTY_RECORD = {
 };
 
 export function recordTitleFor(patient: Patient): string {
-  return `${patient.full_name} — ${new Date().toLocaleDateString()}`;
+  return `${patient.full_name} — ${formatDate(new Date())}`;
 }
 
 function initialFormFor(initialPatient: Patient | null) {

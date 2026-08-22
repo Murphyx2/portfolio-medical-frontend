@@ -1,12 +1,13 @@
-import { useCallback, useEffect, useState } from "react";
+import { useState } from "react";
 import { useTranslation } from "react-i18next";
 
-import { FormModal, Page, Pagination, SearchBar, Spinner, Table, type Column } from "../components/ui";
-import { RoleGate } from "../components/guards";
-import { useListControls } from "../hooks/useListControls";
+import { ListPage } from "../components/ListPage";
+import { FormModal, Page, type Column } from "../components/ui";
+import { useListPage } from "../hooks/useListPage";
 import { api, ApiError } from "../services/api";
-import type { ARS, ARSProgram, Paginated } from "../services/types";
+import type { ARS, ARSProgram } from "../services/types";
 import { useAuth } from "../store/auth";
+import { can } from "../utils/can";
 import { flattenError } from "../utils/errors";
 
 interface ProgramDraft {
@@ -23,19 +24,18 @@ const EMPTY: { ars_id: string; name: string; programs: ProgramDraft[] } = {
 export function Ars() {
   const { t } = useTranslation();
   const { user } = useAuth();
-  const isAdmin = user?.role === "ADMIN";
-  const [rows, setRows] = useState<ARS[]>([]);
+  const isAdmin = can(user?.role, "showInactive", "ars");
+  const canWrite = can(user?.role, "create", "ars");
   const [modal, setModal] = useState(false);
   const [form, setForm] = useState(EMPTY);
   const [editId, setEditId] = useState<number | null>(null);
   const [formError, setFormError] = useState("");
-  const [showInactive, setShowInactive] = useState(false);
   const {
+    rows,
     page,
     setPage,
     pageSize,
     count,
-    setCount,
     search,
     setSearch,
     searchSubmit,
@@ -44,25 +44,10 @@ export function Ars() {
     handleSort,
     changePageSize,
     initialLoading,
-    runList,
-    query,
-  } = useListControls();
-
-  const qs = query({ include_inactive: showInactive ? "true" : "" });
-
-  const load = useCallback(() => {
-    runList((signal) => api.get<Paginated<ARS>>(`/ars/?${qs}`, { signal }))
-      .then((r) => {
-        if (!r) return;
-        setRows(r.results);
-        setCount(r.count);
-        const total = Math.ceil(r.count / pageSize);
-        if (total > 0 && page > total) setPage(total);
-      })
-      .catch(() => {});
-  }, [qs, page, pageSize, setCount, setPage, runList]);
-
-  useEffect(load, [load]);
+    showInactive,
+    setShowInactive,
+    load,
+  } = useListPage<ARS>("/ars/");
 
   function openNew() {
     setForm({ ...EMPTY });
@@ -117,72 +102,44 @@ export function Ars() {
       header: t("ars.programs"),
       render: (r) => r.programs.map((p) => p.name).join(", "),
     },
-    ...(isAdmin
-      ? [
-          {
-            key: "active",
-            header: t("common.status"),
-            render: (r: ARS) => (
-              <span className={`badge status-${r.active ? "active" : "inactive"}`}>
-                {r.active ? t("common.active") : t("common.inactive")}
-              </span>
-            ),
-          } as Column<ARS>,
-        ]
-      : []),
   ];
 
   return (
-    <RoleGate roles={["ADMIN", "RECEPTIONIST"]}>
       <Page
         title={t("ars.title")}
         actions={
-          isAdmin && (
+          canWrite && (
             <button className="btn primary" onClick={openNew}>
               + {t("ars.new")}
             </button>
           )
         }
       >
-        {initialLoading ? (
-          <Spinner />
-        ) : (
-          <>
-            <div className="list-toolbar">
-              <SearchBar
-                value={search}
-                onChange={setSearch}
-                onSubmit={searchSubmit}
-                placeholder={t("common.searchPlaceholder")}
-                label={t("common.search")}
-              />
-              {isAdmin && (
-                <label className="show-inactive-toggle">
-                  <input
-                    type="checkbox"
-                    checked={showInactive}
-                    onChange={(e) => setShowInactive(e.target.checked)}
-                  />
-                  {t("common.showInactive")}
-                </label>
-              )}
-            </div>
-            <Pagination page={page} count={count} pageSize={pageSize} onChange={setPage} onPageSizeChange={changePageSize} />
-            <Table
-              columns={columns}
-              rows={rows}
-              onEdit={isAdmin ? openEdit : undefined}
-              onDelete={isAdmin ? remove : undefined}
-              onRestore={isAdmin ? restore : undefined}
-              getRowLabel={(r) => r.name}
-              isInactive={(r) => !r.active}
-              sortKey={sortKey}
-              sortDir={sortDir}
-              onSort={handleSort}
-            />
-            <Pagination page={page} count={count} pageSize={pageSize} onChange={setPage} onPageSizeChange={changePageSize} />
-          </>
-        )}
+        <ListPage<ARS>
+          initialLoading={initialLoading}
+          search={search}
+          setSearch={setSearch}
+          searchSubmit={searchSubmit}
+          isAdmin={isAdmin}
+          showInactive={showInactive}
+          onToggleInactive={setShowInactive}
+          page={page}
+          count={count}
+          pageSize={pageSize}
+          onPageChange={setPage}
+          onPageSizeChange={changePageSize}
+          columns={columns}
+          activeAccessor={(r) => r.active}
+          rows={rows}
+          onEdit={canWrite ? openEdit : undefined}
+          onDelete={canWrite ? remove : undefined}
+          onRestore={isAdmin ? restore : undefined}
+          getRowLabel={(r) => r.name}
+          isInactive={(r) => !r.active}
+          sortKey={sortKey}
+          sortDir={sortDir}
+          onSort={handleSort}
+        />
 
         {modal && (
           <FormModal
@@ -248,6 +205,5 @@ export function Ars() {
           </FormModal>
         )}
       </Page>
-    </RoleGate>
   );
 }

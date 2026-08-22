@@ -1,51 +1,75 @@
-import { useCallback, useEffect, useState } from "react";
+import { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 
-import { ConfirmDialog, Field, FormModal, Page, Pagination, SearchableSelect, SearchBar, Spinner, Table, type Column } from "../components/ui";
-import { useListControls } from "../hooks/useListControls";
+import { DateNavigator } from "../components/DateNavigator";
+import { DateTimeField } from "../components/DateTimeField";
+import { ListPage } from "../components/ListPage";
+import { PatientFormModal } from "../components/PatientFormModal";
+import { ConfirmDialog, Field, FormModal, MaskedValue, SearchableSelect, useRowConfirm, Page, type Column } from "../components/ui";
+import { useDoctorServiceFilter } from "../hooks/useDoctorServiceFilter";
+import { useListPage } from "../hooks/useListPage";
 import { api, ApiError } from "../services/api";
+import { formatPhone } from "../utils/phone";
+import { searchPatients } from "../services/patients";
 import type {
   Appointment,
   DoctorProfile,
-  MedicalCenter,
   Paginated,
   Patient,
+  Service,
+  ServiceType,
 } from "../services/types";
 import { useAuth } from "../store/auth";
+import { can } from "../utils/can";
+import { formatCedula } from "../utils/cedula";
+import { formatDateTime, nextLocalISO, todayLocalISO } from "../utils/date";
 import { flattenError } from "../utils/errors";
+import { toSentenceCase } from "../utils/text";
 
-const EMPTY = { patient: 0, doctor: 0, center: 0, date_time: "", duration_minutes: 30, notes: "" };
+const EMPTY = { patient: 0, doctor: 0, service: 0, date_time: "", notes: "" };
 
-function formatCedula(value: string): string {
-  const digits = value.replace(/\D/g, "").slice(0, 11);
-  if (digits.length <= 3) return digits;
-  if (digits.length <= 10) return `${digits.slice(0, 3)}-${digits.slice(3)}`;
-  return `${digits.slice(0, 3)}-${digits.slice(3, 10)}-${digits.slice(10)}`;
+// Renders an ISO timestamp as the local "YYYY-MM-DDTHH:mm" value a
+// `datetime-local` input expects, so editing an existing appointment
+// prefills the picker in the visitor's own timezone (mirrors `submit()`'s
+// own `new Date(form.date_time).toISOString()` round-trip back out).
+function toDateTimeLocalInput(iso: string): string {
+  const d = new Date(iso);
+  const pad = (n: number) => String(n).padStart(2, "0");
+  return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
 }
 
 export function Appointments() {
   const { t } = useTranslation();
   const { user } = useAuth();
-  const canManage = user?.role === "DOCTOR" || user?.role === "RECEPTIONIST" || user?.role === "ADMIN";
-  const canDelete = user?.role === "ADMIN" || user?.role === "DOCTOR";
-  const isAdmin = user?.role === "ADMIN";
-  const [showInactive, setShowInactive] = useState(false);
-  const [rows, setRows] = useState<Appointment[]>([]);
+  const canCreate = can(user?.role, "create", "appointments");
+  const canEdit = can(user?.role, "edit", "appointments");
+  const canComplete = can(user?.role, "complete", "appointments");
+  const canCancel = can(user?.role, "cancel", "appointments");
+  const canDelete = can(user?.role, "delete", "appointments");
+  const isAdmin = can(user?.role, "restore", "appointments");
   const [selectedPatient, setSelectedPatient] = useState<Patient | null>(null);
+  const [patientModal, setPatientModal] = useState(false);
   const [doctors, setDoctors] = useState<DoctorProfile[]>([]);
-  const [centers, setCenters] = useState<MedicalCenter[]>([]);
+  const [services, setServices] = useState<Service[]>([]);
+  const [serviceTypes, setServiceTypes] = useState<ServiceType[]>([]);
+  const [dateFilter, setDateFilter] = useState(todayLocalISO);
   const [modal, setModal] = useState(false);
+  const [editingAppointment, setEditingAppointment] = useState<Appointment | null>(null);
   const [form, setForm] = useState(EMPTY);
   const [formError, setFormError] = useState("");
-  const [confirming, setConfirming] = useState<{ type: "complete" | "cancel" | "delete" | "restore"; row: Appointment } | null>(null);
-  const [actionError, setActionError] = useState("");
-  const [actionPending, setActionPending] = useState(false);
+  const [rescheduleTarget, setRescheduleTarget] = useState<Appointment | null>(null);
+  const [rescheduleDateTime, setRescheduleDateTime] = useState("");
+  const [rescheduleError, setRescheduleError] = useState("");
+  const [cancelTarget, setCancelTarget] = useState<Appointment | null>(null);
+  const [cancelReason, setCancelReason] = useState("");
+  const [cancelError, setCancelError] = useState("");
+  const confirm = useRowConfirm<"complete" | "delete" | "restore", Appointment>();
   const {
+    rows,
     page,
     setPage,
     pageSize,
     count,
-    setCount,
     search,
     setSearch,
     searchSubmit,
@@ -54,56 +78,85 @@ export function Appointments() {
     handleSort,
     changePageSize,
     initialLoading,
-    runList,
-    query,
-  } = useListControls({ key: "date_time", dir: "asc" });
+    showInactive,
+    setShowInactive,
+    load,
+  } = useListPage<Appointment>("/appointments/", {
+    initialSort: { key: "date_time", dir: "asc" },
+    extraParams: {
+      date_time__gte: `${dateFilter}T00:00:00`,
+      date_time__lt: `${nextLocalISO(dateFilter)}T00:00:00`,
+    },
+  });
 
-  const qs = query({ include_inactive: showInactive ? "true" : "" });
-
-  const load = useCallback(() => {
-    runList((signal) => api.get<Paginated<Appointment>>(`/appointments/?${qs}`, { signal }))
-      .then((r) => {
-        if (!r) return;
-        setRows(r.results);
-        setCount(r.count);
-        const total = Math.ceil(r.count / pageSize);
-        if (total > 0 && page > total) setPage(total);
-      })
-      .catch(() => {});
-  }, [qs, page, pageSize, setCount, setPage, runList]);
-
-  useEffect(load, [load]);
+  const { availableDoctors, availableServices } = useDoctorServiceFilter({
+    doctors,
+    services,
+    serviceTypes,
+    selectedServiceIds: [form.service],
+    currentDoctorId: form.doctor,
+  });
 
   useEffect(() => {
     // Form-picker options: fetched once, not on every page/sort/search
     // change (unlike `load`, which re-runs then). Patients are looked up
     // on demand instead (SearchableSelect), not preloaded in bulk.
     api.get<Paginated<DoctorProfile>>("/doctors/profiles/?page_size=100").then((r) => setDoctors(r.results)).catch(() => {});
-    api.get<Paginated<MedicalCenter>>("/centers/?page_size=100").then((r) => setCenters(r.results)).catch(() => {});
+    api.get<Paginated<Service>>("/services/?page_size=200").then((r) => setServices(r.results)).catch(() => {});
+    api.get<Paginated<ServiceType>>("/service-types/?page_size=100").then((r) => setServiceTypes(r.results)).catch(() => {});
   }, []);
 
-  const searchPatients = useCallback((q: string): Promise<{ results: Patient[]; count: number }> => {
-    return api
-      .get<Paginated<Patient>>(`/patients/?page_size=50${q ? `&search=${encodeURIComponent(q)}` : ""}`)
-      .then((r) => ({ results: r.results, count: r.count }))
-      .catch(() => ({ results: [], count: 0 }));
-  }, []);
+  function pickDoctor(doctorId: number) {
+    setForm((f) => {
+      const doctor = doctors.find((d) => d.id === doctorId);
+      const serviceStillValid = doctor && doctor.services.length > 0 ? doctor.services.includes(f.service) : true;
+      return {
+        ...f,
+        doctor: doctorId,
+        service: serviceStillValid ? f.service : 0,
+      };
+    });
+  }
 
   function pickPatient(p: Patient) {
     setSelectedPatient(p);
     setForm({ ...form, patient: p.id });
   }
 
+  function openEdit(a: Appointment) {
+    setEditingAppointment(a);
+    setSelectedPatient(null);
+    setForm({
+      patient: a.patient,
+      doctor: a.doctor,
+      service: a.service ?? 0,
+      date_time: toDateTimeLocalInput(a.date_time),
+      notes: a.notes,
+    });
+    setFormError("");
+    setModal(true);
+  }
+
   async function submit() {
     setFormError("");
+    if (!form.doctor) {
+      setFormError(t("appointments.doctorRequired"));
+      return;
+    }
+    if (!form.service) {
+      setFormError(t("appointments.serviceRequired"));
+      return;
+    }
+    const body = {
+      patient: Number(form.patient),
+      doctor: Number(form.doctor),
+      service: Number(form.service),
+      date_time: new Date(form.date_time).toISOString(),
+      notes: form.notes,
+    };
     try {
-      await api.post("/appointments/", {
-        ...form,
-        patient: Number(form.patient),
-        doctor: Number(form.doctor),
-        center: Number(form.center) || null,
-        date_time: new Date(form.date_time).toISOString(),
-      });
+      if (editingAppointment) await api.patch(`/appointments/${editingAppointment.id}/`, body);
+      else await api.post("/appointments/", body);
       setModal(false);
       load();
     } catch (err) {
@@ -111,43 +164,67 @@ export function Appointments() {
     }
   }
 
-  function closeConfirm() {
-    setConfirming(null);
-    setActionError("");
+  function openReschedule(a: Appointment) {
+    setRescheduleTarget(a);
+    setRescheduleDateTime(toDateTimeLocalInput(a.date_time));
+    setRescheduleError("");
   }
 
-  async function runConfirmedAction() {
-    if (!confirming) return;
-    const { type, row } = confirming;
-    const endpoint =
-      type === "delete" ? { method: "delete" as const, path: `/appointments/${row.id}/` } : { method: "post" as const, path: `/appointments/${row.id}/${type}/` };
-    setActionPending(true);
-    setActionError("");
+  async function submitReschedule() {
+    if (!rescheduleTarget) return;
+    setRescheduleError("");
     try {
-      if (endpoint.method === "delete") {
-        await api.delete(endpoint.path);
-      } else {
-        await api.post(endpoint.path, {});
-      }
-      setConfirming(null);
+      await api.post(`/appointments/${rescheduleTarget.id}/reschedule/`, {
+        date_time: new Date(rescheduleDateTime).toISOString(),
+      });
+      setRescheduleTarget(null);
       load();
     } catch (err) {
-      setActionError(err instanceof ApiError ? flattenError(err.message) : String(err));
-    } finally {
-      setActionPending(false);
+      setRescheduleError(err instanceof ApiError ? flattenError(err.message) : String(err));
     }
   }
 
-  const confirmCopy = confirming
+  function openCancel(a: Appointment) {
+    setCancelTarget(a);
+    setCancelReason("");
+    setCancelError("");
+  }
+
+  async function submitCancel() {
+    if (!cancelTarget) return;
+    if (!cancelReason.trim()) {
+      setCancelError(t("appointments.cancelReasonRequired"));
+      return;
+    }
+    setCancelError("");
+    try {
+      await api.post(`/appointments/${cancelTarget.id}/cancel/`, { reason: cancelReason.trim() });
+      setCancelTarget(null);
+      load();
+    } catch (err) {
+      setCancelError(err instanceof ApiError ? flattenError(err.message) : String(err));
+    }
+  }
+
+  async function runConfirmedAction() {
+    await confirm.run(async (type, row) => {
+      if (type === "delete") {
+        await api.delete(`/appointments/${row.id}/`);
+      } else {
+        await api.post(`/appointments/${row.id}/${type}/`, {});
+      }
+      load();
+    });
+  }
+
+  const confirmCopy = confirm.confirming
     ? (() => {
-        const { type, row } = confirming;
-        const time = new Date(row.date_time).toLocaleString();
+        const { type, row } = confirm.confirming!;
+        const time = formatDateTime(row.date_time);
         const patient = row.patient_info.full_name;
         switch (type) {
           case "complete":
             return { title: t("appointments.complete"), message: t("appointments.completeConfirm", { patient, time }), confirmLabel: t("appointments.complete"), danger: false };
-          case "cancel":
-            return { title: t("appointments.cancel"), message: t("appointments.cancelConfirm", { patient, time }), confirmLabel: t("appointments.cancel"), danger: true };
           case "delete":
             return { title: t("common.delete"), message: t("common.deleteConfirmNamed", { name: patient }), confirmLabel: t("common.delete"), danger: true };
           case "restore":
@@ -159,10 +236,11 @@ export function Appointments() {
   const statusLabel = (s: string) => t(`appointments.status${s[0]}${s.slice(1).toLowerCase()}`);
 
   const columns: Column<Appointment>[] = [
-    { key: "date_time", header: t("appointments.dateTime"), sortKey: "date_time", render: (r) => new Date(r.date_time).toLocaleString() },
+    { key: "date_time", header: t("appointments.dateTime"), sortKey: "date_time", render: (r) => formatDateTime(r.date_time) },
     { key: "patient", header: t("appointments.patient"), sortKey: "patient__search_name", render: (r) => r.patient_info.full_name },
     { key: "doctor", header: t("appointments.doctor"), sortKey: "doctor__user__last_name", render: (r) => r.doctor_info.full_name },
-    { key: "center", header: t("appointments.center"), sortKey: "center__name", render: (r) => r.center_name ?? "—" },
+    { key: "service", header: t("appointments.service"), render: (r) => r.service_detail?.name ?? "—" },
+    { key: "phone", header: t("appointments.phone"), render: (r) => <MaskedValue value={formatPhone(r.patient_info.phone)} /> },
     { key: "created_by_name", header: t("appointments.createdBy") },
     { key: "status", header: t("common.status"), sortKey: "status", render: (r) => <span className={`badge status-${r.status.toLowerCase()}`}>{statusLabel(r.status)}</span> },
     ...(isAdmin
@@ -181,23 +259,30 @@ export function Appointments() {
     {
       key: "actions",
       header: t("common.actions"),
+      align: "center",
       render: (r) => (
-        <>
-          {canManage && r.status === "SCHEDULED" && (
-            <>
-              <button className="btn small" onClick={() => setConfirming({ type: "complete", row: r })}>{t("appointments.complete")}</button>
-              <button className="btn small danger" onClick={() => setConfirming({ type: "cancel", row: r })}>{t("appointments.cancel")}</button>
-            </>
+        <div className="row-actions">
+          {canEdit && r.active && (
+            <button className="btn small ghost" onClick={() => openEdit(r)}>{t("common.edit")}</button>
+          )}
+          {canEdit && r.status === "SCHEDULED" && (
+            <button className="btn small ghost" onClick={() => openReschedule(r)}>{t("appointments.reschedule")}</button>
+          )}
+          {canComplete && r.status === "SCHEDULED" && (
+            <button className="btn small" onClick={() => confirm.open("complete", r)}>{t("appointments.complete")}</button>
+          )}
+          {canCancel && r.status === "SCHEDULED" && (
+            <button className="btn small danger" onClick={() => openCancel(r)}>{t("appointments.cancel")}</button>
           )}
           {canDelete && r.active && (
-            <button className="btn small danger" onClick={() => setConfirming({ type: "delete", row: r })}>{t("common.delete")}</button>
+            <button className="btn small danger" onClick={() => confirm.open("delete", r)}>{t("common.delete")}</button>
           )}
           {isAdmin && !r.active && (
-            <button className="btn small" onClick={() => setConfirming({ type: "restore", row: r })}>
+            <button className="btn small" onClick={() => confirm.open("restore", r)}>
               {t("common.restore")}
             </button>
           )}
-        </>
+        </div>
       ),
     },
   ];
@@ -206,97 +291,107 @@ export function Appointments() {
     <Page
       title={t("appointments.title")}
       actions={
-        canManage && (
-          <button className="btn primary" onClick={() => { setForm(EMPTY); setSelectedPatient(null); setFormError(""); setModal(true); }}>
+        canCreate && (
+          <button
+            className="btn primary"
+            onClick={() => { setEditingAppointment(null); setForm(EMPTY); setSelectedPatient(null); setFormError(""); setModal(true); }}
+          >
             + {t("appointments.new")}
           </button>
         )
       }
     >
-      {initialLoading ? (
-        <Spinner />
-      ) : (
-        <>
-          <div className="list-toolbar">
-            <SearchBar
-              value={search}
-              onChange={setSearch}
-              onSubmit={searchSubmit}
-              placeholder={t("common.searchPlaceholder")}
-              label={t("common.search")}
-            />
-            {isAdmin && (
-              <label className="show-inactive-toggle">
-                <input
-                  type="checkbox"
-                  checked={showInactive}
-                  onChange={(e) => setShowInactive(e.target.checked)}
-                />
-                {t("common.showInactive")}
-              </label>
-            )}
-          </div>
-          <Pagination page={page} count={count} pageSize={pageSize} onChange={setPage} onPageSizeChange={changePageSize} />
-          <Table
-            columns={columns}
-            rows={rows}
-            sortKey={sortKey}
-            sortDir={sortDir}
-            onSort={handleSort}
+      <ListPage<Appointment>
+        initialLoading={initialLoading}
+        search={search}
+        setSearch={setSearch}
+        searchSubmit={searchSubmit}
+        toolbarBefore={
+          <DateNavigator
+            value={dateFilter}
+            onChange={(isoDate) => setDateFilter(isoDate || todayLocalISO())}
+            ariaLabel={t("appointments.date")}
           />
-          <Pagination page={page} count={count} pageSize={pageSize} onChange={setPage} onPageSizeChange={changePageSize} />
-        </>
-      )}
+        }
+        isAdmin={isAdmin}
+        showInactive={showInactive}
+        onToggleInactive={setShowInactive}
+        page={page}
+        count={count}
+        pageSize={pageSize}
+        onPageChange={setPage}
+        onPageSizeChange={changePageSize}
+        columns={columns}
+        rows={rows}
+        sortKey={sortKey}
+        sortDir={sortDir}
+        onSort={handleSort}
+      />
 
       {modal && (
         <FormModal
-          title={t("appointments.new")}
+          title={editingAppointment ? t("common.edit") : t("appointments.new")}
           onClose={() => setModal(false)}
           onSubmit={submit}
           submitLabel={t("common.save")}
           error={formError}
         >
-          <Field label={t("appointments.patient")}>
-            <SearchableSelect<Patient>
-              value={selectedPatient}
-              onSelect={pickPatient}
-              search={searchPatients}
-              placeholder={t("records.patientPickerPlaceholder")}
-              getLabel={(p) => p.full_name}
-              getSublabel={(p) => `${formatCedula(p.cedula)} · NSS ${p.nss || "—"}`}
+          {editingAppointment ? (
+            <p><MaskedValue value={editingAppointment.patient_info.full_name} /></p>
+          ) : (
+            <>
+              <Field label={t("appointments.patient")}>
+                <SearchableSelect<Patient>
+                  value={selectedPatient}
+                  onSelect={pickPatient}
+                  search={searchPatients}
+                  placeholder={t("records.patientPickerPlaceholder")}
+                  getLabel={(p) => p.full_name}
+                  getSublabel={(p) => `${formatCedula(p.cedula)} · NSS ${p.nss || "—"}`}
+                />
+              </Field>
+              <button type="button" className="btn ghost small" onClick={() => setPatientModal(true)}>
+                + {t("patients.new")}
+              </button>
+            </>
+          )}
+          <Field label={t("appointments.doctor")}>
+            <SearchableSelect<DoctorProfile>
+              value={availableDoctors.find((d) => d.id === form.doctor) ?? null}
+              onSelect={(d) => pickDoctor(d.id)}
+              search={async (query) => {
+                const q = query.trim().toLowerCase();
+                const results = q ? availableDoctors.filter((d) => d.full_name.toLowerCase().includes(q)) : availableDoctors;
+                return { results, count: results.length };
+              }}
+              minChars={1}
+              placeholder={t("appointments.doctor")}
+              getLabel={(d) => d.full_name}
+              autoFocus={false}
             />
           </Field>
-          <Field label={t("appointments.doctor")}>
-            <select value={form.doctor} onChange={(e) => setForm({ ...form, doctor: Number(e.target.value) })} required>
-              <option value={0} disabled>—</option>
-              {doctors.map((d) => (
-                <option key={d.id} value={d.id}>{d.full_name}</option>
-              ))}
-            </select>
-          </Field>
-          <Field label={t("appointments.center")}>
-            <select value={form.center} onChange={(e) => setForm({ ...form, center: Number(e.target.value) })}>
-              <option value={0}>—</option>
-              {centers.map((c) => (
-                <option key={c.id} value={c.id}>{c.name}</option>
-              ))}
-            </select>
+          <Field label={t("appointments.service")}>
+            <SearchableSelect<Service>
+              value={availableServices.find((s) => s.id === form.service) ?? null}
+              onSelect={(s) => setForm({ ...form, service: s.id })}
+              search={async (query) => {
+                const q = query.trim().toLowerCase();
+                const results = q ? availableServices.filter((s) => s.name.toLowerCase().includes(q)) : availableServices;
+                return { results, count: results.length };
+              }}
+              minChars={1}
+              placeholder={t("appointments.service")}
+              getLabel={(s) => toSentenceCase(s.name)}
+              getSublabel={(s) => toSentenceCase(s.type_name)}
+              autoFocus={false}
+            />
           </Field>
           <Field label={t("appointments.dateTime")}>
-            <input
-              type="datetime-local"
+            <DateTimeField
               value={form.date_time}
-              onChange={(e) => setForm({ ...form, date_time: e.target.value })}
+              onChange={(v) => setForm({ ...form, date_time: v })}
+              ariaLabel={t("appointments.dateTime")}
               required
-            />
-          </Field>
-          <Field label={t("appointments.duration")}>
-            <input
-              type="number"
-              min={5}
-              step={5}
-              value={form.duration_minutes}
-              onChange={(e) => setForm({ ...form, duration_minutes: Number(e.target.value) })}
             />
           </Field>
           <Field label={t("appointments.notes")}>
@@ -305,16 +400,60 @@ export function Appointments() {
         </FormModal>
       )}
 
-      {confirming && confirmCopy && (
+      {patientModal && (
+        <PatientFormModal
+          onClose={() => setPatientModal(false)}
+          onSaved={(p) => { setPatientModal(false); pickPatient(p); }}
+        />
+      )}
+
+      {rescheduleTarget && (
+        <FormModal
+          title={t("appointments.reschedule")}
+          onClose={() => setRescheduleTarget(null)}
+          onSubmit={submitReschedule}
+          submitLabel={t("common.save")}
+          error={rescheduleError}
+        >
+          <Field label={t("appointments.dateTime")}>
+            <DateTimeField
+              value={rescheduleDateTime}
+              onChange={setRescheduleDateTime}
+              ariaLabel={t("appointments.dateTime")}
+              required
+            />
+          </Field>
+        </FormModal>
+      )}
+
+      {cancelTarget && (
+        <FormModal
+          title={t("appointments.cancel")}
+          onClose={() => setCancelTarget(null)}
+          onSubmit={submitCancel}
+          submitLabel={t("appointments.cancel")}
+          error={cancelError}
+        >
+          <Field label={t("appointments.cancelReason")}>
+            <textarea
+              value={cancelReason}
+              onChange={(e) => setCancelReason(e.target.value)}
+              required
+            />
+          </Field>
+        </FormModal>
+      )}
+
+      {confirm.confirming && confirmCopy && (
         <ConfirmDialog
           title={confirmCopy.title}
           message={confirmCopy.message}
           confirmLabel={confirmCopy.confirmLabel}
           danger={confirmCopy.danger}
-          error={actionError}
-          pending={actionPending}
+          error={confirm.error}
+          pending={confirm.pending}
           onConfirm={runConfirmedAction}
-          onCancel={closeConfirm}
+          onCancel={confirm.close}
         />
       )}
     </Page>

@@ -1,12 +1,14 @@
-import { useCallback, useEffect, useState } from "react";
+import { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { useNavigate } from "react-router-dom";
 
-import { Field, FormModal, Page, Pagination, SearchBar, Spinner, Table, type Column } from "../components/ui";
-import { useListControls } from "../hooks/useListControls";
+import { ListPage } from "../components/ListPage";
+import { Field, FormModal, Page, type Column } from "../components/ui";
+import { useListPage } from "../hooks/useListPage";
 import { api, ApiError } from "../services/api";
 import type { Paginated, Service, ServiceType } from "../services/types";
 import { useAuth } from "../store/auth";
+import { can } from "../utils/can";
 import { formatCurrencyDOP } from "../utils/currency";
 import { flattenError } from "../utils/errors";
 
@@ -16,21 +18,19 @@ export function Services() {
   const { t } = useTranslation();
   const { user } = useAuth();
   const navigate = useNavigate();
-  const canEdit = user?.role === "ADMIN" || user?.role === "CENTER_MANAGER";
-  const isAdmin = user?.role === "ADMIN";
-  const [rows, setRows] = useState<Service[]>([]);
+  const canEdit = can(user?.role, "edit", "services");
+  const isAdmin = can(user?.role, "restore", "services");
   const [types, setTypes] = useState<ServiceType[]>([]);
   const [modal, setModal] = useState(false);
   const [form, setForm] = useState(EMPTY);
   const [editId, setEditId] = useState<number | null>(null);
   const [formError, setFormError] = useState("");
-  const [showInactive, setShowInactive] = useState(false);
   const {
+    rows,
     page,
     setPage,
     pageSize,
     count,
-    setCount,
     search,
     setSearch,
     searchSubmit,
@@ -39,25 +39,10 @@ export function Services() {
     handleSort,
     changePageSize,
     initialLoading,
-    runList,
-    query,
-  } = useListControls();
-
-  const qs = query({ include_inactive: showInactive ? "true" : "" });
-
-  const load = useCallback(() => {
-    runList((signal) => api.get<Paginated<Service>>(`/services/?${qs}`, { signal }))
-      .then((r) => {
-        if (!r) return;
-        setRows(r.results);
-        setCount(r.count);
-        const total = Math.ceil(r.count / pageSize);
-        if (total > 0 && page > total) setPage(total);
-      })
-      .catch(() => {});
-  }, [qs, page, pageSize, setCount, setPage, runList]);
-
-  useEffect(load, [load]);
+    showInactive,
+    setShowInactive,
+    load,
+  } = useListPage<Service>("/services/");
 
   useEffect(() => {
     // Type options: fetched once, not on every page/sort/search change.
@@ -119,19 +104,6 @@ export function Services() {
     { key: "type_name", header: t("services.type") },
     { key: "co_pago", header: t("services.coPago"), sortKey: "co_pago", render: (s) => formatCurrencyDOP(s.co_pago) },
     { key: "privado", header: t("services.privado"), sortKey: "privado", render: (s) => formatCurrencyDOP(s.privado) },
-    ...(isAdmin
-      ? [
-          {
-            key: "active",
-            header: t("common.status"),
-            render: (s: Service) => (
-              <span className={`badge status-${s.active ? "active" : "inactive"}`}>
-                {s.active ? t("common.active") : t("common.inactive")}
-              </span>
-            ),
-          } as Column<Service>,
-        ]
-      : []),
   ];
 
   return (
@@ -150,45 +122,31 @@ export function Services() {
         )
       }
     >
-      {initialLoading ? (
-        <Spinner />
-      ) : (
-        <>
-          <div className="list-toolbar">
-            <SearchBar
-              value={search}
-              onChange={setSearch}
-              onSubmit={searchSubmit}
-              placeholder={t("common.searchPlaceholder")}
-              label={t("common.search")}
-            />
-            {isAdmin && (
-              <label className="show-inactive-toggle">
-                <input
-                  type="checkbox"
-                  checked={showInactive}
-                  onChange={(e) => setShowInactive(e.target.checked)}
-                />
-                {t("common.showInactive")}
-              </label>
-            )}
-          </div>
-          <Pagination page={page} count={count} pageSize={pageSize} onChange={setPage} onPageSizeChange={changePageSize} />
-          <Table
-            columns={columns}
-            rows={rows}
-            onEdit={canEdit ? openEdit : undefined}
-            onDelete={canEdit ? remove : undefined}
-            onRestore={isAdmin ? restore : undefined}
-            getRowLabel={(s) => s.name}
-            isInactive={(s) => !s.active}
-            sortKey={sortKey}
-            sortDir={sortDir}
-            onSort={handleSort}
-          />
-          <Pagination page={page} count={count} pageSize={pageSize} onChange={setPage} onPageSizeChange={changePageSize} />
-        </>
-      )}
+      <ListPage<Service>
+        initialLoading={initialLoading}
+        search={search}
+        setSearch={setSearch}
+        searchSubmit={searchSubmit}
+        isAdmin={isAdmin}
+        showInactive={showInactive}
+        onToggleInactive={setShowInactive}
+        page={page}
+        count={count}
+        pageSize={pageSize}
+        onPageChange={setPage}
+        onPageSizeChange={changePageSize}
+        columns={columns}
+        activeAccessor={(s) => s.active}
+        rows={rows}
+        onEdit={canEdit ? openEdit : undefined}
+        onDelete={canEdit ? remove : undefined}
+        onRestore={isAdmin ? restore : undefined}
+        getRowLabel={(s) => s.name}
+        isInactive={(s) => !s.active}
+        sortKey={sortKey}
+        sortDir={sortDir}
+        onSort={handleSort}
+      />
 
       {modal && (
         <FormModal

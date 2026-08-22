@@ -3,11 +3,51 @@ import type { FormEvent, ReactNode } from "react";
 import { useTranslation } from "react-i18next";
 
 import { MIN_SEARCH_CHARS } from "../hooks/useListControls";
-import { ApiError } from "../services/api";
+import type { SortDir } from "../hooks/useListControls";
+export type { SortDir };
+import { ApiError, onMutationSuccess } from "../services/api";
 import { flattenError } from "../utils/errors";
 
 function actionErrorMessage(err: unknown): string {
   return err instanceof ApiError ? flattenError(err.message) : String(err);
+}
+
+/** Shared "confirm before running a row action" state machine -- extracted
+ * so pages with more confirm types than Table's built-in delete/restore
+ * (Appointments' complete/cancel, Encounters' admit/complete/cancel) don't
+ * each hand-roll their own confirming/error/pending triple. Table itself
+ * keeps its own internal copy for delete/restore since it owns that flow
+ * end-to-end; this is for pages driving `ConfirmDialog` themselves. */
+export function useRowConfirm<K extends string, T>() {
+  const [confirming, setConfirming] = useState<{ type: K; row: T } | null>(null);
+  const [error, setError] = useState("");
+  const [pending, setPending] = useState(false);
+
+  function open(type: K, row: T) {
+    setConfirming({ type, row });
+    setError("");
+  }
+
+  function close() {
+    setConfirming(null);
+    setError("");
+  }
+
+  async function run(handler: (type: K, row: T) => void | Promise<void>) {
+    if (!confirming) return;
+    setPending(true);
+    setError("");
+    try {
+      await handler(confirming.type, confirming.row);
+      setConfirming(null);
+    } catch (err) {
+      setError(actionErrorMessage(err));
+    } finally {
+      setPending(false);
+    }
+  }
+
+  return { confirming, error, pending, open, close, run };
 }
 
 export function Page({ title, actions, children }: {
@@ -37,16 +77,24 @@ const DIALOG_FOCUSABLE_SELECTOR =
  * the focus trap. Composed by FormModal; also used directly by dialogs that
  * don't fit the single-submit/cancel shape (e.g. Records' detail view).
  */
-export function Dialog({ title, onClose, children, wide, preventClose }: {
+export function Dialog({ title, onClose, children, wide, xwide, preventClose, confirmBeforeClose }: {
   title: ReactNode;
   onClose: () => void;
   children: ReactNode;
   wide?: boolean;
+  xwide?: boolean;
   preventClose?: boolean;
+  /** When true, backdrop-click and Escape no longer close immediately --
+   * they raise a "discard changes?" ConfirmDialog first (the explicit
+   * Cancel/Close button, driven separately by the caller, is unaffected).
+   * `FormModal` sets this once the form has any unsaved input. */
+  confirmBeforeClose?: boolean;
 }) {
+  const { t } = useTranslation();
   const pressOnBackdrop = useRef(false);
   const modalRef = useRef<HTMLDivElement>(null);
   const titleId = useId();
+  const [confirmingExit, setConfirmingExit] = useState(false);
 
   useEffect(() => {
     const previouslyFocused = document.activeElement as HTMLElement | null;
@@ -62,7 +110,8 @@ export function Dialog({ title, onClose, children, wide, preventClose }: {
     function handleKeyDown(e: KeyboardEvent) {
       if (preventClose) return;
       if (e.key === "Escape") {
-        onClose();
+        if (confirmBeforeClose) setConfirmingExit(true);
+        else onClose();
         return;
       }
       if (e.key !== "Tab") return;
@@ -82,7 +131,7 @@ export function Dialog({ title, onClose, children, wide, preventClose }: {
     }
     document.addEventListener("keydown", handleKeyDown);
     return () => document.removeEventListener("keydown", handleKeyDown);
-  }, [onClose, preventClose]);
+  }, [onClose, preventClose, confirmBeforeClose]);
 
   return (
     <div
@@ -93,13 +142,14 @@ export function Dialog({ title, onClose, children, wide, preventClose }: {
       onClick={(e) => {
         if (pressOnBackdrop.current && e.target === e.currentTarget && !preventClose) {
           pressOnBackdrop.current = false;
-          onClose();
+          if (confirmBeforeClose) setConfirmingExit(true);
+          else onClose();
         }
       }}
     >
       <div
         ref={modalRef}
-        className={wide ? "modal wide" : "modal"}
+        className={xwide ? "modal xwide" : wide ? "modal wide" : "modal"}
         role="dialog"
         aria-modal="true"
         aria-labelledby={titleId}
@@ -113,21 +163,46 @@ export function Dialog({ title, onClose, children, wide, preventClose }: {
         <h3 id={titleId}>{title}</h3>
         {children}
       </div>
+      {confirmingExit && (
+        <ConfirmDialog
+          title={t("common.discardChangesTitle")}
+          message={t("common.discardChangesMessage")}
+          confirmLabel={t("common.discardChanges")}
+          danger
+          onConfirm={() => {
+            setConfirmingExit(false);
+            onClose();
+          }}
+          onCancel={() => setConfirmingExit(false)}
+        />
+      )}
     </div>
   );
 }
 
-export function FormModal({ title, onClose, onSubmit, children, submitLabel, error, wide }: {
+export function FormModal({ title, onClose, onSubmit, children, submitLabel, error, wide, xwide }: {
   title: string;
   onClose: () => void;
   onSubmit: () => void | Promise<void>;
   submitLabel: string;
   error?: string;
   wide?: boolean;
+  xwide?: boolean;
   children: ReactNode;
 }) {
   const [submitting, setSubmitting] = useState(false);
+  // Set on the first change/input/click anywhere in `children` (not the
+  // error banner or Cancel/Submit footer, which sit outside this tracked
+  // region) -- an untouched form still closes immediately on backdrop-click
+  // or Escape; one with any interaction asks for confirmation first. Cancel
+  // stays an immediate, no-prompt exit regardless, since it's a deliberate
+  // action rather than an accidental dismissal.
+  const [dirty, setDirty] = useState(false);
   const { t } = useTranslation();
+
+  function markDirty() {
+    if (!dirty) setDirty(true);
+  }
 
   async function handleSubmit(e: FormEvent) {
     e.preventDefault();
@@ -141,9 +216,11 @@ export function FormModal({ title, onClose, onSubmit, children, submitLabel, err
   }
 
   return (
-    <Dialog title={title} onClose={onClose} preventClose={submitting} wide={wide}>
+    <Dialog title={title} onClose={onClose} preventClose={submitting} confirmBeforeClose={dirty} wide={wide} xwide={xwide}>
       <form onSubmit={handleSubmit}>
-        {children}
+        <div onChangeCapture={markDirty} onInputCapture={markDirty} onClickCapture={markDirty}>
+          {children}
+        </div>
         {error && (
           <p className="form-error" role="alert">
             {error}
@@ -221,9 +298,8 @@ export interface Column<T> {
   header: ReactNode;
   render?: (row: T) => ReactNode;
   sortKey?: string;
+  align?: "center";
 }
-
-export type SortDir = "asc" | "desc";
 
 export function Table<T extends { id: number }>({
   columns,
@@ -290,6 +366,7 @@ export function Table<T extends { id: number }>({
                 <th
                   key={c.key}
                   scope="col"
+                  className={c.align === "center" ? "col-center" : undefined}
                   aria-sort={
                     sortable
                       ? active
@@ -317,7 +394,7 @@ export function Table<T extends { id: number }>({
                 </th>
               );
             })}
-            {hasActions && <th scope="col">{t("common.actions")}</th>}
+            {hasActions && <th scope="col" className="col-center">{t("common.actions")}</th>}
           </tr>
         </thead>
         <tbody>
@@ -331,37 +408,41 @@ export function Table<T extends { id: number }>({
           {rows.map((row) => (
             <tr key={row.id}>
               {columns.map((c) => (
-                <td key={c.key}>{c.render ? c.render(row) : String((row as never)[c.key] ?? "")}</td>
+                <td key={c.key} className={c.align === "center" ? "col-center" : undefined}>
+                  {c.render ? c.render(row) : String((row as never)[c.key] ?? "")}
+                </td>
               ))}
               {hasActions && (
-                <td className="row-actions">
-                  {onEdit && (
-                    <button
-                      className="btn small"
-                      onClick={() => onEdit(row)}
-                      aria-label={`${t("common.edit")} ${getRowLabel?.(row) ?? row.id}`}
-                    >
-                      {t("common.edit")}
-                    </button>
-                  )}
-                  {onDelete && (
-                    <button
-                      className="btn small danger"
-                      onClick={() => setConfirming({ type: "delete", row })}
-                      aria-label={`${t("common.delete")} ${getRowLabel?.(row) ?? row.id}`}
-                    >
-                      {t("common.delete")}
-                    </button>
-                  )}
-                  {onRestore && isInactive?.(row) && (
-                    <button
-                      className="btn small"
-                      onClick={() => setConfirming({ type: "restore", row })}
-                      aria-label={`${t("common.restore")} ${getRowLabel?.(row) ?? row.id}`}
-                    >
-                      {t("common.restore")}
-                    </button>
-                  )}
+                <td className="col-center">
+                  <div className="row-actions">
+                    {onEdit && (
+                      <button
+                        className="btn small"
+                        onClick={() => onEdit(row)}
+                        aria-label={`${t("common.edit")} ${getRowLabel?.(row) ?? row.id}`}
+                      >
+                        {t("common.edit")}
+                      </button>
+                    )}
+                    {onDelete && (
+                      <button
+                        className="btn small danger"
+                        onClick={() => setConfirming({ type: "delete", row })}
+                        aria-label={`${t("common.delete")} ${getRowLabel?.(row) ?? row.id}`}
+                      >
+                        {t("common.delete")}
+                      </button>
+                    )}
+                    {onRestore && isInactive?.(row) && (
+                      <button
+                        className="btn small"
+                        onClick={() => setConfirming({ type: "restore", row })}
+                        aria-label={`${t("common.restore")} ${getRowLabel?.(row) ?? row.id}`}
+                      >
+                        {t("common.restore")}
+                      </button>
+                    )}
+                  </div>
                 </td>
               )}
             </tr>
@@ -479,6 +560,7 @@ export function SearchableSelect<T extends { id: number }>({
   getLabel,
   getSublabel,
   minChars = MIN_SEARCH_CHARS,
+  autoFocus = true,
 }: {
   value: T | null;
   onSelect: (item: T) => void;
@@ -487,6 +569,12 @@ export function SearchableSelect<T extends { id: number }>({
   getLabel: (item: T) => string;
   getSublabel?: (item: T) => string;
   minChars?: number;
+  // Defaults to true (a lone empty field, e.g. Patient search, should grab
+  // focus when its modal opens). Pass false when multiple empty instances
+  // render together -- only one can hold real DOM focus, but every mounted
+  // `autoFocus` input still fires its own onFocus, opening every field's
+  // dropdown list at once (see Appointments.tsx's Doctor/Service fields).
+  autoFocus?: boolean;
 }) {
   const { t } = useTranslation();
   const wrapRef = useRef<HTMLDivElement>(null);
@@ -580,7 +668,7 @@ export function SearchableSelect<T extends { id: number }>({
         <div className="searchable-select-input-wrap">
           <input
             className="searchable-select-input"
-            autoFocus
+            autoFocus={autoFocus}
             value={query}
             placeholder={value ? getLabel(value) : placeholder}
             onChange={(e) => setQuery(e.target.value)}
@@ -719,6 +807,40 @@ export function Pagination({ page, count, pageSize, onChange, onPageSizeChange }
           {t("pagination.pageOf", { page, total })} · {t("pagination.records", { count })}
         </span>
       )}
+    </div>
+  );
+}
+
+interface Toast {
+  id: number;
+  message: string;
+}
+
+let toastId = 0;
+
+/** Mounted once in `Layout`. Every successful save/delete/upload across the
+ * app fires a toast from `api.ts`'s `onMutationSuccess` subscription -- the
+ * app previously gave zero positive confirmation that a mutating action
+ * landed, so this is wired centrally rather than per page. */
+export function ToastHost() {
+  const [toasts, setToasts] = useState<Toast[]>([]);
+
+  useEffect(() => {
+    return onMutationSuccess((message) => {
+      const id = ++toastId;
+      setToasts((prev) => [...prev, { id, message }]);
+      setTimeout(() => setToasts((prev) => prev.filter((t) => t.id !== id)), 3000);
+    });
+  }, []);
+
+  if (!toasts.length) return null;
+  return (
+    <div className="toast-host" role="status" aria-live="polite">
+      {toasts.map((t) => (
+        <div key={t.id} className="toast">
+          {t.message}
+        </div>
+      ))}
     </div>
   );
 }

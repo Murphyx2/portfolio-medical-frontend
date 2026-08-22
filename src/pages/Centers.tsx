@@ -1,12 +1,13 @@
-import { useCallback, useEffect, useState } from "react";
+import { useState } from "react";
 import { useTranslation } from "react-i18next";
 
-import { Field, FormModal, Page, Pagination, SearchBar, Spinner, Table, type Column } from "../components/ui";
-import { RoleGate } from "../components/guards";
-import { useListControls } from "../hooks/useListControls";
+import { ListPage } from "../components/ListPage";
+import { Field, FormModal, Page, type Column } from "../components/ui";
+import { useListPage } from "../hooks/useListPage";
 import { api, ApiError } from "../services/api";
-import type { MedicalCenter, Paginated } from "../services/types";
+import type { MedicalCenter } from "../services/types";
 import { useAuth } from "../store/auth";
+import { can } from "../utils/can";
 import { flattenError } from "../utils/errors";
 import { formatPhone, formatPhoneInput, isValidRequiredPhone } from "../utils/phone";
 
@@ -15,21 +16,19 @@ const EMPTY = { name: "", code: "", address: "", phone: "", email: "", is_defaul
 export function Centers() {
   const { t } = useTranslation();
   const { user } = useAuth();
-  const canEdit = user?.role === "ADMIN" || user?.role === "IT";
-  const isAdmin = user?.role === "ADMIN";
-  const [rows, setRows] = useState<MedicalCenter[]>([]);
+  const canEdit = can(user?.role, "edit", "centers");
+  const isAdmin = can(user?.role, "restore", "centers");
   const [modal, setModal] = useState(false);
   const [form, setForm] = useState(EMPTY);
   const [editId, setEditId] = useState<number | null>(null);
   const [phoneError, setPhoneError] = useState("");
   const [formError, setFormError] = useState("");
-  const [showInactive, setShowInactive] = useState(false);
   const {
+    rows,
     page,
     setPage,
     pageSize,
     count,
-    setCount,
     search,
     setSearch,
     searchSubmit,
@@ -38,25 +37,10 @@ export function Centers() {
     handleSort,
     changePageSize,
     initialLoading,
-    runList,
-    query,
-  } = useListControls();
-
-  const qs = query({ include_inactive: showInactive ? "true" : "" });
-
-  const load = useCallback(() => {
-    runList((signal) => api.get<Paginated<MedicalCenter>>(`/centers/?${qs}`, { signal }))
-      .then((r) => {
-        if (!r) return;
-        setRows(r.results);
-        setCount(r.count);
-        const total = Math.ceil(r.count / pageSize);
-        if (total > 0 && page > total) setPage(total);
-      })
-      .catch(() => {});
-  }, [qs, page, pageSize, setCount, setPage, runList]);
-
-  useEffect(load, [load]);
+    showInactive,
+    setShowInactive,
+    load,
+  } = useListPage<MedicalCenter>("/centers/");
 
   function openNew() {
     setForm(EMPTY);
@@ -125,23 +109,9 @@ export function Centers() {
     { key: "phone", header: t("centers.phone"), sortKey: "phone", render: (r) => formatPhone(r.phone) },
     { key: "email", header: t("centers.email"), sortKey: "email" },
     { key: "doctor_count", header: t("centers.doctorsCount"), sortKey: "doctor_count" },
-    ...(isAdmin
-      ? [
-          {
-            key: "active",
-            header: t("common.status"),
-            render: (r: MedicalCenter) => (
-              <span className={`badge status-${r.active ? "active" : "inactive"}`}>
-                {r.active ? t("common.active") : t("common.inactive")}
-              </span>
-            ),
-          } as Column<MedicalCenter>,
-        ]
-      : []),
   ];
 
   return (
-    <RoleGate roles={["ADMIN", "DOCTOR", "IT", "NURSE", "CENTER_MANAGER"]}>
     <Page
       title={t("centers.title")}
       actions={
@@ -152,45 +122,31 @@ export function Centers() {
         )
       }
     >
-      {initialLoading ? (
-        <Spinner />
-      ) : (
-        <>
-          <div className="list-toolbar">
-            <SearchBar
-              value={search}
-              onChange={setSearch}
-              onSubmit={searchSubmit}
-              placeholder={t("common.searchPlaceholder")}
-              label={t("common.search")}
-            />
-            {isAdmin && (
-              <label className="show-inactive-toggle">
-                <input
-                  type="checkbox"
-                  checked={showInactive}
-                  onChange={(e) => setShowInactive(e.target.checked)}
-                />
-                {t("common.showInactive")}
-              </label>
-            )}
-          </div>
-          <Pagination page={page} count={count} pageSize={pageSize} onChange={setPage} onPageSizeChange={changePageSize} />
-          <Table
-            columns={columns}
-            rows={rows}
-            onEdit={canEdit ? openEdit : undefined}
-            onDelete={canEdit ? remove : undefined}
-            onRestore={isAdmin ? restore : undefined}
-            getRowLabel={(r) => r.name}
-            isInactive={(r) => !r.active}
-            sortKey={sortKey}
-            sortDir={sortDir}
-            onSort={handleSort}
-          />
-          <Pagination page={page} count={count} pageSize={pageSize} onChange={setPage} onPageSizeChange={changePageSize} />
-        </>
-      )}
+      <ListPage<MedicalCenter>
+        initialLoading={initialLoading}
+        search={search}
+        setSearch={setSearch}
+        searchSubmit={searchSubmit}
+        isAdmin={isAdmin}
+        showInactive={showInactive}
+        onToggleInactive={setShowInactive}
+        page={page}
+        count={count}
+        pageSize={pageSize}
+        onPageChange={setPage}
+        onPageSizeChange={changePageSize}
+        columns={columns}
+        activeAccessor={(r) => r.active}
+        rows={rows}
+        onEdit={canEdit ? openEdit : undefined}
+        onDelete={canEdit ? remove : undefined}
+        onRestore={isAdmin ? restore : undefined}
+        getRowLabel={(r) => r.name}
+        isInactive={(r) => !r.active}
+        sortKey={sortKey}
+        sortDir={sortDir}
+        onSort={handleSort}
+      />
 
       {modal && (
         <FormModal
@@ -238,6 +194,5 @@ export function Centers() {
         </FormModal>
       )}
     </Page>
-    </RoleGate>
   );
 }

@@ -1,6 +1,27 @@
+import i18n from "../i18n";
+
 const apiBase = import.meta.env.VITE_API_BASE_URL ?? "/api";
 
 let accessToken: string | null = null;
+
+type ToastListener = (message: string) => void;
+const toastListeners = new Set<ToastListener>();
+
+/** Subscribe to save/delete success toasts fired from `request()` below.
+ * Returns an unsubscribe function. There is exactly one subscriber in
+ * practice (the `<ToastHost>` mounted once in `Layout`), but this stays a
+ * pub/sub rather than a single callback so api.ts never needs to know
+ * whether a UI is mounted yet. */
+export function onMutationSuccess(listener: ToastListener): () => void {
+  toastListeners.add(listener);
+  return () => toastListeners.delete(listener);
+}
+
+function notifyMutationSuccess(method: string): void {
+  const message =
+    method === "DELETE" ? i18n.t("common.toastDeleted") : i18n.t("common.toastSaved");
+  toastListeners.forEach((listener) => listener(message));
+}
 
 export class ApiError extends Error {
   status: number;
@@ -50,6 +71,9 @@ async function request<T>(
     }
     throw new ApiError(message, res.status);
   }
+
+  const method = (options.method ?? "GET").toUpperCase();
+  if (method !== "GET") notifyMutationSuccess(method);
 
   if (res.status === 204) return undefined as T;
   return (await res.json()) as T;
@@ -114,5 +138,6 @@ export async function upload<T>(path: string, formData: FormData): Promise<T> {
     credentials: "include",
   });
   if (!res.ok) throw new ApiError(res.statusText, res.status);
+  notifyMutationSuccess("POST");
   return (await res.json()) as T;
 }

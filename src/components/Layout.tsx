@@ -1,24 +1,43 @@
-import type { ReactNode } from "react";
+import type { ComponentType, ReactNode } from "react";
+import {
+  BriefcaseMedical,
+  Bed,
+  Calendar,
+  ClipboardList,
+  Folder,
+  Hospital,
+  LayoutDashboard,
+  Pill,
+  Shield,
+  Stethoscope,
+  Users,
+  type LucideProps,
+} from "lucide-react";
 import { useTranslation } from "react-i18next";
 import { NavLink, useNavigate } from "react-router-dom";
 
 import { useAuth } from "../store/auth";
-import type { Role } from "../services/types";
+import { can, type Resource } from "../utils/can";
 import { LanguageSwitcher } from "./LanguageSwitcher";
+import { ToastHost } from "./ui";
 
-const NAV: { to: string; key: string; roles?: Role[] }[] = [
-  { to: "/", key: "nav.dashboard" },
-  { to: "/encounters", key: "nav.encounters" },
-  { to: "/patients", key: "nav.patients" },
-  { to: "/doctors", key: "nav.doctors" },
-  { to: "/services", key: "nav.services" },
-  { to: "/centers", key: "nav.centers", roles: ["ADMIN", "DOCTOR", "IT", "NURSE", "CENTER_MANAGER"] },
-  { to: "/ars", key: "nav.ars", roles: ["ADMIN", "RECEPTIONIST"] },
-  { to: "/medicines", key: "nav.medicines" },
-  { to: "/rooms", key: "nav.rooms" },
-  { to: "/appointments", key: "nav.appointments" },
-  { to: "/records", key: "nav.records", roles: ["ADMIN", "DOCTOR", "IT", "NURSE", "CENTER_MANAGER"] },
-  { to: "/users", key: "nav.users", roles: ["ADMIN", "IT"] },
+// Nav visibility derives from the same `can(role, "view", resource)` check
+// as route-level gating (`App.tsx`'s `ProtectedRoute`) and page-local
+// buttons, so it can't drift from them again. Entries with no `resource`
+// are open to every authenticated role (matches Dashboard).
+const NAV: { to: string; key: string; resource?: Resource; icon: ComponentType<LucideProps> }[] = [
+  { to: "/", key: "nav.dashboard", icon: LayoutDashboard },
+  { to: "/encounters", key: "nav.encounters", resource: "encounters", icon: ClipboardList },
+  { to: "/patients", key: "nav.patients", resource: "patients", icon: Users },
+  { to: "/doctors", key: "nav.doctors", resource: "doctors", icon: Stethoscope },
+  { to: "/services", key: "nav.services", resource: "services", icon: BriefcaseMedical },
+  { to: "/centers", key: "nav.centers", resource: "centers", icon: Hospital },
+  { to: "/ars", key: "nav.ars", resource: "ars", icon: Shield },
+  { to: "/medicines", key: "nav.medicines", resource: "medicines", icon: Pill },
+  { to: "/rooms", key: "nav.rooms", resource: "rooms", icon: Bed },
+  { to: "/appointments", key: "nav.appointments", resource: "appointments", icon: Calendar },
+  { to: "/records", key: "nav.records", resource: "records", icon: Folder },
+  { to: "/users", key: "nav.users", resource: "users", icon: Users },
 ];
 
 export function Layout({ children }: { children: ReactNode }) {
@@ -32,7 +51,7 @@ export function Layout({ children }: { children: ReactNode }) {
   }
 
   const items = NAV.filter(
-    (item) => !item.roles || (user && item.roles.includes(user.role)),
+    (item) => !item.resource || can(user?.role, "view", item.resource),
   );
 
   return (
@@ -47,6 +66,7 @@ export function Layout({ children }: { children: ReactNode }) {
               end={item.to === "/"}
               className={({ isActive }) => (isActive ? "nav-link active" : "nav-link")}
             >
+              <item.icon size={20} strokeWidth={1.75} aria-hidden="true" />
               {t(item.key)}
             </NavLink>
           ))}
@@ -67,6 +87,7 @@ export function Layout({ children }: { children: ReactNode }) {
         </header>
         <main className="content">{children}</main>
       </div>
+      <ToastHost />
     </div>
   );
 }

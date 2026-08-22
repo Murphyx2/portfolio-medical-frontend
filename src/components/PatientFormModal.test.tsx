@@ -16,6 +16,10 @@ vi.mock("../services/api", () => ({
   },
 }));
 
+vi.mock("../store/auth", () => ({
+  useAuth: () => ({ user: { role: "ADMIN" } }),
+}));
+
 const mockedApi = vi.mocked(api);
 
 const ARS_LIST = { count: 0, next: null, previous: null, results: [] };
@@ -36,6 +40,7 @@ function existingPatient(overrides: Partial<Patient> = {}): Patient {
     age: 36,
     gender: "FEMALE",
     phone: "8095550100",
+    extra_phones: [],
     address: "123 Main St",
     email: "jane@example.com",
     cedula: "00100000001",
@@ -83,7 +88,7 @@ describe("PatientFormModal", () => {
     fireEvent.change(screen.getByLabelText(/First name|Nombre/i), { target: { value: "Ana" } });
     fireEvent.change(screen.getByLabelText(/Last name|Apellido/i), { target: { value: "Perez" } });
     fireEvent.change(screen.getByLabelText(/Birth date|Fecha de nacimiento/i), { target: { value: "1990-01-01" } });
-    fireEvent.change(screen.getByLabelText(/^Gender$|^Género$/i), { target: { value: "FEMALE" } });
+    fireEvent.change(screen.getByLabelText(/^Sex$|^Sexo$/i), { target: { value: "FEMALE" } });
     fireEvent.change(screen.getByLabelText(/Cedula|Cédula/i), { target: { value: "00112345678" } });
 
     fireEvent.click(screen.getByRole("button", { name: /Save|Guardar/i }));
@@ -121,7 +126,7 @@ describe("PatientFormModal", () => {
     fireEvent.change(screen.getByLabelText(/First name|Nombre/i), { target: { value: "Ana" } });
     fireEvent.change(screen.getByLabelText(/Last name|Apellido/i), { target: { value: "Perez" } });
     fireEvent.change(screen.getByLabelText(/Birth date|Fecha de nacimiento/i), { target: { value: "1990-01-01" } });
-    fireEvent.change(screen.getByLabelText(/^Gender$|^Género$/i), { target: { value: "FEMALE" } });
+    fireEvent.change(screen.getByLabelText(/^Sex$|^Sexo$/i), { target: { value: "FEMALE" } });
     fireEvent.change(screen.getByLabelText(/Cedula|Cédula/i), { target: { value: "00112345678" } });
     fireEvent.change(screen.getByLabelText(/^Phone$|^Teléfono$/i), { target: { value: "123" } });
     fireEvent.click(screen.getByRole("button", { name: /Save|Guardar/i }));

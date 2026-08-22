@@ -1,36 +1,58 @@
-import { useCallback, useEffect, useState } from "react";
+import { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 
-import { Field, FormModal, MaskedValue, Page, Pagination, SearchBar, Spinner, Table, type Column } from "../components/ui";
-import { useListControls } from "../hooks/useListControls";
+import { ListPage } from "../components/ListPage";
+import { PhoneNumberListField } from "../components/PhoneNumberListField";
+import { Field, FormModal, MaskedValue, Page, type Column } from "../components/ui";
+import { ServiceChipList, ServiceCheckboxList } from "./doctors/ServicePickers";
+import { RoomChipList, RoomCheckboxList } from "./doctors/RoomPickers";
+import { useListPage } from "../hooks/useListPage";
 import { api, ApiError } from "../services/api";
-import type { DoctorProfile, Paginated, User } from "../services/types";
+import type { DoctorProfile, ExtraPhone, Paginated, Room, Service, User } from "../services/types";
 import { useAuth } from "../store/auth";
+import { can } from "../utils/can";
 import { flattenError } from "../utils/errors";
 import { formatPhone, formatPhoneInput, isValidRequiredPhone } from "../utils/phone";
 
-const EMPTY = { user: 0, specialty: "", license_number: "", contact_phone: "", contact_email: "", bio: "" };
+const EMPTY = {
+  user: 0,
+  license_number: "",
+  contact_phone: "",
+  contact_email: "",
+  bio: "",
+  services: [] as number[],
+  rooms: [] as number[],
+};
 
 export function Doctors() {
   const { t } = useTranslation();
   const { user } = useAuth();
-  const canEdit = user?.role === "ADMIN" || user?.role === "IT";
-  const isAdmin = user?.role === "ADMIN";
-  const [rows, setRows] = useState<DoctorProfile[]>([]);
+  const canEdit = can(user?.role, "edit", "doctors");
+  const canEditServices = can(user?.role, "manageServices", "doctors");
+  const canEditRooms = can(user?.role, "manageRooms", "doctors");
+  const isAdmin = can(user?.role, "restore", "doctors");
   const [userOptions, setUserOptions] = useState<User[]>([]);
+  const [services, setServices] = useState<Service[]>([]);
+  const [rooms, setRooms] = useState<Room[]>([]);
   const [modal, setModal] = useState(false);
   const [form, setForm] = useState(EMPTY);
+  const [extraPhones, setExtraPhones] = useState<string[]>([]);
   const [editId, setEditId] = useState<number | null>(null);
   const [phoneError, setPhoneError] = useState("");
   const [userError, setUserError] = useState("");
   const [formError, setFormError] = useState("");
-  const [showInactive, setShowInactive] = useState(false);
+  const [servicesModalDoctor, setServicesModalDoctor] = useState<DoctorProfile | null>(null);
+  const [servicesSelected, setServicesSelected] = useState<number[]>([]);
+  const [servicesError, setServicesError] = useState("");
+  const [roomsModalDoctor, setRoomsModalDoctor] = useState<DoctorProfile | null>(null);
+  const [roomsSelected, setRoomsSelected] = useState<number[]>([]);
+  const [roomsError, setRoomsError] = useState("");
   const {
+    rows,
     page,
     setPage,
     pageSize,
     count,
-    setCount,
     search,
     setSearch,
     searchSubmit,
@@ -39,25 +61,10 @@ export function Doctors() {
     handleSort,
     changePageSize,
     initialLoading,
-    runList,
-    query,
-  } = useListControls();
-
-  const qs = query({ include_inactive: showInactive ? "true" : "" });
-
-  const load = useCallback(() => {
-    runList((signal) => api.get<Paginated<DoctorProfile>>(`/doctors/profiles/?${qs}`, { signal }))
-      .then((r) => {
-        if (!r) return;
-        setRows(r.results);
-        setCount(r.count);
-        const total = Math.ceil(r.count / pageSize);
-        if (total > 0 && page > total) setPage(total);
-      })
-      .catch(() => {});
-  }, [qs, page, pageSize, setCount, setPage, runList]);
-
-  useEffect(load, [load]);
+    showInactive,
+    setShowInactive,
+    load,
+  } = useListPage<DoctorProfile>("/doctors/profiles/");
 
   useEffect(() => {
     // User options for the "assign profile" picker: fetched once, not on
@@ -65,8 +72,22 @@ export function Doctors() {
     api.get<Paginated<User>>("/auth/users/?page_size=200").then((r) => setUserOptions(r.results)).catch(() => {});
   }, []);
 
+  useEffect(() => {
+    if (!canEdit && !canEditServices) return;
+    // Active services only (the default /services/ query already excludes
+    // inactive rows), fetched once -- mirrors Encounters.tsx's own
+    // page_size=200 service-picker fetch.
+    api.get<Paginated<Service>>("/services/?page_size=200").then((r) => setServices(r.results)).catch(() => {});
+  }, [canEdit, canEditServices]);
+
+  useEffect(() => {
+    if (!canEdit && !canEditRooms) return;
+    api.get<Paginated<Room>>("/rooms/?page_size=100").then((r) => setRooms(r.results)).catch(() => {});
+  }, [canEdit, canEditRooms]);
+
   function openNew() {
     setForm(EMPTY);
+    setExtraPhones([]);
     setEditId(null);
     setPhoneError("");
     setUserError("");
@@ -77,12 +98,14 @@ export function Doctors() {
   function openEdit(d: DoctorProfile) {
     setForm({
       user: d.user_id,
-      specialty: d.specialty,
       license_number: d.license_number,
       contact_phone: formatPhone(d.contact_phone),
       contact_email: d.contact_email,
       bio: d.bio,
+      services: d.services,
+      rooms: d.rooms,
     });
+    setExtraPhones(d.extra_phones.map((p) => formatPhone(p.phone)));
     setEditId(d.id);
     setPhoneError("");
     setUserError("");
@@ -100,7 +123,20 @@ export function Doctors() {
       return;
     }
     setFormError("");
-    const body = { ...form, contact_phone: form.contact_phone.replace(/\D/g, "") };
+    const { services: formServices, rooms: formRooms, ...rest } = form;
+    const body: Record<string, unknown> = {
+      ...rest,
+      contact_phone: form.contact_phone.replace(/\D/g, ""),
+      extra_phones: extraPhones
+        .filter((p) => p.trim() !== "")
+        .map((p): ExtraPhone => ({ phone: p.replace(/\D/g, "") })),
+    };
+    // Only ADMIN sees the services field in this form (IT has canEdit but
+    // not canEditServices) -- omit the key entirely for IT rather than
+    // sending an empty list, since the backend treats key-presence itself
+    // as "this request is trying to change services."
+    if (canEditServices) body.services = formServices;
+    if (canEditRooms) body.rooms = formRooms;
     try {
       if (editId) await api.patch(`/doctors/profiles/${editId}/`, body);
       else await api.post("/doctors/profiles/", body);
@@ -108,6 +144,40 @@ export function Doctors() {
       load();
     } catch (err) {
       setFormError(err instanceof ApiError ? flattenError(err.message) : String(err));
+    }
+  }
+
+  function openServicesModal(d: DoctorProfile) {
+    setServicesModalDoctor(d);
+    setServicesSelected(d.services);
+    setServicesError("");
+  }
+
+  async function submitServices() {
+    if (!servicesModalDoctor) return;
+    try {
+      await api.patch(`/doctors/profiles/${servicesModalDoctor.id}/`, { services: servicesSelected });
+      setServicesModalDoctor(null);
+      load();
+    } catch (err) {
+      setServicesError(err instanceof ApiError ? flattenError(err.message) : String(err));
+    }
+  }
+
+  function openRoomsModal(d: DoctorProfile) {
+    setRoomsModalDoctor(d);
+    setRoomsSelected(d.rooms);
+    setRoomsError("");
+  }
+
+  async function submitRooms() {
+    if (!roomsModalDoctor) return;
+    try {
+      await api.patch(`/doctors/profiles/${roomsModalDoctor.id}/`, { rooms: roomsSelected });
+      setRoomsModalDoctor(null);
+      load();
+    } catch (err) {
+      setRoomsError(err instanceof ApiError ? flattenError(err.message) : String(err));
     }
   }
 
@@ -133,23 +203,37 @@ export function Doctors() {
   const columns: Column<DoctorProfile>[] = [
     { key: "code", header: t("doctors.code"), sortKey: "code" },
     { key: "full_name", header: t("doctors.fullName"), sortKey: "user__last_name" },
-    { key: "specialty", header: t("doctors.specialty"), sortKey: "specialty" },
+    {
+      key: "services",
+      header: t("doctors.services"),
+      render: (r) => (
+        <div className="services-cell">
+          <ServiceChipList items={r.services_detail} />
+          {canEditServices && (
+            <button type="button" className="btn ghost small" onClick={() => openServicesModal(r)}>
+              {t("doctors.manageServices")}
+            </button>
+          )}
+        </div>
+      ),
+    },
+    {
+      key: "rooms",
+      header: t("doctors.rooms"),
+      render: (r) => (
+        <div className="services-cell">
+          <RoomChipList items={r.rooms_detail} />
+          {canEditRooms && (
+            <button type="button" className="btn ghost small" onClick={() => openRoomsModal(r)}>
+              {t("doctors.manageRooms")}
+            </button>
+          )}
+        </div>
+      ),
+    },
     { key: "license_number", header: t("doctors.license"), sortKey: "license_number", render: (r) => <MaskedValue value={r.license_number} /> },
     { key: "contact_phone", header: t("doctors.contactPhone"), sortKey: "contact_phone", render: (r) => <MaskedValue value={formatPhone(r.contact_phone)} /> },
     { key: "contact_email", header: t("doctors.contactEmail"), sortKey: "contact_email", render: (r) => <MaskedValue value={r.contact_email} /> },
-    ...(isAdmin
-      ? [
-          {
-            key: "active",
-            header: t("common.status"),
-            render: (r: DoctorProfile) => (
-              <span className={`badge status-${r.active ? "active" : "inactive"}`}>
-                {r.active ? t("common.active") : t("common.inactive")}
-              </span>
-            ),
-          } as Column<DoctorProfile>,
-        ]
-      : []),
   ];
 
   return (
@@ -163,45 +247,31 @@ export function Doctors() {
         )
       }
     >
-      {initialLoading ? (
-        <Spinner />
-      ) : (
-        <>
-          <div className="list-toolbar">
-            <SearchBar
-              value={search}
-              onChange={setSearch}
-              onSubmit={searchSubmit}
-              placeholder={t("common.searchPlaceholder")}
-              label={t("common.search")}
-            />
-            {isAdmin && (
-              <label className="show-inactive-toggle">
-                <input
-                  type="checkbox"
-                  checked={showInactive}
-                  onChange={(e) => setShowInactive(e.target.checked)}
-                />
-                {t("common.showInactive")}
-              </label>
-            )}
-          </div>
-          <Pagination page={page} count={count} pageSize={pageSize} onChange={setPage} onPageSizeChange={changePageSize} />
-          <Table
-            columns={columns}
-            rows={rows}
-            onEdit={canEdit ? openEdit : undefined}
-            onDelete={canEdit ? remove : undefined}
-            onRestore={isAdmin ? restore : undefined}
-            getRowLabel={(r) => r.full_name}
-            isInactive={(r) => !r.active}
-            sortKey={sortKey}
-            sortDir={sortDir}
-            onSort={handleSort}
-          />
-          <Pagination page={page} count={count} pageSize={pageSize} onChange={setPage} onPageSizeChange={changePageSize} />
-        </>
-      )}
+      <ListPage<DoctorProfile>
+        initialLoading={initialLoading}
+        search={search}
+        setSearch={setSearch}
+        searchSubmit={searchSubmit}
+        isAdmin={isAdmin}
+        showInactive={showInactive}
+        onToggleInactive={setShowInactive}
+        page={page}
+        count={count}
+        pageSize={pageSize}
+        onPageChange={setPage}
+        onPageSizeChange={changePageSize}
+        columns={columns}
+        activeAccessor={(r) => r.active}
+        rows={rows}
+        onEdit={canEdit ? openEdit : undefined}
+        onDelete={canEdit ? remove : undefined}
+        onRestore={isAdmin ? restore : undefined}
+        getRowLabel={(r) => r.full_name}
+        isInactive={(r) => !r.active}
+        sortKey={sortKey}
+        sortDir={sortDir}
+        onSort={handleSort}
+      />
 
       {modal && (
         <FormModal
@@ -210,6 +280,7 @@ export function Doctors() {
           onSubmit={submit}
           submitLabel={t("common.save")}
           error={formError}
+          wide
         >
           <Field label={t("doctors.user")}>
             <select
@@ -229,13 +300,6 @@ export function Doctors() {
               ))}
             </select>
             {userError && <span className="field-error">{userError}</span>}
-          </Field>
-          <Field label={t("doctors.specialty")}>
-            <input
-              value={form.specialty}
-              onChange={(e) => setForm({ ...form, specialty: e.target.value })}
-              required
-            />
           </Field>
           <Field label={t("doctors.license")}>
             <input
@@ -258,6 +322,11 @@ export function Doctors() {
               required
             />
             {phoneError && <span className="field-error">{phoneError}</span>}
+            <PhoneNumberListField
+              values={extraPhones}
+              onChange={setExtraPhones}
+              addLabel={t("patients.addPhone")}
+            />
           </Field>
           <Field label={t("doctors.contactEmail")}>
             <input
@@ -272,6 +341,62 @@ export function Doctors() {
               onChange={(e) => setForm({ ...form, bio: e.target.value })}
             />
           </Field>
+          {canEditServices && (
+            // Plain .field-styled div, not the Field/<label> wrapper -- this
+            // widget nests its own interactive controls (search input,
+            // type select, many checkboxes), which is invalid inside a
+            // single <label>, unlike Field's usual one-input case.
+            <div className="field">
+              <span>{t("doctors.services")}</span>
+              <ServiceCheckboxList
+                services={services}
+                selected={form.services}
+                onChange={(ids) => setForm({ ...form, services: ids })}
+              />
+            </div>
+          )}
+          {canEditRooms && (
+            <div className="field">
+              <span>{t("doctors.rooms")}</span>
+              <RoomCheckboxList
+                rooms={rooms}
+                selected={form.rooms}
+                onChange={(ids) => setForm({ ...form, rooms: ids })}
+              />
+            </div>
+          )}
+        </FormModal>
+      )}
+
+      {servicesModalDoctor && (
+        <FormModal
+          title={t("doctors.manageServices")}
+          onClose={() => setServicesModalDoctor(null)}
+          onSubmit={submitServices}
+          submitLabel={t("common.save")}
+          error={servicesError}
+          wide
+        >
+          <div className="field">
+            <span>{servicesModalDoctor.full_name}</span>
+            <ServiceCheckboxList services={services} selected={servicesSelected} onChange={setServicesSelected} />
+          </div>
+        </FormModal>
+      )}
+
+      {roomsModalDoctor && (
+        <FormModal
+          title={t("doctors.manageRooms")}
+          onClose={() => setRoomsModalDoctor(null)}
+          onSubmit={submitRooms}
+          submitLabel={t("common.save")}
+          error={roomsError}
+          wide
+        >
+          <div className="field">
+            <span>{roomsModalDoctor.full_name}</span>
+            <RoomCheckboxList rooms={rooms} selected={roomsSelected} onChange={setRoomsSelected} />
+          </div>
         </FormModal>
       )}
     </Page>

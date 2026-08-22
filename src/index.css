@@ -1017,8 +1017,25 @@ input[type="radio"]:focus-visible {
   min-width: 3.5rem;
 }
 
-.dashboard-today-names {
+.dashboard-today-details {
   flex: 1;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.25rem 1rem;
+}
+
+.dashboard-today-field {
+  display: flex;
+  align-items: baseline;
+  gap: 0.35rem;
+  font-size: 0.9rem;
+}
+
+.dashboard-today-label {
+  font-size: 0.72rem;
+  text-transform: uppercase;
+  letter-spacing: 0.02em;
+  color: var(--mc-muted);
 }
 
 .badge {

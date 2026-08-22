@@ -69,12 +69,11 @@ const POLICY: Partial<Record<Resource, Partial<Record<Action, Role[]>>>> = {
     delete: ["ADMIN"],
   },
   records: {
-    // Widened: RECEPTIONIST gains view (was ADMIN, DOCTOR, IT, NURSE, CENTER_MANAGER).
-    view: ALL_ROLES,
-    // Widened: RECEPTIONIST gains full record access (create record, upload
-    // image, add SOAP log); CENTER_MANAGER/IT stay excluded (view-only).
-    create: ["ADMIN", "DOCTOR", "NURSE", "RECEPTIONIST"],
-    // Explicitly excludes RECEPTIONIST: full record access except delete.
+    // Narrowed: records are ADMIN/DOCTOR/NURSE-only now -- RECEPTIONIST, IT,
+    // and CENTER_MANAGER can no longer see the Records page, its nav link,
+    // or any "open record" button anywhere in the app.
+    view: ["ADMIN", "DOCTOR", "NURSE"],
+    create: ["ADMIN", "DOCTOR", "NURSE"],
     delete: ["ADMIN", "DOCTOR", "NURSE"],
   },
   rooms: {

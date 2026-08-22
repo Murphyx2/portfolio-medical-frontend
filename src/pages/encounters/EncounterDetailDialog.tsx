@@ -2,6 +2,7 @@ import { useTranslation } from "react-i18next";
 
 import { Dialog, MaskedValue } from "../../components/ui";
 import type { Encounter } from "../../services/types";
+import { formatDateTime } from "../../utils/date";
 import { toSentenceCase } from "../../utils/text";
 import { GuardianAwareCedula } from "./guardianCedula";
 
@@ -10,9 +11,10 @@ const priorityLabelKey = (p: string) => `encounters.priority${p[0]}${p.slice(1).
 
 /** Read-only "full admission details" dialog opened by clicking a row's
  * patient name or cedula in the list. */
-export function EncounterDetailDialog({ detail, onClose, onOpenRecord }: {
+export function EncounterDetailDialog({ detail, onClose, canViewRecords, onOpenRecord }: {
   detail: Encounter;
   onClose: () => void;
+  canViewRecords: boolean;
   onOpenRecord: (row: Encounter) => void;
 }) {
   const { t } = useTranslation();
@@ -33,9 +35,11 @@ export function EncounterDetailDialog({ detail, onClose, onOpenRecord }: {
         <span className={`badge status-${detail.status.toLowerCase()}`}>{statusLabel(detail.status)}</span>
         <span className={`badge status-${detail.priority.toLowerCase()}`}>{priorityLabel(detail.priority)}</span>
       </div>
-      <button type="button" className="btn ghost small" onClick={() => onOpenRecord(detail)}>
-        {t("encounters.openRecord")}
-      </button>
+      {canViewRecords && (
+        <button type="button" className="btn ghost small" onClick={() => onOpenRecord(detail)}>
+          {t("encounters.openRecord")}
+        </button>
+      )}
 
       <div className="form-columns">
         <div>
@@ -63,9 +67,9 @@ export function EncounterDetailDialog({ detail, onClose, onOpenRecord }: {
             <div><b>{t("encounters.type")}:</b> {toSentenceCase(detail.service_type_name)}</div>
             <div><b>{t("encounters.room")}:</b> {detail.room_name ?? "—"}</div>
             <div><b>{t("encounters.referringDoctor")}:</b> {detail.referring_doctor_name || "—"}</div>
-            <div><b>{t("encounters.createdAt")}:</b> {new Date(detail.created_at).toLocaleString()}</div>
-            {detail.admitted_at && <div><b>{t("encounters.admit")}:</b> {new Date(detail.admitted_at).toLocaleString()}</div>}
-            {detail.completed_at && <div><b>{t("encounters.complete")}:</b> {new Date(detail.completed_at).toLocaleString()}</div>}
+            <div><b>{t("encounters.createdAt")}:</b> {formatDateTime(detail.created_at)}</div>
+            {detail.admitted_at && <div><b>{t("encounters.admit")}:</b> {formatDateTime(detail.admitted_at)}</div>}
+            {detail.completed_at && <div><b>{t("encounters.complete")}:</b> {formatDateTime(detail.completed_at)}</div>}
             {detail.cancel_reason && <div><b>{t("encounters.cancelReason")}:</b> {detail.cancel_reason}</div>}
           </div>
         </div>

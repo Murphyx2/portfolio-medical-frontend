@@ -4,6 +4,7 @@ import { useTranslation } from "react-i18next";
 import { Dialog, Field, MaskedValue } from "../../components/ui";
 import { ApiError } from "../../services/api";
 import type { ConsultationLog, MedicalRecord } from "../../services/types";
+import { formatDateTime } from "../../utils/date";
 import { flattenError } from "../../utils/errors";
 
 const EMPTY_LOG_FIELDS = { subjective: "", objective: "", assessment: "", plan: "", notes: "" };
@@ -124,7 +125,7 @@ export function RecordDetailWithLogs({
         <div className="log-list">
           {logs.map((log) => (
             <div key={log.id} className="log-entry">
-              <b>{log.doctor_name} · {new Date(log.date).toLocaleString()}</b>
+              <b>{log.doctor_name} · {formatDateTime(log.date)}</b>
               <div><b>S:</b> {log.subjective}</div>
               <div><b>O:</b> {log.objective}</div>
               <div><b>A:</b> {log.assessment}</div>

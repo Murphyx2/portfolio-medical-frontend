@@ -25,6 +25,7 @@ import type {
 } from "../services/types";
 import { useAuth } from "../store/auth";
 import { can } from "../utils/can";
+import { formatDate, formatDateTime } from "../utils/date";
 import { toSentenceCase } from "../utils/text";
 
 // Local (not UTC) YYYY-MM-DD -- admissions are handled on a daily basis, so
@@ -50,6 +51,7 @@ export function Encounters() {
   const canManage = can(user?.role, "manage", "encounters");
   const isAdmin = can(user?.role, "restore", "encounters");
   const canDelete = can(user?.role, "delete", "encounters");
+  const canViewRecords = can(user?.role, "view", "records");
 
   const [doctors, setDoctors] = useState<DoctorProfile[]>([]);
   const [rooms, setRooms] = useState<Room[]>([]);
@@ -152,7 +154,7 @@ export function Encounters() {
     { key: "room_name", header: t("encounters.room"), render: (r) => r.room_name ?? "—" },
     { key: "priority", header: t("encounters.priority"), sortKey: "priority", render: (r) => <span className={`badge status-${r.priority.toLowerCase()}`}>{priorityLabel(r.priority)}</span> },
     { key: "status", header: t("common.status"), sortKey: "status", render: (r) => <span className={`badge status-${r.status.toLowerCase()}`}>{statusLabel(r.status)}</span> },
-    { key: "created_at", header: t("encounters.createdAt"), sortKey: "created_at", render: (r) => new Date(r.created_at).toLocaleString() },
+    { key: "created_at", header: t("encounters.createdAt"), sortKey: "created_at", render: (r) => formatDateTime(r.created_at) },
     {
       key: "actions",
       header: t("common.actions"),
@@ -163,6 +165,7 @@ export function Encounters() {
           canManage={canManage}
           canDelete={canDelete}
           isAdmin={isAdmin}
+          canViewRecords={canViewRecords}
           onEdit={openEdit}
           onConfirm={confirmAction.openConfirm}
           onOpenRecord={(row) => navigate(`/records?patient=${row.patient}`)}
@@ -220,7 +223,7 @@ export function Encounters() {
         sortKey={sortKey}
         sortDir={sortDir}
         onSort={handleSort}
-        emptyLabel={t("encounters.noDataForDate", { date: new Date(`${dateFilter}T00:00:00`).toLocaleDateString() })}
+        emptyLabel={t("encounters.noDataForDate", { date: formatDate(`${dateFilter}T00:00:00`) })}
       />
 
       {modal && (
@@ -247,6 +250,7 @@ export function Encounters() {
         <EncounterDetailDialog
           detail={detail}
           onClose={() => setDetail(null)}
+          canViewRecords={canViewRecords}
           onOpenRecord={(row) => navigate(`/records?patient=${row.patient}`)}
         />
       )}

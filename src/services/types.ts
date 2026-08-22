@@ -46,6 +46,11 @@ export interface ServiceLite {
   name: string;
 }
 
+export interface RoomLite {
+  id: number;
+  name: string;
+}
+
 export interface DoctorProfile {
   id: number;
   code: string;
@@ -60,6 +65,8 @@ export interface DoctorProfile {
   default_room_name: string | null;
   services: number[];
   services_detail: ServiceLite[];
+  rooms: number[];
+  rooms_detail: RoomLite[];
   active: boolean;
 }
 

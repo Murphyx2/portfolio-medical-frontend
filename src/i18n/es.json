@@ -126,7 +126,13 @@
     "noServices": "No hay servicios activos disponibles.",
     "noServicesMatch": "Ningún servicio coincide con tu búsqueda.",
     "allServiceTypes": "Todos los tipos de servicio",
-    "moreServices": "+{{count}} más"
+    "moreServices": "+{{count}} más",
+    "rooms": "Salas",
+    "manageRooms": "Gestionar salas",
+    "noRooms": "No hay salas activas disponibles.",
+    "noRoomsMatch": "Ninguna sala coincide con tu búsqueda.",
+    "allRoomTypes": "Todos los tipos de sala",
+    "moreRooms": "+{{count}} más"
   },
   "centers": {
     "title": "Centros Médicos",
@@ -275,7 +281,8 @@
     "arsLockedNote": "El paciente ya tiene ARS/programa en su ficha; no se pueden cambiar aquí.",
     "patientRequired": "Selecciona un paciente.",
     "typeAndDoctorRequired": "Selecciona el tipo de servicio y el médico.",
-    "servicesRequired": "Se requiere al menos un servicio."
+    "servicesRequired": "Se requiere al menos un servicio.",
+    "diagnosisRequiredWarning": "Este servicio requiere un diagnóstico principal antes de poder admitir al paciente."
   },
   "records": {
     "title": "Expedientes Médicos",

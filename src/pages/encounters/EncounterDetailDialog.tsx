@@ -10,7 +10,11 @@ const priorityLabelKey = (p: string) => `encounters.priority${p[0]}${p.slice(1).
 
 /** Read-only "full admission details" dialog opened by clicking a row's
  * patient name or cedula in the list. */
-export function EncounterDetailDialog({ detail, onClose }: { detail: Encounter; onClose: () => void }) {
+export function EncounterDetailDialog({ detail, onClose, onOpenRecord }: {
+  detail: Encounter;
+  onClose: () => void;
+  onOpenRecord: (row: Encounter) => void;
+}) {
   const { t } = useTranslation();
   const statusLabel = (s: string) => t(statusLabelKey(s));
   const priorityLabel = (p: string) => t(priorityLabelKey(p));
@@ -29,6 +33,9 @@ export function EncounterDetailDialog({ detail, onClose }: { detail: Encounter; 
         <span className={`badge status-${detail.status.toLowerCase()}`}>{statusLabel(detail.status)}</span>
         <span className={`badge status-${detail.priority.toLowerCase()}`}>{priorityLabel(detail.priority)}</span>
       </div>
+      <button type="button" className="btn ghost small" onClick={() => onOpenRecord(detail)}>
+        {t("encounters.openRecord")}
+      </button>
 
       <div className="form-columns">
         <div>

@@ -36,6 +36,7 @@ export type Action =
   | "restore"
   | "manage"
   | "manageServices"
+  | "manageRooms"
   | "complete"
   | "cancel"
   | "showInactive"
@@ -104,6 +105,7 @@ const POLICY: Partial<Record<Resource, Partial<Record<Action, Role[]>>>> = {
     delete: ["ADMIN", "IT"],
     // Explicitly confirmed intentional -- IT stays excluded.
     manageServices: CENTER_MANAGER_WRITE,
+    manageRooms: CENTER_MANAGER_WRITE,
   },
   appointments: {
     view: ALL_ROLES,

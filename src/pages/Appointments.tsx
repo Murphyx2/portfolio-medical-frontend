@@ -34,8 +34,10 @@ function toDateTimeLocalInput(iso: string): string {
 export function Appointments() {
   const { t } = useTranslation();
   const { user } = useAuth();
-  const canManage = can(user?.role, "manage", "appointments");
+  const canCreate = can(user?.role, "create", "appointments");
   const canEdit = can(user?.role, "edit", "appointments");
+  const canComplete = can(user?.role, "complete", "appointments");
+  const canCancel = can(user?.role, "cancel", "appointments");
   const canDelete = can(user?.role, "delete", "appointments");
   const isAdmin = can(user?.role, "restore", "appointments");
   const [selectedPatient, setSelectedPatient] = useState<Patient | null>(null);
@@ -172,11 +174,11 @@ export function Appointments() {
           {canEdit && r.active && (
             <button className="btn small ghost" onClick={() => openEdit(r)}>{t("common.edit")}</button>
           )}
-          {canManage && r.status === "SCHEDULED" && (
-            <>
-              <button className="btn small" onClick={() => confirm.open("complete", r)}>{t("appointments.complete")}</button>
-              <button className="btn small danger" onClick={() => confirm.open("cancel", r)}>{t("appointments.cancel")}</button>
-            </>
+          {canComplete && r.status === "SCHEDULED" && (
+            <button className="btn small" onClick={() => confirm.open("complete", r)}>{t("appointments.complete")}</button>
+          )}
+          {canCancel && r.status === "SCHEDULED" && (
+            <button className="btn small danger" onClick={() => confirm.open("cancel", r)}>{t("appointments.cancel")}</button>
           )}
           {canDelete && r.active && (
             <button className="btn small danger" onClick={() => confirm.open("delete", r)}>{t("common.delete")}</button>
@@ -195,7 +197,7 @@ export function Appointments() {
     <Page
       title={t("appointments.title")}
       actions={
-        canManage && (
+        canCreate && (
           <button
             className="btn primary"
             onClick={() => { setEditingAppointment(null); setForm(EMPTY); setSelectedPatient(null); setFormError(""); setModal(true); }}

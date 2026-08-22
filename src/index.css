@@ -75,7 +75,13 @@ body {
   padding: 0.45rem 0.75rem;
   border-radius: 6px;
   font-size: 0.9rem;
-  display: block;
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+}
+
+.nav-link svg {
+  flex-shrink: 0;
 }
 
 .nav-link:hover {

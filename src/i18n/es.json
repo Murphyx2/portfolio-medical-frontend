@@ -220,7 +220,10 @@
     "new": "Nueva cita",
     "patient": "Paciente",
     "doctor": "Médico",
+    "service": "Servicio",
     "center": "Centro",
+    "phone": "Teléfono",
+    "date": "Fecha",
     "dateTime": "Fecha y hora",
     "duration": "Duración (min)",
     "notes": "Notas",
@@ -231,9 +234,13 @@
     "statusNoShow": "No asistió",
     "cancel": "Cancelar cita",
     "complete": "Completar",
+    "reschedule": "Reprogramar",
     "createdBy": "Creada por",
     "cancelConfirm": "¿Cancelar la cita de {{patient}} el {{time}}?",
-    "completeConfirm": "¿Marcar como completada la cita de {{patient}} el {{time}}?"
+    "cancelReason": "Motivo de cancelación",
+    "cancelReasonRequired": "Se requiere un motivo de cancelación.",
+    "completeConfirm": "¿Marcar como completada la cita de {{patient}} el {{time}}?",
+    "noDataForDate": "No hay citas para {{date}}."
   },
   "encounters": {
     "title": "Admisiones",

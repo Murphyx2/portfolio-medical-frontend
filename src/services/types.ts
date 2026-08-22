@@ -237,15 +237,18 @@ export interface Room {
 export interface Appointment {
   id: number;
   patient: number;
-  patient_info: { id: number; full_name: string; gender: string };
+  patient_info: { id: number; full_name: string; gender: string; phone: string };
   doctor: number;
   doctor_info: { id: number; full_name: string };
   center: number | null;
   center_name: string | null;
+  service: number | null;
+  service_detail: { id: number; name: string } | null;
   date_time: string;
   duration_minutes: number;
   status: AppointmentStatus;
   notes: string;
+  cancel_reason: string;
   created_by: number;
   created_by_name: string;
   created_at: string;

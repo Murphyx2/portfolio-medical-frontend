@@ -220,7 +220,10 @@
     "new": "New appointment",
     "patient": "Patient",
     "doctor": "Doctor",
+    "service": "Service",
     "center": "Center",
+    "phone": "Phone",
+    "date": "Date",
     "dateTime": "Date & time",
     "duration": "Duration (min)",
     "notes": "Notes",
@@ -231,9 +234,13 @@
     "statusNoShow": "No show",
     "cancel": "Cancel appointment",
     "complete": "Complete",
+    "reschedule": "Reschedule",
     "createdBy": "Created by",
     "cancelConfirm": "Cancel {{patient}}'s appointment on {{time}}?",
-    "completeConfirm": "Mark {{patient}}'s appointment on {{time}} as completed?"
+    "cancelReason": "Cancellation reason",
+    "cancelReasonRequired": "A cancellation reason is required.",
+    "completeConfirm": "Mark {{patient}}'s appointment on {{time}} as completed?",
+    "noDataForDate": "No appointments for {{date}}."
   },
   "encounters": {
     "title": "Admissions",

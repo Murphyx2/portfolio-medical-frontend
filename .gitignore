@@ -19,3 +19,6 @@ npm-debug.log*
 .idea/
 Thumbs.db
 .DS_Store
+
+# Local tool state (impeccable skill live-preview server)
+.impeccable/

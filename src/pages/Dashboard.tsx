@@ -103,8 +103,19 @@ export function Dashboard() {
                 {todayAppointments.map((a) => (
                   <li key={a.id} className="dashboard-today-item">
                     <span className="dashboard-today-time">{new Date(a.date_time).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}</span>
-                    <span className="dashboard-today-names">
-                      {a.patient_info.full_name} &middot; {a.doctor_info.full_name}
+                    <span className="dashboard-today-details">
+                      <span className="dashboard-today-field">
+                        <span className="dashboard-today-label">{t("appointments.patient")}</span>
+                        {a.patient_info.full_name}
+                      </span>
+                      <span className="dashboard-today-field">
+                        <span className="dashboard-today-label">{t("appointments.doctor")}</span>
+                        {a.doctor_info.full_name}
+                      </span>
+                      <span className="dashboard-today-field">
+                        <span className="dashboard-today-label">{t("appointments.service")}</span>
+                        {a.service_detail?.name ?? "—"}
+                      </span>
                     </span>
                     <span className={`badge status-${a.status.toLowerCase()}`}>{statusLabel(t, a.status)}</span>
                   </li>

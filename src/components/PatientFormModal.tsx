@@ -1,9 +1,12 @@
 import { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 
+import { DateField } from "./DateField";
+import { PhoneNumberListField } from "./PhoneNumberListField";
 import { Field, FormModal } from "./ui";
 import { api, ApiError } from "../services/api";
-import type { ARS, MedicalCenter, Paginated, Patient } from "../services/types";
+import type { ARS, ExtraPhone, MedicalCenter, Paginated, Patient } from "../services/types";
+import { useAuth } from "../store/auth";
 import { flattenError } from "../utils/errors";
 import { formatCedula } from "../utils/cedula";
 import { formatPhone, formatPhoneInput, isValidPhone, isValidRequiredPhone, stripToDigits } from "../utils/phone";
@@ -62,6 +65,8 @@ export function PatientFormModal({
   onSaved: (patient: Patient) => void;
 }) {
   const { t } = useTranslation();
+  const { user } = useAuth();
+  const canEditCenter = user?.role === "ADMIN";
   const [arsList, setArsList] = useState<ARS[]>([]);
   const [centersList, setCentersList] = useState<MedicalCenter[]>([]);
   const [form, setForm] = useState(() =>
@@ -89,6 +94,9 @@ export function PatientFormModal({
           critical_conditions: patient.critical_conditions,
         }
       : EMPTY,
+  );
+  const [extraPhones, setExtraPhones] = useState<string[]>(
+    () => patient?.extra_phones.map((p) => formatPhone(p.phone)) ?? [],
   );
   const [phoneError, setPhoneError] = useState("");
   const [guardianPhoneError, setGuardianPhoneError] = useState("");
@@ -128,6 +136,9 @@ export function PatientFormModal({
       ...form,
       birth_date: form.birth_date || null,
       phone: form.phone.replace(/\D/g, ""),
+      extra_phones: extraPhones
+        .filter((p) => p.trim() !== "")
+        .map((p): ExtraPhone => ({ phone: p.replace(/\D/g, "") })),
       cedula: form.cedula.replace(/\D/g, ""),
       guardian_cedula: form.guardian_cedula.replace(/\D/g, ""),
       guardian_phone: form.guardian_phone.replace(/\D/g, ""),
@@ -183,11 +194,10 @@ export function PatientFormModal({
             />
           </Field>
           <Field label={t("patients.birthDate")}>
-            <input
-              type="date"
+            <DateField
               value={form.birth_date}
+              onChange={(isoDate) => setForm({ ...form, birth_date: isoDate })}
               required
-              onChange={(e) => setForm({ ...form, birth_date: e.target.value })}
             />
           </Field>
           <Field label={t("patients.gender")}>
@@ -245,6 +255,7 @@ export function PatientFormModal({
           <Field label={t("patients.center")}>
             <select
               value={form.center}
+              disabled={!canEditCenter}
               onChange={(e) => setForm({ ...form, center: e.target.value })}
             >
               <option value="">—</option>
@@ -342,6 +353,11 @@ export function PatientFormModal({
             }}
           />
           {phoneError && <span className="field-error">{phoneError}</span>}
+          <PhoneNumberListField
+            values={extraPhones}
+            onChange={setExtraPhones}
+            addLabel={t("patients.addPhone")}
+          />
         </Field>
         <Field label={t("patients.email")}>
           <input

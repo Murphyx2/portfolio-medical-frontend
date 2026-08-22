@@ -2,6 +2,7 @@ import { useState } from "react";
 import { useTranslation } from "react-i18next";
 
 import { Field, FormModal, MaskedValue, SearchableSelect } from "../../components/ui";
+import { useDoctorServiceFilter } from "../../hooks/useDoctorServiceFilter";
 import { api, ApiError } from "../../services/api";
 import { searchPatients } from "../../services/patients";
 import type {
@@ -121,47 +122,18 @@ export function EncounterFormModal({
   // toward "required" before any service is picked yet.
   const doctorRequired = !derivedServiceType || derivedServiceType.requires_doctor;
 
-  // Only service types that actually need a specific doctor present
-  // participate in doctor<->service filtering -- e.g. lab/vaccination-style
-  // services stay freely selectable no matter which doctor (if any) is
-  // picked, and picking one never narrows the Doctor dropdown. Fails safe
-  // toward "doctor-bound" if the type can't be resolved yet, mirroring
-  // doctorRequired's own fail-safe convention above.
-  function isDoctorBoundService(serviceId: number): boolean {
-    const svc = services.find((sv) => sv.id === serviceId);
-    const st = serviceTypes.find((t) => t.id === svc?.type);
-    return st?.requires_doctor ?? true;
-  }
+  const { isDoctorBoundService, eligibleForDoctor, availableDoctors, availableServices, currentDoctor } =
+    useDoctorServiceFilter({
+      doctors,
+      services,
+      serviceTypes,
+      selectedServiceIds: form.services.map((s) => s.service),
+      currentDoctorId: form.doctor,
+    });
 
-  /** A doctor stays a valid pick as long as they're unrestricted (no
-   * `services` assigned) or provide at least one of the currently-selected
-   * doctor-bound services -- mirrors the ANY-match rule used to filter the
-   * Doctor dropdown itself. */
-  function eligibleForDoctor(doctor: DoctorProfile | undefined, servicesList: EncounterService[]): boolean {
-    if (!doctor || doctor.services.length === 0) return true;
-    const selectedIds = servicesList.map((s) => s.service).filter((id) => id && isDoctorBoundService(id));
-    if (selectedIds.length === 0) return true;
-    return selectedIds.some((id) => doctor.services.includes(id));
-  }
-
-  const selectedServiceIds = form.services.map((s) => s.service).filter((id) => id && isDoctorBoundService(id));
-  const currentDoctor = doctors.find((d) => d.id === form.doctor);
-
-  // Doctor dropdown: unrestricted doctors always show; restricted ones show
-  // only if they provide at least one of the currently-selected doctor-bound
-  // services.
-  const availableDoctors = doctors.filter(
-    (d) => d.services.length === 0 || selectedServiceIds.length === 0 || d.services.some((id) => selectedServiceIds.includes(id))
-  );
-  // Service picker: once a doctor with a non-empty services list is picked,
-  // narrow doctor-bound services to what they actually offer -- services
-  // whose type doesn't require a doctor stay available regardless.
-  const availableServices =
-    currentDoctor && currentDoctor.services.length > 0
-      ? services.filter((sv) => !isDoctorBoundService(sv.id) || currentDoctor.services.includes(sv.id))
-      : services;
-  // Room dropdown: mirrors the service narrowing above, using the doctor's
-  // assigned rooms instead.
+  // Room dropdown: mirrors the hook's service narrowing above, using the
+  // doctor's assigned rooms instead -- Encounter-specific, not part of the
+  // shared hook.
   const availableRooms =
     currentDoctor && currentDoctor.rooms.length > 0
       ? rooms.filter((rm) => currentDoctor.rooms.includes(rm.id))
@@ -217,7 +189,7 @@ export function EncounterFormModal({
       return {
         ...f,
         services: nextServices,
-        doctor: eligibleForDoctor(doctor, nextServices) ? f.doctor : 0,
+        doctor: eligibleForDoctor(doctor, nextServices.map((s) => s.service)) ? f.doctor : 0,
       };
     });
   }
@@ -229,7 +201,7 @@ export function EncounterFormModal({
       return {
         ...f,
         services: nextServices,
-        doctor: eligibleForDoctor(doctor, nextServices) ? f.doctor : 0,
+        doctor: eligibleForDoctor(doctor, nextServices.map((s) => s.service)) ? f.doctor : 0,
       };
     });
   }

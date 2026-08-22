@@ -1,4 +1,18 @@
-import type { ReactNode } from "react";
+import type { ComponentType, ReactNode } from "react";
+import {
+  BriefcaseMedical,
+  Bed,
+  Calendar,
+  ClipboardList,
+  Folder,
+  Hospital,
+  LayoutDashboard,
+  Pill,
+  Shield,
+  Stethoscope,
+  Users,
+  type LucideProps,
+} from "lucide-react";
 import { useTranslation } from "react-i18next";
 import { NavLink, useNavigate } from "react-router-dom";
 
@@ -11,19 +25,19 @@ import { ToastHost } from "./ui";
 // as route-level gating (`App.tsx`'s `ProtectedRoute`) and page-local
 // buttons, so it can't drift from them again. Entries with no `resource`
 // are open to every authenticated role (matches Dashboard).
-const NAV: { to: string; key: string; resource?: Resource }[] = [
-  { to: "/", key: "nav.dashboard" },
-  { to: "/encounters", key: "nav.encounters", resource: "encounters" },
-  { to: "/patients", key: "nav.patients", resource: "patients" },
-  { to: "/doctors", key: "nav.doctors", resource: "doctors" },
-  { to: "/services", key: "nav.services", resource: "services" },
-  { to: "/centers", key: "nav.centers", resource: "centers" },
-  { to: "/ars", key: "nav.ars", resource: "ars" },
-  { to: "/medicines", key: "nav.medicines", resource: "medicines" },
-  { to: "/rooms", key: "nav.rooms", resource: "rooms" },
-  { to: "/appointments", key: "nav.appointments", resource: "appointments" },
-  { to: "/records", key: "nav.records", resource: "records" },
-  { to: "/users", key: "nav.users", resource: "users" },
+const NAV: { to: string; key: string; resource?: Resource; icon: ComponentType<LucideProps> }[] = [
+  { to: "/", key: "nav.dashboard", icon: LayoutDashboard },
+  { to: "/encounters", key: "nav.encounters", resource: "encounters", icon: ClipboardList },
+  { to: "/patients", key: "nav.patients", resource: "patients", icon: Users },
+  { to: "/doctors", key: "nav.doctors", resource: "doctors", icon: Stethoscope },
+  { to: "/services", key: "nav.services", resource: "services", icon: BriefcaseMedical },
+  { to: "/centers", key: "nav.centers", resource: "centers", icon: Hospital },
+  { to: "/ars", key: "nav.ars", resource: "ars", icon: Shield },
+  { to: "/medicines", key: "nav.medicines", resource: "medicines", icon: Pill },
+  { to: "/rooms", key: "nav.rooms", resource: "rooms", icon: Bed },
+  { to: "/appointments", key: "nav.appointments", resource: "appointments", icon: Calendar },
+  { to: "/records", key: "nav.records", resource: "records", icon: Folder },
+  { to: "/users", key: "nav.users", resource: "users", icon: Users },
 ];
 
 export function Layout({ children }: { children: ReactNode }) {
@@ -52,6 +66,7 @@ export function Layout({ children }: { children: ReactNode }) {
               end={item.to === "/"}
               className={({ isActive }) => (isActive ? "nav-link active" : "nav-link")}
             >
+              <item.icon size={20} strokeWidth={1.75} aria-hidden="true" />
               {t(item.key)}
             </NavLink>
           ))}

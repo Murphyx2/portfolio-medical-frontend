@@ -2,12 +2,13 @@ import { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 
 import { ListPage } from "../components/ListPage";
+import { PhoneNumberListField } from "../components/PhoneNumberListField";
 import { Field, FormModal, MaskedValue, Page, type Column } from "../components/ui";
 import { ServiceChipList, ServiceCheckboxList } from "./doctors/ServicePickers";
 import { RoomChipList, RoomCheckboxList } from "./doctors/RoomPickers";
 import { useListPage } from "../hooks/useListPage";
 import { api, ApiError } from "../services/api";
-import type { DoctorProfile, Paginated, Room, Service, User } from "../services/types";
+import type { DoctorProfile, ExtraPhone, Paginated, Room, Service, User } from "../services/types";
 import { useAuth } from "../store/auth";
 import { can } from "../utils/can";
 import { flattenError } from "../utils/errors";
@@ -35,6 +36,7 @@ export function Doctors() {
   const [rooms, setRooms] = useState<Room[]>([]);
   const [modal, setModal] = useState(false);
   const [form, setForm] = useState(EMPTY);
+  const [extraPhones, setExtraPhones] = useState<string[]>([]);
   const [editId, setEditId] = useState<number | null>(null);
   const [phoneError, setPhoneError] = useState("");
   const [userError, setUserError] = useState("");
@@ -85,6 +87,7 @@ export function Doctors() {
 
   function openNew() {
     setForm(EMPTY);
+    setExtraPhones([]);
     setEditId(null);
     setPhoneError("");
     setUserError("");
@@ -102,6 +105,7 @@ export function Doctors() {
       services: d.services,
       rooms: d.rooms,
     });
+    setExtraPhones(d.extra_phones.map((p) => formatPhone(p.phone)));
     setEditId(d.id);
     setPhoneError("");
     setUserError("");
@@ -120,7 +124,13 @@ export function Doctors() {
     }
     setFormError("");
     const { services: formServices, rooms: formRooms, ...rest } = form;
-    const body: Record<string, unknown> = { ...rest, contact_phone: form.contact_phone.replace(/\D/g, "") };
+    const body: Record<string, unknown> = {
+      ...rest,
+      contact_phone: form.contact_phone.replace(/\D/g, ""),
+      extra_phones: extraPhones
+        .filter((p) => p.trim() !== "")
+        .map((p): ExtraPhone => ({ phone: p.replace(/\D/g, "") })),
+    };
     // Only ADMIN sees the services field in this form (IT has canEdit but
     // not canEditServices) -- omit the key entirely for IT rather than
     // sending an empty list, since the backend treats key-presence itself
@@ -312,6 +322,11 @@ export function Doctors() {
               required
             />
             {phoneError && <span className="field-error">{phoneError}</span>}
+            <PhoneNumberListField
+              values={extraPhones}
+              onChange={setExtraPhones}
+              addLabel={t("patients.addPhone")}
+            />
           </Field>
           <Field label={t("doctors.contactEmail")}>
             <input

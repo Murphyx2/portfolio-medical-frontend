@@ -51,6 +51,11 @@ export interface RoomLite {
   name: string;
 }
 
+export interface ExtraPhone {
+  id?: number;
+  phone: string;
+}
+
 export interface DoctorProfile {
   id: number;
   code: string;
@@ -59,6 +64,7 @@ export interface DoctorProfile {
   full_name: string;
   license_number: string;
   contact_phone: string;
+  extra_phones: ExtraPhone[];
   contact_email: string;
   bio: string;
   default_room: number | null;
@@ -79,6 +85,7 @@ export interface Patient {
   age: number | null;
   gender: string;
   phone: string;
+  extra_phones: ExtraPhone[];
   address: string;
   email: string;
   cedula: string;
@@ -230,15 +237,18 @@ export interface Room {
 export interface Appointment {
   id: number;
   patient: number;
-  patient_info: { id: number; full_name: string; gender: string };
+  patient_info: { id: number; full_name: string; gender: string; phone: string };
   doctor: number;
   doctor_info: { id: number; full_name: string };
   center: number | null;
   center_name: string | null;
+  service: number | null;
+  service_detail: { id: number; name: string } | null;
   date_time: string;
   duration_minutes: number;
   status: AppointmentStatus;
   notes: string;
+  cancel_reason: string;
   created_by: number;
   created_by_name: string;
   created_at: string;

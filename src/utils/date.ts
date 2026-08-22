@@ -16,3 +16,27 @@ export function formatDateTime(value: string | Date): string {
   const date = value instanceof Date ? value : new Date(value);
   return `${formatDate(date)}, ${date.toLocaleTimeString()}`;
 }
+
+/** Local (not UTC) today as YYYY-MM-DD -- day-scoped list filters (Encounters,
+ * Appointments) must match the browser's own "today", not a UTC one that
+ * could be a day off depending on the visitor's timezone. */
+export function todayLocalISO(): string {
+  const d = new Date();
+  const pad = (n: number) => String(n).padStart(2, "0");
+  return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
+}
+
+function shiftLocalISO(dateStr: string, deltaDays: number): string {
+  const d = new Date(`${dateStr}T00:00:00`);
+  d.setDate(d.getDate() + deltaDays);
+  const pad = (n: number) => String(n).padStart(2, "0");
+  return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
+}
+
+export function nextLocalISO(dateStr: string): string {
+  return shiftLocalISO(dateStr, 1);
+}
+
+export function prevLocalISO(dateStr: string): string {
+  return shiftLocalISO(dateStr, -1);
+}

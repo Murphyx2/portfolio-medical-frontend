@@ -141,6 +141,7 @@ export function Patients() {
   );
 
   const columns: Column<Patient>[] = [
+    { key: "id", header: t("patients.id"), sortKey: "id", render: (r) => r.id },
     {
       key: "full_name",
       header: t("common.name"),
@@ -179,7 +180,6 @@ export function Patients() {
     { key: "phone", header: t("patients.phone"), sortKey: "phone", render: (r) => <MaskedValue value={formatPhone(r.phone)} /> },
     { key: "ars_name", header: t("patients.ars"), sortKey: "ars__name" },
     { key: "ars_program_name", header: t("patients.arsProgram"), sortKey: "ars_program__name" },
-    { key: "center_name", header: t("patients.center"), sortKey: "center__code", render: (r) => r.center_code ?? "—" },
   ];
 
   return (

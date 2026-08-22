@@ -76,11 +76,16 @@
     "address": "Dirección",
     "status": "Estado",
     "toastSaved": "Guardado correctamente",
-    "toastDeleted": "Eliminado correctamente"
+    "toastDeleted": "Eliminado correctamente",
+    "previousDay": "Día anterior",
+    "nextDay": "Día siguiente",
+    "openCalendar": "Abrir calendario"
   },
   "patients": {
     "title": "Pacientes",
     "new": "Nuevo paciente",
+    "id": "ID",
+    "addPhone": "Agregar número de teléfono",
     "firstName": "Nombre",
     "lastName": "Apellido",
     "birthDate": "Fecha de nacimiento",
@@ -218,7 +223,10 @@
     "new": "Nueva cita",
     "patient": "Paciente",
     "doctor": "Médico",
+    "service": "Servicio",
     "center": "Centro",
+    "phone": "Teléfono",
+    "date": "Fecha",
     "dateTime": "Fecha y hora",
     "duration": "Duración (min)",
     "notes": "Notas",
@@ -229,9 +237,13 @@
     "statusNoShow": "No asistió",
     "cancel": "Cancelar cita",
     "complete": "Completar",
+    "reschedule": "Reprogramar",
     "createdBy": "Creada por",
     "cancelConfirm": "¿Cancelar la cita de {{patient}} el {{time}}?",
-    "completeConfirm": "¿Marcar como completada la cita de {{patient}} el {{time}}?"
+    "cancelReason": "Motivo de cancelación",
+    "cancelReasonRequired": "Se requiere un motivo de cancelación.",
+    "completeConfirm": "¿Marcar como completada la cita de {{patient}} el {{time}}?",
+    "noDataForDate": "No hay citas para {{date}}."
   },
   "encounters": {
     "title": "Admisiones",

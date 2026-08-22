@@ -16,6 +16,10 @@ vi.mock("../services/api", () => ({
   },
 }));
 
+vi.mock("../store/auth", () => ({
+  useAuth: () => ({ user: { role: "ADMIN" } }),
+}));
+
 const mockedApi = vi.mocked(api);
 
 const ARS_LIST = { count: 0, next: null, previous: null, results: [] };
@@ -36,6 +40,7 @@ function existingPatient(overrides: Partial<Patient> = {}): Patient {
     age: 36,
     gender: "FEMALE",
     phone: "8095550100",
+    extra_phones: [],
     address: "123 Main St",
     email: "jane@example.com",
     cedula: "00100000001",

@@ -51,7 +51,7 @@ const ALL_ROLES: Role[] = ["ADMIN", "DOCTOR", "RECEPTIONIST", "IT", "NURSE", "CE
 const ADMIN_ONLY_DEFAULT_ACTIONS: Action[] = ["restore", "showInactive", "assignAdminRole"];
 
 const ROOM_LIKE_WRITE: Role[] = ["ADMIN", "IT", "RECEPTIONIST"];
-const APPOINTMENT_WRITE: Role[] = ["ADMIN", "DOCTOR", "RECEPTIONIST"];
+const APPOINTMENT_WRITE: Role[] = ["ADMIN", "DOCTOR", "NURSE", "RECEPTIONIST"];
 const CENTER_MANAGER_WRITE: Role[] = ["ADMIN", "CENTER_MANAGER"];
 
 const POLICY: Partial<Record<Resource, Partial<Record<Action, Role[]>>>> = {
@@ -78,17 +78,18 @@ const POLICY: Partial<Record<Resource, Partial<Record<Action, Role[]>>>> = {
   },
   rooms: {
     view: ALL_ROLES,
-    // Widened: RECEPTIONIST gains create+delete (was edit-only).
-    create: ROOM_LIKE_WRITE,
-    edit: ROOM_LIKE_WRITE,
-    delete: ROOM_LIKE_WRITE,
+    // Narrowed: only ADMIN/CENTER_MANAGER get write access -- RECEPTIONIST,
+    // IT, NURSE, and DOCTOR are read-only.
+    create: CENTER_MANAGER_WRITE,
+    edit: CENTER_MANAGER_WRITE,
+    delete: CENTER_MANAGER_WRITE,
   },
   roomTypes: {
     view: ALL_ROLES,
-    // Widened: same as Rooms.
-    create: ROOM_LIKE_WRITE,
-    edit: ROOM_LIKE_WRITE,
-    delete: ROOM_LIKE_WRITE,
+    // Narrowed: same as Rooms.
+    create: CENTER_MANAGER_WRITE,
+    edit: CENTER_MANAGER_WRITE,
+    delete: CENTER_MANAGER_WRITE,
   },
   medicines: {
     view: ALL_ROLES,
@@ -135,10 +136,11 @@ const POLICY: Partial<Record<Resource, Partial<Record<Action, Role[]>>>> = {
     restore: ["ADMIN"],
   },
   centers: {
-    view: ["ADMIN", "DOCTOR", "IT", "NURSE", "CENTER_MANAGER"],
-    create: ["ADMIN", "IT"],
-    edit: ["ADMIN", "IT"],
-    delete: ["ADMIN", "IT"],
+    // Narrowed: hidden from every role except ADMIN (page, nav, and API).
+    view: ["ADMIN"],
+    create: ["ADMIN"],
+    edit: ["ADMIN"],
+    delete: ["ADMIN"],
   },
   services: {
     view: ALL_ROLES,

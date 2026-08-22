@@ -10,7 +10,14 @@ import { useTranslation } from "react-i18next";
  * native date input (positioned over the calendar button) as a
  * progressive-enhancement picker. Emits/accepts the same ISO `YYYY-MM-DD`
  * string a native date input would, so it's a drop-in replacement in
- * existing form state. */
+ * existing form state.
+ *
+ * The hidden input's own picker POPUP still renders in the browser's/OS's
+ * locale while open (e.g. an English month name, MM/DD order) -- tested and
+ * confirmed the `lang` attribute does NOT override this in Chromium (it
+ * follows `navigator.language` instead), so this is an accepted, unfixable
+ * limitation of using a native input as the picker. The masked text field
+ * is what the user actually reads/types, and it's correct regardless. */
 
 function isoToDisplay(iso: string): string {
   if (!iso) return "";

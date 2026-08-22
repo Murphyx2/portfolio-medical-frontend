@@ -560,6 +560,7 @@ export function SearchableSelect<T extends { id: number }>({
   getLabel,
   getSublabel,
   minChars = MIN_SEARCH_CHARS,
+  autoFocus = true,
 }: {
   value: T | null;
   onSelect: (item: T) => void;
@@ -568,6 +569,12 @@ export function SearchableSelect<T extends { id: number }>({
   getLabel: (item: T) => string;
   getSublabel?: (item: T) => string;
   minChars?: number;
+  // Defaults to true (a lone empty field, e.g. Patient search, should grab
+  // focus when its modal opens). Pass false when multiple empty instances
+  // render together -- only one can hold real DOM focus, but every mounted
+  // `autoFocus` input still fires its own onFocus, opening every field's
+  // dropdown list at once (see Appointments.tsx's Doctor/Service fields).
+  autoFocus?: boolean;
 }) {
   const { t } = useTranslation();
   const wrapRef = useRef<HTMLDivElement>(null);
@@ -661,7 +668,7 @@ export function SearchableSelect<T extends { id: number }>({
         <div className="searchable-select-input-wrap">
           <input
             className="searchable-select-input"
-            autoFocus
+            autoFocus={autoFocus}
             value={query}
             placeholder={value ? getLabel(value) : placeholder}
             onChange={(e) => setQuery(e.target.value)}

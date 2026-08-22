@@ -2,50 +2,53 @@ import { useEffect, useRef, useState } from "react";
 import { Calendar } from "lucide-react";
 import { useTranslation } from "react-i18next";
 
-/** A native `<input type="date">` always displays/edits in the OS/browser's
- * own locale format -- on a US-locale machine that's MM/DD/YYYY, which
- * fights this app's fixed DD/MM/YYYY convention (see `utils/date.ts`).
- * There's no HTML/CSS way to force a native date input's display format, so
- * this renders a masked DD/MM/YYYY text field instead, backed by a hidden
- * native date input (positioned over the calendar button) as a
- * progressive-enhancement picker. Emits/accepts the same ISO `YYYY-MM-DD`
- * string a native date input would, so it's a drop-in replacement in
- * existing form state. */
+/** Same locale problem as `DateField`, extended to date+time: a native
+ * `<input type="datetime-local">` displays/edits in the OS/browser's own
+ * locale (e.g. `08/22/2026 03:30 PM` on a US-locale machine) with no way to
+ * force DD/MM/YYYY HH:mm. Renders a masked text field backed by a hidden
+ * native datetime-local input (progressive-enhancement picker), same
+ * pattern as `DateField`. Emits/accepts the same "YYYY-MM-DDTHH:mm" string
+ * a native datetime-local input would, so it's a drop-in replacement. */
 
 function isoToDisplay(iso: string): string {
-  if (!iso) return "";
-  const [y, m, d] = iso.split("-");
-  if (!y || !m || !d) return "";
-  return `${d}/${m}/${y}`;
+  const [datePart, timePart] = iso.split("T");
+  if (!datePart || !timePart) return "";
+  const [y, m, d] = datePart.split("-");
+  const [h, min] = timePart.split(":");
+  if (!y || !m || !d || !h || !min) return "";
+  return `${d}/${m}/${y} ${h}:${min}`;
 }
 
 function displayToIso(display: string): string | null {
-  const match = /^(\d{2})\/(\d{2})\/(\d{4})$/.exec(display.trim());
+  const match = /^(\d{2})\/(\d{2})\/(\d{4}) (\d{2}):(\d{2})$/.exec(display.trim());
   if (!match) return null;
-  const [, d, m, y] = match;
+  const [, d, m, y, h, min] = match;
   const day = Number(d);
   const month = Number(m);
-  if (month < 1 || month > 12 || day < 1 || day > 31) return null;
-  return `${y}-${m}-${d}`;
+  const hour = Number(h);
+  const minute = Number(min);
+  if (month < 1 || month > 12 || day < 1 || day > 31 || hour > 23 || minute > 59) return null;
+  return `${y}-${m}-${d}T${h}:${min}`;
 }
 
-/** Masks free-typed digits into DD/MM/YYYY as the user types (auto-inserts
- * the `/` separators), without letting them type the separators themselves. */
+/** Masks free-typed digits into "DD/MM/YYYY HH:mm" as the user types. */
 function maskDisplayInput(raw: string): string {
-  const digits = raw.replace(/\D/g, "").slice(0, 8);
+  const digits = raw.replace(/\D/g, "").slice(0, 12);
   if (digits.length <= 2) return digits;
   if (digits.length <= 4) return `${digits.slice(0, 2)}/${digits.slice(2)}`;
-  return `${digits.slice(0, 2)}/${digits.slice(2, 4)}/${digits.slice(4)}`;
+  if (digits.length <= 8) return `${digits.slice(0, 2)}/${digits.slice(2, 4)}/${digits.slice(4)}`;
+  if (digits.length <= 10) return `${digits.slice(0, 2)}/${digits.slice(2, 4)}/${digits.slice(4, 8)} ${digits.slice(8)}`;
+  return `${digits.slice(0, 2)}/${digits.slice(2, 4)}/${digits.slice(4, 8)} ${digits.slice(8, 10)}:${digits.slice(10, 12)}`;
 }
 
-export function DateField({
+export function DateTimeField({
   value,
   onChange,
   required,
   ariaLabel,
 }: {
   value: string;
-  onChange: (isoDate: string) => void;
+  onChange: (isoDateTime: string) => void;
   required?: boolean;
   ariaLabel?: string;
 }) {
@@ -71,12 +74,12 @@ export function DateField({
   }
 
   return (
-    <div className="date-field">
+    <div className="date-field datetime-field">
       <input
         type="text"
         inputMode="numeric"
-        placeholder="DD/MM/YYYY"
-        maxLength={10}
+        placeholder="DD/MM/YYYY HH:mm"
+        maxLength={16}
         value={display}
         aria-label={ariaLabel}
         required={required}
@@ -93,7 +96,7 @@ export function DateField({
       </button>
       <input
         ref={nativeRef}
-        type="date"
+        type="datetime-local"
         className="date-field-native"
         tabIndex={-1}
         aria-hidden="true"

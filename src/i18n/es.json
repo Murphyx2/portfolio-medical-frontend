@@ -76,7 +76,10 @@
     "address": "Dirección",
     "status": "Estado",
     "toastSaved": "Guardado correctamente",
-    "toastDeleted": "Eliminado correctamente"
+    "toastDeleted": "Eliminado correctamente",
+    "previousDay": "Día anterior",
+    "nextDay": "Día siguiente",
+    "openCalendar": "Abrir calendario"
   },
   "patients": {
     "title": "Pacientes",

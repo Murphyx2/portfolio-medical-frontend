@@ -549,6 +549,11 @@ body {
   color: var(--mc-primary);
 }
 
+.date-field-picker-btn:focus-visible {
+  outline: 2px solid var(--mc-primary);
+  outline-offset: 1px;
+}
+
 .date-field-native {
   position: absolute;
   right: 0.4rem;
@@ -556,6 +561,10 @@ body {
   height: 1.5rem;
   opacity: 0;
   pointer-events: none;
+}
+
+.datetime-field input[type="text"] {
+  min-width: 11.5rem;
 }
 
 /* ---------- PhoneNumberListField: growable list of extra phone rows ---------- */
@@ -634,6 +643,11 @@ body {
   background: var(--mc-primary);
   color: #fff;
   border-color: var(--mc-primary);
+}
+
+.date-navigator-btn:focus-visible {
+  outline: 2px solid var(--mc-primary);
+  outline-offset: 1px;
 }
 
 input[type="checkbox"]:focus-visible,

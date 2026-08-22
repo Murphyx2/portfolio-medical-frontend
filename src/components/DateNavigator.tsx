@@ -1,4 +1,5 @@
 import { ChevronLeft, ChevronRight } from "lucide-react";
+import { useTranslation } from "react-i18next";
 
 import { DateField } from "./DateField";
 import { nextLocalISO, prevLocalISO } from "../utils/date";
@@ -15,12 +16,13 @@ export function DateNavigator({
   onChange: (isoDate: string) => void;
   ariaLabel?: string;
 }) {
+  const { t } = useTranslation();
   return (
     <div className="date-navigator">
       <button
         type="button"
         className="date-navigator-btn"
-        aria-label="Previous day"
+        aria-label={t("common.previousDay")}
         onClick={() => onChange(prevLocalISO(value))}
       >
         <ChevronLeft size={18} strokeWidth={1.75} aria-hidden="true" />
@@ -29,7 +31,7 @@ export function DateNavigator({
       <button
         type="button"
         className="date-navigator-btn"
-        aria-label="Next day"
+        aria-label={t("common.nextDay")}
         onClick={() => onChange(nextLocalISO(value))}
       >
         <ChevronRight size={18} strokeWidth={1.75} aria-hidden="true" />

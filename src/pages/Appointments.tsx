@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 
 import { DateNavigator } from "../components/DateNavigator";
+import { DateTimeField } from "../components/DateTimeField";
 import { ListPage } from "../components/ListPage";
 import { PatientFormModal } from "../components/PatientFormModal";
 import { ConfirmDialog, Field, FormModal, MaskedValue, SearchableSelect, useRowConfirm, Page, type Column } from "../components/ui";
@@ -362,10 +363,10 @@ export function Appointments() {
             </select>
           </Field>
           <Field label={t("appointments.dateTime")}>
-            <input
-              type="datetime-local"
+            <DateTimeField
               value={form.date_time}
-              onChange={(e) => setForm({ ...form, date_time: e.target.value })}
+              onChange={(v) => setForm({ ...form, date_time: v })}
+              ariaLabel={t("appointments.dateTime")}
               required
             />
           </Field>
@@ -391,10 +392,10 @@ export function Appointments() {
           error={rescheduleError}
         >
           <Field label={t("appointments.dateTime")}>
-            <input
-              type="datetime-local"
+            <DateTimeField
               value={rescheduleDateTime}
-              onChange={(e) => setRescheduleDateTime(e.target.value)}
+              onChange={setRescheduleDateTime}
+              ariaLabel={t("appointments.dateTime")}
               required
             />
           </Field>

@@ -76,7 +76,10 @@
     "address": "Address",
     "status": "Status",
     "toastSaved": "Saved successfully",
-    "toastDeleted": "Deleted successfully"
+    "toastDeleted": "Deleted successfully",
+    "previousDay": "Previous day",
+    "nextDay": "Next day",
+    "openCalendar": "Open calendar"
   },
   "patients": {
     "title": "Patients",

@@ -40,7 +40,10 @@ export type Action =
   | "complete"
   | "cancel"
   | "showInactive"
-  | "assignAdminRole";
+  | "assignAdminRole"
+  | "unlock"
+  | "changePassword"
+  | "viewActivity";
 
 const ALL_ROLES: Role[] = ["ADMIN", "DOCTOR", "RECEPTIONIST", "IT", "NURSE", "CENTER_MANAGER"];
 
@@ -122,8 +125,14 @@ const POLICY: Partial<Record<Resource, Partial<Record<Action, Role[]>>>> = {
     view: ["ADMIN", "IT"],
     create: ["ADMIN", "IT"],
     edit: ["ADMIN", "IT"],
-    delete: ["ADMIN", "IT"],
+    // Narrowed to match the backend (M-08): deactivate/restore/unlock/
+    // password-reset/activity are more sensitive than editing a profile
+    // field, so IT keeps view/create/edit only.
+    delete: ["ADMIN"],
     restore: ["ADMIN"],
+    unlock: ["ADMIN"],
+    changePassword: ["ADMIN"],
+    viewActivity: ["ADMIN"],
     assignAdminRole: ["ADMIN"],
     showInactive: ["ADMIN"],
   },

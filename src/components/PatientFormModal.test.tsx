@@ -16,6 +16,10 @@ vi.mock("../services/api", () => ({
   },
 }));
 
+vi.mock("../store/auth", () => ({
+  useAuth: () => ({ user: { role: "ADMIN" } }),
+}));
+
 const mockedApi = vi.mocked(api);
 
 const ARS_LIST = { count: 0, next: null, previous: null, results: [] };

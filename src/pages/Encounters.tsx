@@ -2,6 +2,7 @@ import { useEffect, useState, type ReactNode } from "react";
 import { useTranslation } from "react-i18next";
 import { useNavigate } from "react-router-dom";
 
+import { DateNavigator } from "../components/DateNavigator";
 import { ListPage } from "../components/ListPage";
 import { PatientFormModal } from "../components/PatientFormModal";
 import { MaskedValue, Page, type Column } from "../components/ui";
@@ -25,24 +26,8 @@ import type {
 } from "../services/types";
 import { useAuth } from "../store/auth";
 import { can } from "../utils/can";
-import { formatDate, formatDateTime } from "../utils/date";
+import { formatDate, formatDateTime, nextLocalISO, todayLocalISO } from "../utils/date";
 import { toSentenceCase } from "../utils/text";
-
-// Local (not UTC) YYYY-MM-DD -- admissions are handled on a daily basis, so
-// the date selector must match the browser's own "today", not a UTC one
-// that could be a day off depending on the visitor's timezone.
-function todayLocalISO(): string {
-  const d = new Date();
-  const pad = (n: number) => String(n).padStart(2, "0");
-  return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
-}
-
-function nextLocalISO(dateStr: string): string {
-  const d = new Date(`${dateStr}T00:00:00`);
-  d.setDate(d.getDate() + 1);
-  const pad = (n: number) => String(n).padStart(2, "0");
-  return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
-}
 
 export function Encounters() {
   const { t } = useTranslation();
@@ -191,12 +176,10 @@ export function Encounters() {
         setSearch={setSearch}
         searchSubmit={searchSubmit}
         toolbarBefore={
-          <input
-            type="date"
-            className="date-filter"
-            aria-label={t("encounters.date")}
+          <DateNavigator
             value={dateFilter}
-            onChange={(e) => setDateFilter(e.target.value || todayLocalISO())}
+            onChange={(isoDate) => setDateFilter(isoDate || todayLocalISO())}
+            ariaLabel={t("encounters.date")}
           />
         }
         toolbarAfter={

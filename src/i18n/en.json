@@ -81,6 +81,7 @@
   "patients": {
     "title": "Patients",
     "new": "New patient",
+    "id": "ID",
     "firstName": "First name",
     "lastName": "Last name",
     "birthDate": "Birth date",

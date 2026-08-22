@@ -507,6 +507,89 @@ body {
   border-color: var(--mc-primary);
 }
 
+/* ---------- DateField: DD/MM/YYYY masked text input + hidden native picker ---------- */
+
+.date-field {
+  position: relative;
+  display: flex;
+  align-items: center;
+}
+
+.date-field input[type="text"] {
+  width: 100%;
+  padding: 0.5rem 2.25rem 0.5rem 0.65rem;
+  border: 1px solid var(--mc-border);
+  border-radius: 8px;
+  font-size: 0.9rem;
+  font-family: inherit;
+  background: var(--mc-white);
+  color: var(--mc-text);
+}
+
+.date-field input[type="text"]:focus {
+  outline: 2px solid var(--mc-primary);
+  outline-offset: 1px;
+  border-color: var(--mc-primary);
+}
+
+.date-field-picker-btn {
+  position: absolute;
+  right: 0.4rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: none;
+  border: none;
+  padding: 0.2rem;
+  cursor: pointer;
+  color: var(--mc-muted);
+}
+
+.date-field-picker-btn:hover {
+  color: var(--mc-primary);
+}
+
+.date-field-native {
+  position: absolute;
+  right: 0.4rem;
+  width: 1.5rem;
+  height: 1.5rem;
+  opacity: 0;
+  pointer-events: none;
+}
+
+/* ---------- DateNavigator: prev/next-day-stepped DateField ---------- */
+
+.date-navigator {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+}
+
+.date-navigator .date-field {
+  width: 10rem;
+}
+
+.date-navigator-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 2rem;
+  height: 2rem;
+  border: 1px solid var(--mc-border);
+  border-radius: 8px;
+  background: var(--mc-white);
+  color: var(--mc-text);
+  cursor: pointer;
+  flex-shrink: 0;
+}
+
+.date-navigator-btn:hover {
+  background: var(--mc-primary);
+  color: #fff;
+  border-color: var(--mc-primary);
+}
+
 input[type="checkbox"]:focus-visible,
 input[type="radio"]:focus-visible {
   outline: 2px solid var(--mc-primary);

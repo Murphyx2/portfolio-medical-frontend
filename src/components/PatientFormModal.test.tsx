@@ -40,6 +40,7 @@ function existingPatient(overrides: Partial<Patient> = {}): Patient {
     age: 36,
     gender: "FEMALE",
     phone: "8095550100",
+    extra_phones: [],
     address: "123 Main St",
     email: "jane@example.com",
     cedula: "00100000001",

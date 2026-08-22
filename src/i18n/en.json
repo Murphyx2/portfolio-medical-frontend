@@ -82,6 +82,7 @@
     "title": "Patients",
     "new": "New patient",
     "id": "ID",
+    "addPhone": "Add phone number",
     "firstName": "First name",
     "lastName": "Last name",
     "birthDate": "Birth date",

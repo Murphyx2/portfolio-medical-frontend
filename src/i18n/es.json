@@ -82,6 +82,7 @@
     "title": "Pacientes",
     "new": "Nuevo paciente",
     "id": "ID",
+    "addPhone": "Agregar número de teléfono",
     "firstName": "Nombre",
     "lastName": "Apellido",
     "birthDate": "Fecha de nacimiento",

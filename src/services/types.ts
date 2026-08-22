@@ -51,6 +51,11 @@ export interface RoomLite {
   name: string;
 }
 
+export interface ExtraPhone {
+  id?: number;
+  phone: string;
+}
+
 export interface DoctorProfile {
   id: number;
   code: string;
@@ -59,6 +64,7 @@ export interface DoctorProfile {
   full_name: string;
   license_number: string;
   contact_phone: string;
+  extra_phones: ExtraPhone[];
   contact_email: string;
   bio: string;
   default_room: number | null;
@@ -79,6 +85,7 @@ export interface Patient {
   age: number | null;
   gender: string;
   phone: string;
+  extra_phones: ExtraPhone[];
   address: string;
   email: string;
   cedula: string;

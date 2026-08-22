@@ -2,9 +2,10 @@ import { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 
 import { DateField } from "./DateField";
+import { PhoneNumberListField } from "./PhoneNumberListField";
 import { Field, FormModal } from "./ui";
 import { api, ApiError } from "../services/api";
-import type { ARS, MedicalCenter, Paginated, Patient } from "../services/types";
+import type { ARS, ExtraPhone, MedicalCenter, Paginated, Patient } from "../services/types";
 import { useAuth } from "../store/auth";
 import { flattenError } from "../utils/errors";
 import { formatCedula } from "../utils/cedula";
@@ -94,6 +95,9 @@ export function PatientFormModal({
         }
       : EMPTY,
   );
+  const [extraPhones, setExtraPhones] = useState<string[]>(
+    () => patient?.extra_phones.map((p) => formatPhone(p.phone)) ?? [],
+  );
   const [phoneError, setPhoneError] = useState("");
   const [guardianPhoneError, setGuardianPhoneError] = useState("");
   const [formError, setFormError] = useState("");
@@ -132,6 +136,9 @@ export function PatientFormModal({
       ...form,
       birth_date: form.birth_date || null,
       phone: form.phone.replace(/\D/g, ""),
+      extra_phones: extraPhones
+        .filter((p) => p.trim() !== "")
+        .map((p): ExtraPhone => ({ phone: p.replace(/\D/g, "") })),
       cedula: form.cedula.replace(/\D/g, ""),
       guardian_cedula: form.guardian_cedula.replace(/\D/g, ""),
       guardian_phone: form.guardian_phone.replace(/\D/g, ""),
@@ -346,6 +353,11 @@ export function PatientFormModal({
             }}
           />
           {phoneError && <span className="field-error">{phoneError}</span>}
+          <PhoneNumberListField
+            values={extraPhones}
+            onChange={setExtraPhones}
+            addLabel={t("patients.addPhone")}
+          />
         </Field>
         <Field label={t("patients.email")}>
           <input

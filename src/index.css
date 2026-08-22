@@ -558,6 +558,52 @@ body {
   pointer-events: none;
 }
 
+/* ---------- PhoneNumberListField: growable list of extra phone rows ---------- */
+
+.phone-list-field {
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+  margin-bottom: 0.9rem;
+}
+
+.phone-list-row {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+}
+
+.phone-list-row input {
+  flex: 1;
+  padding: 0.5rem 0.65rem;
+  border: 1px solid var(--mc-border);
+  border-radius: 8px;
+  font-size: 0.9rem;
+  font-family: inherit;
+  background: var(--mc-white);
+  color: var(--mc-text);
+}
+
+.phone-list-remove-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 2rem;
+  height: 2rem;
+  border: 1px solid var(--mc-border);
+  border-radius: 8px;
+  background: var(--mc-white);
+  color: var(--mc-muted);
+  cursor: pointer;
+  flex-shrink: 0;
+}
+
+.phone-list-remove-btn:hover {
+  color: #fff;
+  background: var(--mc-danger, #c0392b);
+  border-color: var(--mc-danger, #c0392b);
+}
+
 /* ---------- DateNavigator: prev/next-day-stepped DateField ---------- */
 
 .date-navigator {

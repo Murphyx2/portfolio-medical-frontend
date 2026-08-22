@@ -15,6 +15,29 @@ export interface User {
   full_name: string;
   role: Role;
   is_active: boolean;
+  is_locked: boolean;
+  locked_until: string | null;
+  last_login: string | null;
+}
+
+export type AuditAction =
+  | "CREATE"
+  | "READ"
+  | "UPDATE"
+  | "DELETE"
+  | "LOGIN"
+  | "LOGOUT"
+  | "FAILED_LOGIN"
+  | "EXPORT";
+
+export interface AuditLogEntry {
+  id: number;
+  action: AuditAction;
+  target_type: string;
+  target_id: number | null;
+  ip_address: string | null;
+  details: Record<string, unknown>;
+  created_at: string;
 }
 
 export interface LoginResponse {

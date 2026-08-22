@@ -1066,6 +1066,7 @@ input[type="radio"]:focus-visible {
 .status-no_show { background: var(--mc-muted); }
 .status-active { background: var(--mc-primary-dark); }
 .status-inactive { background: var(--mc-muted); }
+.status-locked { background: #ef6c00; }
 .status-draft { background: var(--mc-muted); }
 .status-pending { background: var(--mc-primary); }
 .status-routine { background: var(--mc-muted); }

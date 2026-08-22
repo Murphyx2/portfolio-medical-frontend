@@ -24,6 +24,7 @@ import { can } from "../utils/can";
 import { formatCedula } from "../utils/cedula";
 import { formatDateTime, nextLocalISO, todayLocalISO } from "../utils/date";
 import { flattenError } from "../utils/errors";
+import { toSentenceCase } from "../utils/text";
 
 const EMPTY = { patient: 0, doctor: 0, service: 0, date_time: "", notes: "" };
 
@@ -138,6 +139,14 @@ export function Appointments() {
 
   async function submit() {
     setFormError("");
+    if (!form.doctor) {
+      setFormError(t("appointments.doctorRequired"));
+      return;
+    }
+    if (!form.service) {
+      setFormError(t("appointments.serviceRequired"));
+      return;
+    }
     const body = {
       patient: Number(form.patient),
       doctor: Number(form.doctor),
@@ -347,20 +356,35 @@ export function Appointments() {
             </>
           )}
           <Field label={t("appointments.doctor")}>
-            <select value={form.doctor} onChange={(e) => pickDoctor(Number(e.target.value))} required>
-              <option value={0} disabled>—</option>
-              {availableDoctors.map((d) => (
-                <option key={d.id} value={d.id}>{d.full_name}</option>
-              ))}
-            </select>
+            <SearchableSelect<DoctorProfile>
+              value={availableDoctors.find((d) => d.id === form.doctor) ?? null}
+              onSelect={(d) => pickDoctor(d.id)}
+              search={async (query) => {
+                const q = query.trim().toLowerCase();
+                const results = q ? availableDoctors.filter((d) => d.full_name.toLowerCase().includes(q)) : availableDoctors;
+                return { results, count: results.length };
+              }}
+              minChars={1}
+              placeholder={t("appointments.doctor")}
+              getLabel={(d) => d.full_name}
+              autoFocus={false}
+            />
           </Field>
           <Field label={t("appointments.service")}>
-            <select value={form.service} onChange={(e) => setForm({ ...form, service: Number(e.target.value) })} required>
-              <option value={0} disabled>—</option>
-              {availableServices.map((s) => (
-                <option key={s.id} value={s.id}>{s.name}</option>
-              ))}
-            </select>
+            <SearchableSelect<Service>
+              value={availableServices.find((s) => s.id === form.service) ?? null}
+              onSelect={(s) => setForm({ ...form, service: s.id })}
+              search={async (query) => {
+                const q = query.trim().toLowerCase();
+                const results = q ? availableServices.filter((s) => s.name.toLowerCase().includes(q)) : availableServices;
+                return { results, count: results.length };
+              }}
+              minChars={1}
+              placeholder={t("appointments.service")}
+              getLabel={(s) => toSentenceCase(s.name)}
+              getSublabel={(s) => toSentenceCase(s.type_name)}
+              autoFocus={false}
+            />
           </Field>
           <Field label={t("appointments.dateTime")}>
             <DateTimeField

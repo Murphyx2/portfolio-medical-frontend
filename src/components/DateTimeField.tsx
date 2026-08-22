@@ -8,7 +8,15 @@ import { useTranslation } from "react-i18next";
  * force DD/MM/YYYY HH:mm. Renders a masked text field backed by a hidden
  * native datetime-local input (progressive-enhancement picker), same
  * pattern as `DateField`. Emits/accepts the same "YYYY-MM-DDTHH:mm" string
- * a native datetime-local input would, so it's a drop-in replacement. */
+ * a native datetime-local input would, so it's a drop-in replacement.
+ *
+ * The hidden input's own picker POPUP still renders in the browser's/OS's
+ * locale while open (English month name, MM/DD order, AM/PM clock) --
+ * tested and confirmed the `lang` attribute does NOT override this in
+ * Chromium (it follows `navigator.language` instead), so this is an
+ * accepted, unfixable limitation of using a native input as the picker.
+ * The masked text field is what the user actually reads/types, and it's
+ * correct regardless. */
 
 function isoToDisplay(iso: string): string {
   const [datePart, timePart] = iso.split("T");

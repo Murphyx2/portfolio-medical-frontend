@@ -243,7 +243,9 @@
     "cancelReason": "Motivo de cancelación",
     "cancelReasonRequired": "Se requiere un motivo de cancelación.",
     "completeConfirm": "¿Marcar como completada la cita de {{patient}} el {{time}}?",
-    "noDataForDate": "No hay citas para {{date}}."
+    "noDataForDate": "No hay citas para {{date}}.",
+    "doctorRequired": "Se requiere un médico.",
+    "serviceRequired": "Se requiere un servicio."
   },
   "encounters": {
     "title": "Admisiones",

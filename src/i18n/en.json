@@ -243,7 +243,9 @@
     "cancelReason": "Cancellation reason",
     "cancelReasonRequired": "A cancellation reason is required.",
     "completeConfirm": "Mark {{patient}}'s appointment on {{time}} as completed?",
-    "noDataForDate": "No appointments for {{date}}."
+    "noDataForDate": "No appointments for {{date}}.",
+    "doctorRequired": "A doctor is required.",
+    "serviceRequired": "A service is required."
   },
   "encounters": {
     "title": "Admissions",

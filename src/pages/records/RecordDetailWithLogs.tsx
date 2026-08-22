@@ -31,6 +31,7 @@ export function RecordDetailWithLogs({
   canCreate,
   onUploadImage,
   onCreateLog,
+  maxUploadMb,
 }: {
   detail: MedicalRecord;
   logs: ConsultationLog[];
@@ -38,6 +39,12 @@ export function RecordDetailWithLogs({
   canCreate: boolean;
   onUploadImage: (file: File, caption: string) => Promise<void>;
   onCreateLog: (fields: LogFields) => Promise<void>;
+  /** Admin-configurable max image size (apps.systemsettings), fetched via
+   * the narrower /records/upload-limits/ endpoint since doctors/nurses --
+   * the ones actually uploading -- can't reach the ADMIN/IT-only
+   * /settings/. Undefined while still loading: the client-side pre-check is
+   * skipped and the server's own validation (same limit) is the fallback. */
+  maxUploadMb?: number;
 }) {
   const { t } = useTranslation();
   const [imageFile, setImageFile] = useState<File | null>(null);
@@ -50,6 +57,10 @@ export function RecordDetailWithLogs({
   async function handleUpload() {
     if (!imageFile || uploading) return;
     setImageError("");
+    if (maxUploadMb && imageFile.size > maxUploadMb * 1024 * 1024) {
+      setImageError(t("records.imageTooLarge", { max: maxUploadMb }));
+      return;
+    }
     setUploading(true);
     try {
       await onUploadImage(imageFile, caption);

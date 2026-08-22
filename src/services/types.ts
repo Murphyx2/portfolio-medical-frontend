@@ -45,6 +45,22 @@ export interface LoginResponse {
   user: User;
 }
 
+export interface SystemSettings {
+  login_lockout_threshold: number;
+  login_lockout_minutes: number;
+  password_min_length: number;
+  access_token_lifetime_minutes: number;
+  refresh_token_lifetime_days: number;
+  login_rate_limit_per_min: number;
+  anon_rate_limit_per_min: number;
+  user_rate_limit_per_min: number;
+  max_image_upload_mb: number;
+  media_token_ttl_minutes: number;
+  default_page_size: number;
+  updated_by: number | null;
+  updated_at: string;
+}
+
 export interface Paginated<T> {
   count: number;
   next: string | null;

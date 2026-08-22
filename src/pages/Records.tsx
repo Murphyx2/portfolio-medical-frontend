@@ -8,6 +8,7 @@ import { RecordFormModal } from "./records/RecordFormModal";
 import { RecordList } from "./records/RecordList";
 import { useListPage } from "../hooks/useListPage";
 import { api, upload } from "../services/api";
+import { getUploadLimits } from "../services/settings";
 import type { ConsultationLog, MedicalRecord, Paginated, Patient } from "../services/types";
 import { useAuth } from "../store/auth";
 import { can } from "../utils/can";
@@ -19,6 +20,7 @@ export function Records() {
   const canDelete = can(user?.role, "delete", "records");
   const isAdmin = can(user?.role, "restore", "records");
   const [patients, setPatients] = useState<Patient[]>([]);
+  const [maxUploadMb, setMaxUploadMb] = useState<number | undefined>(undefined);
   const [detail, setDetail] = useState<MedicalRecord | null>(null);
   const [logs, setLogs] = useState<ConsultationLog[]>([]);
   const [modal, setModal] = useState<"record" | null>(null);
@@ -48,6 +50,14 @@ export function Records() {
     // Patient options for the "new record" picker: fetched once, not on
     // every page/sort/search change (unlike `load`, which re-runs then).
     api.get<Paginated<Patient>>("/patients/?page_size=100").then((r) => setPatients(r.results)).catch(() => {});
+  }, []);
+
+  useEffect(() => {
+    // Fetched once for the image-upload pre-check in RecordDetailWithLogs;
+    // failing silently just skips the client-side check and leaves the
+    // server's own validation (same configured limit) as the fallback.
+    if (canCreate) getUploadLimits().then((r) => setMaxUploadMb(r.max_image_upload_mb)).catch(() => {});
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   async function openDetail(rec: MedicalRecord) {
@@ -174,6 +184,7 @@ export function Records() {
           canCreate={canCreate}
           onUploadImage={uploadImage}
           onCreateLog={createLog}
+          maxUploadMb={maxUploadMb}
         />
       )}
 

@@ -26,7 +26,8 @@ export type Resource =
   | "ars"
   | "centers"
   | "services"
-  | "serviceTypes";
+  | "serviceTypes"
+  | "settings";
 
 export type Action =
   | "view"
@@ -162,6 +163,13 @@ const POLICY: Partial<Record<Resource, Partial<Record<Action, Role[]>>>> = {
     create: CENTER_MANAGER_WRITE,
     edit: CENTER_MANAGER_WRITE,
     delete: CENTER_MANAGER_WRITE,
+  },
+  settings: {
+    // Mirrors the backend's IsAdminOrITReadOnly (apps.core.permissions):
+    // ADMIN reads/writes, IT reads only, every other role has no access at
+    // all (not even the nav link).
+    view: ["ADMIN", "IT"],
+    edit: ["ADMIN"],
   },
 };
 

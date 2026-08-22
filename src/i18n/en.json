@@ -15,6 +15,7 @@
     "rooms": "Rooms",
     "users": "Users",
     "ars": "ARS",
+    "settings": "Settings",
     "logout": "Log out"
   },
   "auth": {
@@ -349,7 +350,73 @@
     "images": "Images",
     "uploadImage": "Upload image",
     "caption": "Caption",
-    "patientPickerPlaceholder": "Search patient by name, cedula or NSS…"
+    "patientPickerPlaceholder": "Search patient by name, cedula or NSS…",
+    "imageTooLarge": "Image must be smaller than {{max}} MB."
+  },
+  "settings": {
+    "title": "System settings",
+    "readOnly": "Read-only",
+    "readOnlyNotice": "Your role can view these settings but cannot change them. Only administrators can save changes.",
+    "resetToDefaults": "Reset to defaults",
+    "resetConfirmMessage": "Reset every setting below to its default value? This cannot be undone, and takes effect immediately.",
+    "rangeHelp": "Allowed range: {{min}}–{{max}}.",
+    "rangeError": "Enter a whole number between {{min}} and {{max}}.",
+    "unsavedChange": "Unsaved change",
+    "lastUpdated": "Last saved {{date}}",
+    "sections": {
+      "loginSecurity": "Login & Security",
+      "sessions": "Sessions",
+      "rateLimits": "Rate Limits",
+      "dataMedia": "Data & Media"
+    },
+    "fields": {
+      "login_lockout_threshold": {
+        "label": "Failed logins before lockout",
+        "help": "How many wrong passwords in a row lock the account."
+      },
+      "login_lockout_minutes": {
+        "label": "Lockout duration (minutes)",
+        "help": "How long a locked account stays locked before it can try again."
+      },
+      "password_min_length": {
+        "label": "Password minimum length",
+        "help": "Shortest password allowed when creating or resetting an account."
+      },
+      "access_token_lifetime_minutes": {
+        "label": "Access token lifetime (minutes)",
+        "help": "How long a signed-in session stays active before it silently refreshes.",
+        "warning": "Security note: access tokens can't be revoked on logout, only the refresh token can. A longer lifetime widens the window a stolen access token stays usable — that's why this range is capped at 60 minutes."
+      },
+      "refresh_token_lifetime_days": {
+        "label": "Refresh token lifetime (days)",
+        "help": "How many days a user can stay signed in without logging in again."
+      },
+      "login_rate_limit_per_min": {
+        "label": "Login attempts per IP per minute",
+        "help": "Caps how many login attempts one IP address can make per minute."
+      },
+      "anon_rate_limit_per_min": {
+        "label": "Anonymous requests per minute",
+        "help": "Caps API requests per minute from a signed-out visitor."
+      },
+      "user_rate_limit_per_min": {
+        "label": "Authenticated requests per minute",
+        "help": "Caps API requests per minute from a signed-in user."
+      },
+      "max_image_upload_mb": {
+        "label": "Max image upload size (MB)",
+        "help": "Largest record image staff can upload."
+      },
+      "media_token_ttl_minutes": {
+        "label": "Media link lifetime (minutes)",
+        "help": "How long a signed image link stays valid once generated.",
+        "warning": "Security note: anyone who obtains a signed image link can use it until it expires. A longer lifetime widens that replay window."
+      },
+      "default_page_size": {
+        "label": "Default page size",
+        "help": "Rows shown per page when a list isn't given an explicit page size (still capped at 200)."
+      }
+    }
   },
   "pagination": {
     "prev": "Previous",

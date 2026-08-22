@@ -8,6 +8,7 @@ import {
   Hospital,
   LayoutDashboard,
   Pill,
+  Settings,
   Shield,
   Stethoscope,
   Users,
@@ -38,6 +39,7 @@ const NAV: { to: string; key: string; resource?: Resource; icon: ComponentType<L
   { to: "/appointments", key: "nav.appointments", resource: "appointments", icon: Calendar },
   { to: "/records", key: "nav.records", resource: "records", icon: Folder },
   { to: "/users", key: "nav.users", resource: "users", icon: Users },
+  { to: "/settings", key: "nav.settings", resource: "settings", icon: Settings },
 ];
 
 export function Layout({ children }: { children: ReactNode }) {

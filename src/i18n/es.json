@@ -15,6 +15,7 @@
     "rooms": "Salas",
     "users": "Usuarios",
     "ars": "ARS",
+    "settings": "Configuración",
     "logout": "Cerrar sesión"
   },
   "auth": {
@@ -349,7 +350,73 @@
     "images": "Imágenes",
     "uploadImage": "Subir imagen",
     "caption": "Título de la imagen",
-    "patientPickerPlaceholder": "Buscar paciente por nombre, cédula o NSS…"
+    "patientPickerPlaceholder": "Buscar paciente por nombre, cédula o NSS…",
+    "imageTooLarge": "La imagen debe ser menor de {{max}} MB."
+  },
+  "settings": {
+    "title": "Configuración del sistema",
+    "readOnly": "Solo lectura",
+    "readOnlyNotice": "Tu rol puede ver esta configuración pero no puede modificarla. Solo los administradores pueden guardar cambios.",
+    "resetToDefaults": "Restablecer valores predeterminados",
+    "resetConfirmMessage": "¿Restablecer todos los valores a su configuración predeterminada? Esto no se puede deshacer y aplica de inmediato.",
+    "rangeHelp": "Rango permitido: {{min}}–{{max}}.",
+    "rangeError": "Ingresa un número entero entre {{min}} y {{max}}.",
+    "unsavedChange": "Cambio sin guardar",
+    "lastUpdated": "Guardado por última vez el {{date}}",
+    "sections": {
+      "loginSecurity": "Inicio de sesión y seguridad",
+      "sessions": "Sesiones",
+      "rateLimits": "Límites de solicitudes",
+      "dataMedia": "Datos y multimedia"
+    },
+    "fields": {
+      "login_lockout_threshold": {
+        "label": "Intentos fallidos antes del bloqueo",
+        "help": "Cuántas contraseñas incorrectas seguidas bloquean la cuenta."
+      },
+      "login_lockout_minutes": {
+        "label": "Duración del bloqueo (minutos)",
+        "help": "Cuánto tiempo permanece bloqueada una cuenta antes de poder reintentar."
+      },
+      "password_min_length": {
+        "label": "Longitud mínima de contraseña",
+        "help": "La contraseña más corta permitida al crear o restablecer una cuenta."
+      },
+      "access_token_lifetime_minutes": {
+        "label": "Duración del token de acceso (minutos)",
+        "help": "Cuánto tiempo permanece activa una sesión antes de renovarse automáticamente.",
+        "warning": "Nota de seguridad: los tokens de acceso no se pueden revocar al cerrar sesión, solo el token de actualización. Una duración mayor amplía la ventana en la que un token robado sigue siendo utilizable — por eso este rango está limitado a 60 minutos."
+      },
+      "refresh_token_lifetime_days": {
+        "label": "Duración del token de actualización (días)",
+        "help": "Cuántos días puede permanecer un usuario conectado sin volver a iniciar sesión."
+      },
+      "login_rate_limit_per_min": {
+        "label": "Intentos de inicio de sesión por IP por minuto",
+        "help": "Limita cuántos intentos de inicio de sesión puede hacer una IP por minuto."
+      },
+      "anon_rate_limit_per_min": {
+        "label": "Solicitudes anónimas por minuto",
+        "help": "Limita las solicitudes por minuto de un visitante sin sesión iniciada."
+      },
+      "user_rate_limit_per_min": {
+        "label": "Solicitudes autenticadas por minuto",
+        "help": "Limita las solicitudes por minuto de un usuario con sesión iniciada."
+      },
+      "max_image_upload_mb": {
+        "label": "Tamaño máximo de imagen (MB)",
+        "help": "El tamaño máximo de imagen de expediente que el personal puede subir."
+      },
+      "media_token_ttl_minutes": {
+        "label": "Duración del enlace de imagen (minutos)",
+        "help": "Cuánto tiempo permanece válido un enlace de imagen firmado una vez generado.",
+        "warning": "Nota de seguridad: cualquiera que obtenga un enlace de imagen firmado puede usarlo hasta que expire. Una duración mayor amplía esa ventana de reutilización."
+      },
+      "default_page_size": {
+        "label": "Tamaño de página predeterminado",
+        "help": "Filas mostradas por página cuando una lista no especifica un tamaño de página (limitado a 200)."
+      }
+    }
   },
   "pagination": {
     "prev": "Anterior",

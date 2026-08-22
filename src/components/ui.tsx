@@ -51,7 +51,7 @@ export function useRowConfirm<K extends string, T>() {
 }
 
 export function Page({ title, actions, children }: {
-  title: string;
+  title: ReactNode;
   actions?: ReactNode;
   children: ReactNode;
 }) {

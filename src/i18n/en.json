@@ -233,6 +233,8 @@
     "activityEmpty": "No activity recorded",
     "activityDate": "Date",
     "activityAction": "Action",
+    "activityTarget": "Resource",
+    "activityDetails": "Details",
     "activityIp": "IP address",
     "lastLogin": "Last login",
     "never": "Never",

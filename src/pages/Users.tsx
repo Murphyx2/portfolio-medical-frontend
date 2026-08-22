@@ -349,6 +349,30 @@ export function Users() {
   );
 }
 
+// "MedicalRecord" -> "Medical Record" — the model class name is already a
+// reasonable label, this just makes it readable without a per-model i18n map.
+function humanizeTargetType(targetType: string): string {
+  return targetType.replace(/([a-z])([A-Z])/g, "$1 $2");
+}
+
+function formatAuditTarget(entry: AuditLogEntry): string {
+  if (!entry.target_type) return "—";
+  return `${humanizeTargetType(entry.target_type)} #${entry.target_id ?? "?"}`;
+}
+
+function formatAuditDetails(entry: AuditLogEntry, t: (key: string) => string): string {
+  const details = entry.details;
+  if (!details || Object.keys(details).length === 0) return "—";
+  if (Array.isArray(details.changed_fields)) {
+    return (details.changed_fields as string[]).join(", ");
+  }
+  if (details.action === "unlock") return t("users.unlock");
+  if (details.action === "password_reset") return t("users.changePassword");
+  return Object.entries(details)
+    .map(([key, value]) => `${key}: ${Array.isArray(value) ? value.join(", ") : value}`)
+    .join(", ");
+}
+
 function UserActivityDialog({ user, rows, page, count, loading, onPageChange, onClose }: {
   user: User;
   rows: AuditLogEntry[];
@@ -377,6 +401,8 @@ function UserActivityDialog({ user, rows, page, count, loading, onPageChange, on
               <tr>
                 <th scope="col">{t("users.activityDate")}</th>
                 <th scope="col">{t("users.activityAction")}</th>
+                <th scope="col">{t("users.activityTarget")}</th>
+                <th scope="col">{t("users.activityDetails")}</th>
                 <th scope="col">{t("users.activityIp")}</th>
               </tr>
             </thead>
@@ -389,6 +415,8 @@ function UserActivityDialog({ user, rows, page, count, loading, onPageChange, on
                       {t(`users.action${entry.action}`)}
                     </span>
                   </td>
+                  <td>{formatAuditTarget(entry)}</td>
+                  <td>{formatAuditDetails(entry, t)}</td>
                   <td>{entry.ip_address ?? "—"}</td>
                 </tr>
               ))}

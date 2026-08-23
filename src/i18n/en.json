@@ -279,7 +279,23 @@
     "completeConfirm": "Mark {{patient}}'s appointment on {{time}} as completed?",
     "noDataForDate": "No appointments for {{date}}.",
     "doctorRequired": "A doctor is required.",
-    "serviceRequired": "A service is required."
+    "serviceRequired": "A service is required.",
+    "viewToggle": "View",
+    "viewList": "List",
+    "viewCalendar": "Calendar",
+    "calendar": {
+      "today": "Today",
+      "previous": "Back",
+      "next": "Next",
+      "month": "Month",
+      "week": "Week",
+      "day": "Day",
+      "date": "Date",
+      "time": "Time",
+      "event": "Appointment",
+      "noEventsInRange": "No appointments in this range.",
+      "showMore": "+{{count}} more"
+    }
   },
   "encounters": {
     "title": "Admissions",

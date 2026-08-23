@@ -270,6 +270,8 @@
     "complete": "Complete",
     "reschedule": "Reschedule",
     "createdBy": "Created by",
+    "createdAt": "Created at",
+    "details": "Appointment details",
     "cancelConfirm": "Cancel {{patient}}'s appointment on {{time}}?",
     "cancelReason": "Cancellation reason",
     "cancelReasonRequired": "A cancellation reason is required.",

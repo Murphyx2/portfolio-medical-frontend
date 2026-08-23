@@ -1,11 +1,13 @@
-import { useEffect, useState, type ReactNode } from "react";
+import { useEffect, useMemo, useState, type ReactNode } from "react";
 import { useTranslation } from "react-i18next";
 
+import { AppointmentCalendar, getVisibleRange } from "../components/AppointmentCalendar";
 import { DateNavigator } from "../components/DateNavigator";
 import { DateTimeField } from "../components/DateTimeField";
 import { ListPage } from "../components/ListPage";
 import { PatientFormModal } from "../components/PatientFormModal";
-import { ConfirmDialog, Dialog, Field, FormModal, MaskedValue, SearchableSelect, useRowConfirm, Page, type Column } from "../components/ui";
+import { ConfirmDialog, Dialog, Field, FormModal, MaskedValue, SearchableSelect, SearchBar, useRowConfirm, Page, type Column } from "../components/ui";
+import { useCalendarAppointments } from "../hooks/useCalendarAppointments";
 import { useDoctorServiceFilter } from "../hooks/useDoctorServiceFilter";
 import { useListPage } from "../hooks/useListPage";
 import { api, ApiError } from "../services/api";
@@ -47,9 +49,45 @@ const genderLabelKeys: Record<string, string> = {
  * patient name or date/time cell — mirrors the click-to-detail pattern in
  * Patients.tsx / Encounters.tsx, giving a full view without forcing users
  * through the Edit form just to look. */
-export function AppointmentDetailsDialog({ appointment, onClose }: {
+export function AppointmentDetailsDialog({
+  appointment,
+  onClose,
+  showActions,
+  canEdit,
+  canConfirm,
+  canComplete,
+  canCancel,
+  canDelete,
+  isAdmin,
+  onEdit,
+  onReschedule,
+  onConfirm,
+  onComplete,
+  onCancel,
+  onDelete,
+  onRestore,
+}: {
   appointment: Appointment;
   onClose: () => void;
+  /** Renders the same row-actions the table's "actions" column shows
+   * (Edit/Reschedule/Confirm/Complete/Cancel/Delete/Restore), for Calendar
+   * mode where events are too small to carry buttons of their own. When
+   * omitted/false, behavior is byte-for-byte identical to before this prop
+   * existed -- List mode's usage must not pass it. */
+  showActions?: boolean;
+  canEdit?: boolean;
+  canConfirm?: boolean;
+  canComplete?: boolean;
+  canCancel?: boolean;
+  canDelete?: boolean;
+  isAdmin?: boolean;
+  onEdit?: (a: Appointment) => void;
+  onReschedule?: (a: Appointment) => void;
+  onConfirm?: (a: Appointment) => void;
+  onComplete?: (a: Appointment) => void;
+  onCancel?: (a: Appointment) => void;
+  onDelete?: (a: Appointment) => void;
+  onRestore?: (a: Appointment) => void;
 }) {
   const { t } = useTranslation();
   const statusLabel = (s: string) => t(`appointments.status${s[0]}${s.slice(1).toLowerCase()}`);
@@ -99,6 +137,31 @@ export function AppointmentDetailsDialog({ appointment, onClose }: {
       </div>
 
       <div className="modal-actions">
+        {showActions && (
+          <div className="row-actions">
+            {canEdit && appointment.active && (
+              <button className="btn small ghost" onClick={() => onEdit?.(appointment)}>{t("common.edit")}</button>
+            )}
+            {canEdit && (appointment.status === "SCHEDULED" || appointment.status === "CONFIRMED") && (
+              <button className="btn small ghost" onClick={() => onReschedule?.(appointment)}>{t("appointments.reschedule")}</button>
+            )}
+            {canConfirm && appointment.status === "SCHEDULED" && (
+              <button className="btn small" onClick={() => onConfirm?.(appointment)}>{t("appointments.confirm")}</button>
+            )}
+            {canComplete && appointment.status === "CONFIRMED" && (
+              <button className="btn small" onClick={() => onComplete?.(appointment)}>{t("appointments.complete")}</button>
+            )}
+            {canCancel && (appointment.status === "SCHEDULED" || appointment.status === "CONFIRMED") && (
+              <button className="btn small danger" onClick={() => onCancel?.(appointment)}>{t("appointments.cancel")}</button>
+            )}
+            {canDelete && appointment.active && (
+              <button className="btn small danger" onClick={() => onDelete?.(appointment)}>{t("common.delete")}</button>
+            )}
+            {isAdmin && !appointment.active && (
+              <button className="btn small" onClick={() => onRestore?.(appointment)}>{t("common.restore")}</button>
+            )}
+          </div>
+        )}
         <button type="button" className="btn ghost" onClick={onClose}>{t("common.close")}</button>
       </div>
     </Dialog>
@@ -132,6 +195,19 @@ export function Appointments() {
   const [cancelReason, setCancelReason] = useState("");
   const [cancelError, setCancelError] = useState("");
   const [detailsTarget, setDetailsTarget] = useState<Appointment | null>(null);
+  // Calendar mode: List and Calendar are two independent views over the
+  // same data (default view is Calendar, per the plan) -- List keeps
+  // today's exact single-day/table/pagination UI below, Calendar renders
+  // AppointmentCalendar instead and fetches its own wider date range.
+  const [viewMode, setViewMode] = useState<"list" | "calendar">("calendar");
+  const [calendarRange, setCalendarRange] = useState(() => getVisibleRange(new Date(), "month"));
+  const [calendarSearch, setCalendarSearch] = useState("");
+  const [calendarDetailsTarget, setCalendarDetailsTarget] = useState<Appointment | null>(null);
+  const {
+    appointments: calendarAppointments,
+    loading: calendarLoading,
+    reload: reloadCalendar,
+  } = useCalendarAppointments(calendarRange.start, calendarRange.end);
   const confirm = useRowConfirm<"confirm" | "complete" | "delete" | "restore", Appointment>();
   const {
     rows,
@@ -157,6 +233,19 @@ export function Appointments() {
       date_time__lt: `${nextLocalISO(dateFilter)}T00:00:00`,
     },
   });
+
+  // Client-side substring filter over the already-fetched calendar range --
+  // no per-keystroke refetch (unlike List mode's server-side search).
+  const filteredCalendarAppointments = useMemo(() => {
+    const q = calendarSearch.trim().toLowerCase();
+    if (!q) return calendarAppointments;
+    return calendarAppointments.filter(
+      (a) =>
+        a.patient_info.full_name.toLowerCase().includes(q) ||
+        a.doctor_info.full_name.toLowerCase().includes(q) ||
+        (a.service_detail?.name ?? "").toLowerCase().includes(q),
+    );
+  }, [calendarAppointments, calendarSearch]);
 
   const { availableDoctors, availableServices } = useDoctorServiceFilter({
     doctors,
@@ -228,6 +317,7 @@ export function Appointments() {
       else await api.post("/appointments/", body);
       setModal(false);
       load();
+      reloadCalendar();
     } catch (err) {
       setFormError(err instanceof ApiError ? flattenError(err.message) : String(err));
     }
@@ -248,6 +338,7 @@ export function Appointments() {
       });
       setRescheduleTarget(null);
       load();
+      reloadCalendar();
     } catch (err) {
       setRescheduleError(err instanceof ApiError ? flattenError(err.message) : String(err));
     }
@@ -270,6 +361,7 @@ export function Appointments() {
       await api.post(`/appointments/${cancelTarget.id}/cancel/`, { reason: cancelReason.trim() });
       setCancelTarget(null);
       load();
+      reloadCalendar();
     } catch (err) {
       setCancelError(err instanceof ApiError ? flattenError(err.message) : String(err));
     }
@@ -283,6 +375,7 @@ export function Appointments() {
         await api.post(`/appointments/${row.id}/${type}/`, {});
       }
       load();
+      reloadCalendar();
     });
   }
 
@@ -314,6 +407,18 @@ export function Appointments() {
       {content}
     </button>
   );
+
+  // Calendar mode's details dialog (`showActions`) reuses the exact same
+  // handlers as the table's row-actions column below -- wrapped so picking
+  // an action first closes the details dialog it was opened from, instead
+  // of leaving it stacked underneath the edit/reschedule/cancel/confirm
+  // dialog that opens next.
+  function fromCalendarDetails<T extends unknown[]>(fn: (...args: T) => void) {
+    return (...args: T) => {
+      setCalendarDetailsTarget(null);
+      fn(...args);
+    };
+  }
 
   const columns: Column<Appointment>[] = [
     { key: "date_time", header: t("appointments.dateTime"), sortKey: "date_time", render: (r) => openDetailLink(r, formatDateTime(r.date_time)) },
@@ -384,32 +489,72 @@ export function Appointments() {
         )
       }
     >
-      <ListPage<Appointment>
-        initialLoading={initialLoading}
-        search={search}
-        setSearch={setSearch}
-        searchSubmit={searchSubmit}
-        toolbarBefore={
-          <DateNavigator
-            value={dateFilter}
-            onChange={(isoDate) => setDateFilter(isoDate || todayLocalISO())}
-            ariaLabel={t("appointments.date")}
+      <div className="view-toggle" role="tablist" aria-label={t("appointments.viewToggle")}>
+        <button
+          type="button"
+          role="tab"
+          aria-selected={viewMode === "calendar"}
+          className={viewMode === "calendar" ? "view-toggle-btn active" : "view-toggle-btn"}
+          onClick={() => setViewMode("calendar")}
+        >
+          {t("appointments.viewCalendar")}
+        </button>
+        <button
+          type="button"
+          role="tab"
+          aria-selected={viewMode === "list"}
+          className={viewMode === "list" ? "view-toggle-btn active" : "view-toggle-btn"}
+          onClick={() => setViewMode("list")}
+        >
+          {t("appointments.viewList")}
+        </button>
+      </div>
+
+      {viewMode === "list" ? (
+        <ListPage<Appointment>
+          initialLoading={initialLoading}
+          search={search}
+          setSearch={setSearch}
+          searchSubmit={searchSubmit}
+          toolbarBefore={
+            <DateNavigator
+              value={dateFilter}
+              onChange={(isoDate) => setDateFilter(isoDate || todayLocalISO())}
+              ariaLabel={t("appointments.date")}
+            />
+          }
+          isAdmin={isAdmin}
+          showInactive={showInactive}
+          onToggleInactive={setShowInactive}
+          page={page}
+          count={count}
+          pageSize={pageSize}
+          onPageChange={setPage}
+          onPageSizeChange={changePageSize}
+          columns={columns}
+          rows={rows}
+          sortKey={sortKey}
+          sortDir={sortDir}
+          onSort={handleSort}
+        />
+      ) : (
+        <>
+          <div className="list-toolbar">
+            <SearchBar
+              value={calendarSearch}
+              onChange={setCalendarSearch}
+              placeholder={t("common.searchPlaceholder")}
+              label={t("common.search")}
+            />
+            {calendarLoading && <span className="calendar-loading">{t("common.loading")}</span>}
+          </div>
+          <AppointmentCalendar
+            appointments={filteredCalendarAppointments}
+            onSelectAppointment={(a) => setCalendarDetailsTarget(a)}
+            onRangeChange={setCalendarRange}
           />
-        }
-        isAdmin={isAdmin}
-        showInactive={showInactive}
-        onToggleInactive={setShowInactive}
-        page={page}
-        count={count}
-        pageSize={pageSize}
-        onPageChange={setPage}
-        onPageSizeChange={changePageSize}
-        columns={columns}
-        rows={rows}
-        sortKey={sortKey}
-        sortDir={sortDir}
-        onSort={handleSort}
-      />
+        </>
+      )}
 
       {modal && (
         <FormModal
@@ -529,6 +674,27 @@ export function Appointments() {
 
       {detailsTarget && (
         <AppointmentDetailsDialog appointment={detailsTarget} onClose={() => setDetailsTarget(null)} />
+      )}
+
+      {calendarDetailsTarget && (
+        <AppointmentDetailsDialog
+          appointment={calendarDetailsTarget}
+          onClose={() => setCalendarDetailsTarget(null)}
+          showActions
+          canEdit={canEdit}
+          canConfirm={canConfirm}
+          canComplete={canComplete}
+          canCancel={canCancel}
+          canDelete={canDelete}
+          isAdmin={isAdmin}
+          onEdit={fromCalendarDetails(openEdit)}
+          onReschedule={fromCalendarDetails(openReschedule)}
+          onConfirm={fromCalendarDetails((a) => confirm.open("confirm", a))}
+          onComplete={fromCalendarDetails((a) => confirm.open("complete", a))}
+          onCancel={fromCalendarDetails(openCancel)}
+          onDelete={fromCalendarDetails((a) => confirm.open("delete", a))}
+          onRestore={fromCalendarDetails((a) => confirm.open("restore", a))}
+        />
       )}
 
       {confirm.confirming && confirmCopy && (

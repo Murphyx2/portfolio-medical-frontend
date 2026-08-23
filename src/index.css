@@ -619,6 +619,52 @@ body {
   border-color: var(--mc-danger, #c0392b);
 }
 
+/* ---------- view toggle: segmented List/Calendar switch (Appointments) --------- */
+
+.view-toggle {
+  display: inline-flex;
+  gap: 0.25rem;
+  padding: 0.25rem;
+  background: var(--mc-lightest);
+  border: 1px solid var(--mc-border);
+  border-radius: 10px;
+  margin-bottom: 1rem;
+}
+
+.view-toggle-btn {
+  border: none;
+  background: transparent;
+  color: var(--mc-muted);
+  font-family: inherit;
+  font-size: 0.85rem;
+  font-weight: 600;
+  padding: 0.4rem 1rem;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: background-color 0.15s, color 0.15s, box-shadow 0.15s;
+}
+
+.view-toggle-btn:hover {
+  color: var(--mc-primary-dark);
+}
+
+.view-toggle-btn.active {
+  background: var(--mc-white);
+  color: var(--mc-primary-dark);
+  box-shadow: 0 1px 3px rgba(13, 33, 55, 0.12);
+}
+
+.view-toggle-btn:focus-visible {
+  outline: 2px solid var(--mc-primary);
+  outline-offset: 1px;
+}
+
+.calendar-loading {
+  color: var(--mc-muted);
+  font-size: 0.85rem;
+  align-self: center;
+}
+
 /* ---------- DateNavigator: prev/next-day-stepped DateField ---------- */
 
 .date-navigator {

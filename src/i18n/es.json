@@ -269,6 +269,8 @@
     "complete": "Completar",
     "reschedule": "Reprogramar",
     "createdBy": "Creada por",
+    "createdAt": "Creada el",
+    "details": "Detalles de la cita",
     "cancelConfirm": "¿Cancelar la cita de {{patient}} el {{time}}?",
     "cancelReason": "Motivo de cancelación",
     "cancelReasonRequired": "Se requiere un motivo de cancelación.",

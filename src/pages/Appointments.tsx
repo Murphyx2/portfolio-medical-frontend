@@ -1,11 +1,11 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, type ReactNode } from "react";
 import { useTranslation } from "react-i18next";
 
 import { DateNavigator } from "../components/DateNavigator";
 import { DateTimeField } from "../components/DateTimeField";
 import { ListPage } from "../components/ListPage";
 import { PatientFormModal } from "../components/PatientFormModal";
-import { ConfirmDialog, Field, FormModal, MaskedValue, SearchableSelect, useRowConfirm, Page, type Column } from "../components/ui";
+import { ConfirmDialog, Dialog, Field, FormModal, MaskedValue, SearchableSelect, useRowConfirm, Page, type Column } from "../components/ui";
 import { useDoctorServiceFilter } from "../hooks/useDoctorServiceFilter";
 import { useListPage } from "../hooks/useListPage";
 import { api, ApiError } from "../services/api";
@@ -38,6 +38,73 @@ function toDateTimeLocalInput(iso: string): string {
   return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
 }
 
+const genderLabelKeys: Record<string, string> = {
+  MALE: "patients.genderMale",
+  FEMALE: "patients.genderFemale",
+};
+
+/** Read-only "appointment details" dialog opened by clicking a row's
+ * patient name or date/time cell — mirrors the click-to-detail pattern in
+ * Patients.tsx / Encounters.tsx, giving a full view without forcing users
+ * through the Edit form just to look. */
+export function AppointmentDetailsDialog({ appointment, onClose }: {
+  appointment: Appointment;
+  onClose: () => void;
+}) {
+  const { t } = useTranslation();
+  const statusLabel = (s: string) => t(`appointments.status${s[0]}${s.slice(1).toLowerCase()}`);
+  const genderLabelKey = genderLabelKeys[appointment.patient_info.gender];
+  const genderLabel = genderLabelKey ? t(genderLabelKey) : undefined;
+
+  return (
+    <Dialog title={t("appointments.details")} onClose={onClose} wide>
+      <div className="encounter-detail-badges">
+        <span className={`badge status-${appointment.status.toLowerCase()}`}>{statusLabel(appointment.status)}</span>
+      </div>
+
+      <div className="form-columns">
+        <div>
+          <h4>{t("appointments.patient")}</h4>
+          <div className="kv-grid">
+            <div><b>{t("common.name")}:</b> <MaskedValue value={appointment.patient_info.full_name} /></div>
+            <div><b>{t("appointments.phone")}:</b> <MaskedValue value={formatPhone(appointment.patient_info.phone)} /></div>
+            {genderLabel && <div><b>{t("patients.gender")}:</b> {genderLabel}</div>}
+          </div>
+        </div>
+        <div>
+          <h4>{t("appointments.dateTime")}</h4>
+          <div className="kv-grid">
+            <div><b>{t("appointments.doctor")}:</b> {appointment.doctor_info.full_name}</div>
+            <div><b>{t("appointments.service")}:</b> {appointment.service_detail?.name ?? "—"}</div>
+            <div><b>{t("appointments.dateTime")}:</b> {formatDateTime(appointment.date_time)}</div>
+            <div><b>{t("appointments.duration")}:</b> {appointment.duration_minutes}</div>
+            <div><b>{t("appointments.center")}:</b> {appointment.center_name ?? "—"}</div>
+          </div>
+        </div>
+      </div>
+
+      <h4>{t("appointments.notes")}</h4>
+      <p>{appointment.notes || "—"}</p>
+
+      {appointment.status === "CANCELLED" && (
+        <>
+          <h4>{t("appointments.cancelReason")}</h4>
+          <p>{appointment.cancel_reason || "—"}</p>
+        </>
+      )}
+
+      <div className="kv-grid">
+        <div><b>{t("appointments.createdBy")}:</b> {appointment.created_by_name}</div>
+        <div><b>{t("appointments.createdAt")}:</b> {formatDateTime(appointment.created_at)}</div>
+      </div>
+
+      <div className="modal-actions">
+        <button type="button" className="btn ghost" onClick={onClose}>{t("common.close")}</button>
+      </div>
+    </Dialog>
+  );
+}
+
 export function Appointments() {
   const { t } = useTranslation();
   const { user } = useAuth();
@@ -63,6 +130,7 @@ export function Appointments() {
   const [cancelTarget, setCancelTarget] = useState<Appointment | null>(null);
   const [cancelReason, setCancelReason] = useState("");
   const [cancelError, setCancelError] = useState("");
+  const [detailsTarget, setDetailsTarget] = useState<Appointment | null>(null);
   const confirm = useRowConfirm<"complete" | "delete" | "restore", Appointment>();
   const {
     rows,
@@ -235,9 +303,18 @@ export function Appointments() {
 
   const statusLabel = (s: string) => t(`appointments.status${s[0]}${s.slice(1).toLowerCase()}`);
 
+  // Matches Patients.tsx/Encounters.tsx's click-to-detail pattern: the
+  // patient name and date/time cells open a read-only details dialog
+  // instead of forcing users through the Edit form just to look.
+  const openDetailLink = (r: Appointment, content: ReactNode) => (
+    <button type="button" className="row-link" onClick={() => setDetailsTarget(r)}>
+      {content}
+    </button>
+  );
+
   const columns: Column<Appointment>[] = [
-    { key: "date_time", header: t("appointments.dateTime"), sortKey: "date_time", render: (r) => formatDateTime(r.date_time) },
-    { key: "patient", header: t("appointments.patient"), sortKey: "patient__search_name", render: (r) => r.patient_info.full_name },
+    { key: "date_time", header: t("appointments.dateTime"), sortKey: "date_time", render: (r) => openDetailLink(r, formatDateTime(r.date_time)) },
+    { key: "patient", header: t("appointments.patient"), sortKey: "patient__search_name", render: (r) => openDetailLink(r, r.patient_info.full_name) },
     { key: "doctor", header: t("appointments.doctor"), sortKey: "doctor__user__last_name", render: (r) => r.doctor_info.full_name },
     { key: "service", header: t("appointments.service"), render: (r) => r.service_detail?.name ?? "—" },
     { key: "phone", header: t("appointments.phone"), render: (r) => <MaskedValue value={formatPhone(r.patient_info.phone)} /> },
@@ -442,6 +519,10 @@ export function Appointments() {
             />
           </Field>
         </FormModal>
+      )}
+
+      {detailsTarget && (
+        <AppointmentDetailsDialog appointment={detailsTarget} onClose={() => setDetailsTarget(null)} />
       )}
 
       {confirm.confirming && confirmCopy && (

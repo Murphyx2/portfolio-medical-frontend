@@ -441,6 +441,12 @@ body {
   text-decoration: underline;
 }
 
+.row-link:focus-visible {
+  outline: 2px solid var(--mc-primary);
+  outline-offset: 1px;
+  border-radius: 2px;
+}
+
 .th-sort {
   background: none;
   border: none;

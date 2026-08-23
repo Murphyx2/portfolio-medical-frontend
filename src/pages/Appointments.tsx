@@ -110,6 +110,7 @@ export function Appointments() {
   const { user } = useAuth();
   const canCreate = can(user?.role, "create", "appointments");
   const canEdit = can(user?.role, "edit", "appointments");
+  const canConfirm = can(user?.role, "confirm", "appointments");
   const canComplete = can(user?.role, "complete", "appointments");
   const canCancel = can(user?.role, "cancel", "appointments");
   const canDelete = can(user?.role, "delete", "appointments");
@@ -131,7 +132,7 @@ export function Appointments() {
   const [cancelReason, setCancelReason] = useState("");
   const [cancelError, setCancelError] = useState("");
   const [detailsTarget, setDetailsTarget] = useState<Appointment | null>(null);
-  const confirm = useRowConfirm<"complete" | "delete" | "restore", Appointment>();
+  const confirm = useRowConfirm<"confirm" | "complete" | "delete" | "restore", Appointment>();
   const {
     rows,
     page,
@@ -291,6 +292,8 @@ export function Appointments() {
         const time = formatDateTime(row.date_time);
         const patient = row.patient_info.full_name;
         switch (type) {
+          case "confirm":
+            return { title: t("appointments.confirm"), message: t("appointments.confirmConfirm", { patient, time }), confirmLabel: t("appointments.confirm"), danger: false };
           case "complete":
             return { title: t("appointments.complete"), message: t("appointments.completeConfirm", { patient, time }), confirmLabel: t("appointments.complete"), danger: false };
           case "delete":
@@ -342,13 +345,16 @@ export function Appointments() {
           {canEdit && r.active && (
             <button className="btn small ghost" onClick={() => openEdit(r)}>{t("common.edit")}</button>
           )}
-          {canEdit && r.status === "SCHEDULED" && (
+          {canEdit && (r.status === "SCHEDULED" || r.status === "CONFIRMED") && (
             <button className="btn small ghost" onClick={() => openReschedule(r)}>{t("appointments.reschedule")}</button>
           )}
-          {canComplete && r.status === "SCHEDULED" && (
+          {canConfirm && r.status === "SCHEDULED" && (
+            <button className="btn small" onClick={() => confirm.open("confirm", r)}>{t("appointments.confirm")}</button>
+          )}
+          {canComplete && r.status === "CONFIRMED" && (
             <button className="btn small" onClick={() => confirm.open("complete", r)}>{t("appointments.complete")}</button>
           )}
-          {canCancel && r.status === "SCHEDULED" && (
+          {canCancel && (r.status === "SCHEDULED" || r.status === "CONFIRMED") && (
             <button className="btn small danger" onClick={() => openCancel(r)}>{t("appointments.cancel")}</button>
           )}
           {canDelete && r.active && (

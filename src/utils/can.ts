@@ -38,6 +38,7 @@ export type Action =
   | "manage"
   | "manageServices"
   | "manageRooms"
+  | "confirm"
   | "complete"
   | "cancel"
   | "showInactive"
@@ -117,6 +118,7 @@ const POLICY: Partial<Record<Resource, Partial<Record<Action, Role[]>>>> = {
     // added, same role set as create/complete/cancel per user directive).
     create: APPOINTMENT_WRITE,
     edit: APPOINTMENT_WRITE,
+    confirm: APPOINTMENT_WRITE,
     complete: APPOINTMENT_WRITE,
     cancel: APPOINTMENT_WRITE,
     // Widened: RECEPTIONIST gains delete.

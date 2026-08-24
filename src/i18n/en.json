@@ -280,6 +280,7 @@
     "noDataForDate": "No appointments for {{date}}.",
     "doctorRequired": "A doctor is required.",
     "serviceRequired": "A service is required.",
+    "dateTimePast": "The appointment date and time cannot be in the past.",
     "viewToggle": "View",
     "viewList": "List",
     "viewCalendar": "Calendar",

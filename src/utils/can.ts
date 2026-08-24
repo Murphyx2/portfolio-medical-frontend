@@ -182,3 +182,12 @@ export function can(role: Role | undefined | null, action: Action, resource: Res
   if (ADMIN_ONLY_DEFAULT_ACTIONS.includes(action)) return role === "ADMIN";
   return false;
 }
+
+// Status-aware: the flat POLICY table has no concept of per-object state, so
+// this can't be expressed as a plain "edit" row. Once an appointment is
+// COMPLETED or CANCELLED, only ADMIN/CENTER_MANAGER may still edit it
+// (mirrors the backend's CanManageAppointments.has_object_permission).
+export function canEditAppointment(role: Role | undefined | null, status: string): boolean {
+  if (status === "COMPLETED" || status === "CANCELLED") return role === "ADMIN" || role === "CENTER_MANAGER";
+  return can(role, "edit", "appointments");
+}

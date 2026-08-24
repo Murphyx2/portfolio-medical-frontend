@@ -40,6 +40,13 @@ function toDateTimeLocalInput(iso: string): string {
   return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
 }
 
+// `value` is the "YYYY-MM-DDTHH:mm" shape DateTimeField emits -- `new
+// Date(...)` parses it in the browser's local timezone, matching how the
+// field displays it.
+function isPastLocal(value: string): boolean {
+  return !!value && new Date(value) < new Date();
+}
+
 const genderLabelKeys: Record<string, string> = {
   MALE: "patients.genderMale",
   FEMALE: "patients.genderFemale",
@@ -188,9 +195,11 @@ export function Appointments() {
   const [editingAppointment, setEditingAppointment] = useState<Appointment | null>(null);
   const [form, setForm] = useState(EMPTY);
   const [formError, setFormError] = useState("");
+  const [dateTimeError, setDateTimeError] = useState("");
   const [rescheduleTarget, setRescheduleTarget] = useState<Appointment | null>(null);
   const [rescheduleDateTime, setRescheduleDateTime] = useState("");
   const [rescheduleError, setRescheduleError] = useState("");
+  const [rescheduleDateTimeError, setRescheduleDateTimeError] = useState("");
   const [cancelTarget, setCancelTarget] = useState<Appointment | null>(null);
   const [cancelReason, setCancelReason] = useState("");
   const [cancelError, setCancelError] = useState("");
@@ -292,6 +301,7 @@ export function Appointments() {
       notes: a.notes,
     });
     setFormError("");
+    setDateTimeError("");
     setModal(true);
   }
 
@@ -303,6 +313,11 @@ export function Appointments() {
     }
     if (!form.service) {
       setFormError(t("appointments.serviceRequired"));
+      return;
+    }
+    const originalDateTime = editingAppointment ? toDateTimeLocalInput(editingAppointment.date_time) : null;
+    if (form.date_time !== originalDateTime && isPastLocal(form.date_time)) {
+      setDateTimeError(t("appointments.dateTimePast"));
       return;
     }
     const body = {
@@ -327,11 +342,17 @@ export function Appointments() {
     setRescheduleTarget(a);
     setRescheduleDateTime(toDateTimeLocalInput(a.date_time));
     setRescheduleError("");
+    setRescheduleDateTimeError("");
   }
 
   async function submitReschedule() {
     if (!rescheduleTarget) return;
     setRescheduleError("");
+    const originalDateTime = toDateTimeLocalInput(rescheduleTarget.date_time);
+    if (rescheduleDateTime !== originalDateTime && isPastLocal(rescheduleDateTime)) {
+      setRescheduleDateTimeError(t("appointments.dateTimePast"));
+      return;
+    }
     try {
       await api.post(`/appointments/${rescheduleTarget.id}/reschedule/`, {
         date_time: new Date(rescheduleDateTime).toISOString(),
@@ -482,7 +503,7 @@ export function Appointments() {
         canCreate && (
           <button
             className="btn primary"
-            onClick={() => { setEditingAppointment(null); setForm(EMPTY); setSelectedPatient(null); setFormError(""); setModal(true); }}
+            onClick={() => { setEditingAppointment(null); setForm(EMPTY); setSelectedPatient(null); setFormError(""); setDateTimeError(""); setModal(true); }}
           >
             + {t("appointments.new")}
           </button>
@@ -617,10 +638,12 @@ export function Appointments() {
           <Field label={t("appointments.dateTime")}>
             <DateTimeField
               value={form.date_time}
-              onChange={(v) => setForm({ ...form, date_time: v })}
+              onChange={(v) => { setForm({ ...form, date_time: v }); setDateTimeError(""); }}
               ariaLabel={t("appointments.dateTime")}
+              min={editingAppointment ? undefined : new Date().toISOString().slice(0, 16)}
               required
             />
+            {dateTimeError && <span className="field-error">{dateTimeError}</span>}
           </Field>
           <Field label={t("appointments.notes")}>
             <textarea value={form.notes} onChange={(e) => setForm({ ...form, notes: e.target.value })} />
@@ -646,10 +669,12 @@ export function Appointments() {
           <Field label={t("appointments.dateTime")}>
             <DateTimeField
               value={rescheduleDateTime}
-              onChange={setRescheduleDateTime}
+              onChange={(v) => { setRescheduleDateTime(v); setRescheduleDateTimeError(""); }}
               ariaLabel={t("appointments.dateTime")}
+              min={new Date().toISOString().slice(0, 16)}
               required
             />
+            {rescheduleDateTimeError && <span className="field-error">{rescheduleDateTimeError}</span>}
           </Field>
         </FormModal>
       )}

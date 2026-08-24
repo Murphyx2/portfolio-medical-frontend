@@ -54,11 +54,13 @@ export function DateTimeField({
   onChange,
   required,
   ariaLabel,
+  min,
 }: {
   value: string;
   onChange: (isoDateTime: string) => void;
   required?: boolean;
   ariaLabel?: string;
+  min?: string;
 }) {
   const { t } = useTranslation();
   const [display, setDisplay] = useState(isoToDisplay(value));
@@ -108,6 +110,7 @@ export function DateTimeField({
         className="date-field-native"
         tabIndex={-1}
         aria-hidden="true"
+        min={min}
         value={value}
         onChange={(e) => e.target.value && commit(isoToDisplay(e.target.value))}
       />

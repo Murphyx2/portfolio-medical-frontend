@@ -280,6 +280,7 @@
     "noDataForDate": "No hay citas para {{date}}.",
     "doctorRequired": "Se requiere un médico.",
     "serviceRequired": "Se requiere un servicio.",
+    "dateTimePast": "La fecha y hora de la cita no pueden ser anteriores a la fecha y hora actuales.",
     "viewToggle": "Vista",
     "viewList": "Lista",
     "viewCalendar": "Calendario",

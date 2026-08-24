@@ -18,11 +18,12 @@ import type {
   DoctorProfile,
   Paginated,
   Patient,
+  Role,
   Service,
   ServiceType,
 } from "../services/types";
 import { useAuth } from "../store/auth";
-import { can } from "../utils/can";
+import { can, canEditAppointment } from "../utils/can";
 import { formatCedula } from "../utils/cedula";
 import { formatDateTime, nextLocalISO, todayLocalISO } from "../utils/date";
 import { flattenError } from "../utils/errors";
@@ -61,6 +62,7 @@ export function AppointmentDetailsDialog({
   onClose,
   showActions,
   canEdit,
+  role,
   canConfirm,
   canComplete,
   canCancel,
@@ -83,6 +85,10 @@ export function AppointmentDetailsDialog({
    * existed -- List mode's usage must not pass it. */
   showActions?: boolean;
   canEdit?: boolean;
+  /** Requesting user's role, used only for the Edit button's status-aware
+   * check (canEditAppointment) -- COMPLETED appointments are locked to
+   * ADMIN/CENTER_MANAGER regardless of the base `canEdit` permission. */
+  role?: Role;
   canConfirm?: boolean;
   canComplete?: boolean;
   canCancel?: boolean;
@@ -146,7 +152,7 @@ export function AppointmentDetailsDialog({
       <div className="modal-actions">
         {showActions && (
           <div className="row-actions">
-            {canEdit && appointment.active && (
+            {canEditAppointment(role, appointment.status) && appointment.active && (
               <button className="btn small ghost" onClick={() => onEdit?.(appointment)}>{t("common.edit")}</button>
             )}
             {canEdit && (appointment.status === "SCHEDULED" || appointment.status === "CONFIRMED") && (
@@ -468,7 +474,7 @@ export function Appointments() {
       align: "center",
       render: (r) => (
         <div className="row-actions">
-          {canEdit && r.active && (
+          {canEditAppointment(user?.role, r.status) && r.active && (
             <button className="btn small ghost" onClick={() => openEdit(r)}>{t("common.edit")}</button>
           )}
           {canEdit && (r.status === "SCHEDULED" || r.status === "CONFIRMED") && (
@@ -707,6 +713,7 @@ export function Appointments() {
           onClose={() => setCalendarDetailsTarget(null)}
           showActions
           canEdit={canEdit}
+          role={user?.role}
           canConfirm={canConfirm}
           canComplete={canComplete}
           canCancel={canCancel}

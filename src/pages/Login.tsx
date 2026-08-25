@@ -2,6 +2,7 @@ import { useState, type FormEvent } from "react";
 import { useTranslation } from "react-i18next";
 import { Navigate, useNavigate } from "react-router-dom";
 
+import { Logo } from "../components/Logo";
 import { useAuth } from "../store/auth";
 
 export function Login() {
@@ -28,6 +29,7 @@ export function Login() {
   return (
     <div className="login-wrap">
       <form className="login-card" onSubmit={onSubmit}>
+        <Logo size={72} className="login-logo" />
         <h1>{t("app.name")}</h1>
         <h2>{t("auth.loginTitle")}</h2>
         <label className="field">

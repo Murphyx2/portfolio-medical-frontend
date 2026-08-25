@@ -20,6 +20,7 @@ import { NavLink, useNavigate } from "react-router-dom";
 import { useAuth } from "../store/auth";
 import { can, type Resource } from "../utils/can";
 import { LanguageSwitcher } from "./LanguageSwitcher";
+import { Logo } from "./Logo";
 import { ToastHost } from "./ui";
 
 // Nav visibility derives from the same `can(role, "view", resource)` check
@@ -59,7 +60,10 @@ export function Layout({ children }: { children: ReactNode }) {
   return (
     <div className="app-shell">
       <aside className="sidebar">
-        <span className="brand">{t("app.name")}</span>
+        <NavLink to="/" end className="brand">
+          <Logo size={28} />
+          <span>{t("app.name")}</span>
+        </NavLink>
         <nav className="nav">
           {items.map((item) => (
             <NavLink

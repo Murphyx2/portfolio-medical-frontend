@@ -29,7 +29,7 @@ export function Login() {
   return (
     <div className="login-wrap">
       <form className="login-card" onSubmit={onSubmit}>
-        <Logo size={72} className="login-logo" />
+        <Logo size={150} className="login-logo" />
         <h1>{t("app.name")}</h1>
         <h2>{t("auth.loginTitle")}</h2>
         <label className="field">

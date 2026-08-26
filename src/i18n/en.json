@@ -385,12 +385,17 @@
     "unsavedChange": "Unsaved change",
     "lastUpdated": "Last saved {{date}}",
     "sections": {
+      "language": "Language",
       "loginSecurity": "Login & Security",
       "sessions": "Sessions",
       "rateLimits": "Rate Limits",
       "dataMedia": "Data & Media"
     },
     "fields": {
+      "language": {
+        "label": "App language",
+        "help": "Spanish is the default. Only administrators and center managers can change it."
+      },
       "login_lockout_threshold": {
         "label": "Failed logins before lockout",
         "help": "How many wrong passwords in a row lock the account."

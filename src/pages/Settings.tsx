@@ -3,6 +3,7 @@ import { RotateCcw, ShieldAlert, TriangleAlert } from "lucide-react";
 import { useTranslation } from "react-i18next";
 
 import { ConfirmDialog, Page } from "../components/ui";
+import { LanguageSwitcher } from "../components/LanguageSwitcher";
 import { ApiError } from "../services/api";
 import { getSettings, resetSettings, updateSettings } from "../services/settings";
 import type { SystemSettings } from "../services/types";
@@ -45,6 +46,7 @@ export function Settings() {
   const { t } = useTranslation();
   const { user } = useAuth();
   const canEdit = can(user?.role, "edit", "settings");
+  const canEditLanguage = can(user?.role, "edit", "language");
 
   const [settings, setSettings] = useState<SystemSettings | null>(null);
   const [form, setForm] = useState<Record<NumericKey, string>>({} as Record<NumericKey, string>);
@@ -176,6 +178,19 @@ export function Settings() {
 
       {settings && (
         <>
+          <div className="settings-section">
+            <h3 className="settings-section-title">{t("settings.sections.language")}</h3>
+            <div className="settings-field-grid">
+              <div className="settings-field">
+                <label className="settings-field-label" htmlFor="settings-language">
+                  {t("settings.fields.language.label")}
+                </label>
+                <LanguageSwitcher id="settings-language" disabled={!canEditLanguage} />
+                <p className="settings-field-help">{t("settings.fields.language.help")}</p>
+              </div>
+            </div>
+          </div>
+
           {SECTIONS.map((section) => (
             <div className="settings-section" key={section}>
               <h3 className="settings-section-title">{t(`settings.sections.${section}`)}</h3>

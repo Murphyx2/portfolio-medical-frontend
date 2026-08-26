@@ -27,7 +27,8 @@ export type Resource =
   | "centers"
   | "services"
   | "serviceTypes"
-  | "settings";
+  | "settings"
+  | "language";
 
 export type Action =
   | "view"
@@ -168,10 +169,16 @@ const POLICY: Partial<Record<Resource, Partial<Record<Action, Role[]>>>> = {
   },
   settings: {
     // Mirrors the backend's IsAdminOrITReadOnly (apps.core.permissions):
-    // ADMIN reads/writes, IT reads only, every other role has no access at
-    // all (not even the nav link).
-    view: ["ADMIN", "IT"],
+    // ADMIN reads/writes, IT reads only. CENTER_MANAGER also reads (needed
+    // to reach the Language section below) but can't edit numeric fields --
+    // every other role has no access at all (not even the nav link).
+    view: ["ADMIN", "IT", "CENTER_MANAGER"],
     edit: ["ADMIN"],
+  },
+  language: {
+    // Narrower carve-out within the Settings page: CENTER_MANAGER may edit
+    // only the language picker, not the rest of settings.
+    edit: ["ADMIN", "CENTER_MANAGER"],
   },
 };
 

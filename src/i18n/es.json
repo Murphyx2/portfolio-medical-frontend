@@ -385,12 +385,17 @@
     "unsavedChange": "Cambio sin guardar",
     "lastUpdated": "Guardado por última vez el {{date}}",
     "sections": {
+      "language": "Idioma",
       "loginSecurity": "Inicio de sesión y seguridad",
       "sessions": "Sesiones",
       "rateLimits": "Límites de solicitudes",
       "dataMedia": "Datos y multimedia"
     },
     "fields": {
+      "language": {
+        "label": "Idioma de la aplicación",
+        "help": "El español es el idioma predeterminado. Solo administradores y gerentes de centro pueden cambiarlo."
+      },
       "login_lockout_threshold": {
         "label": "Intentos fallidos antes del bloqueo",
         "help": "Cuántas contraseñas incorrectas seguidas bloquean la cuenta."

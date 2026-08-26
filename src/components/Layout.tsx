@@ -19,7 +19,6 @@ import { NavLink, useNavigate } from "react-router-dom";
 
 import { useAuth } from "../store/auth";
 import { can, type Resource } from "../utils/can";
-import { LanguageSwitcher } from "./LanguageSwitcher";
 import { Logo } from "./Logo";
 import { ToastHost } from "./ui";
 
@@ -81,7 +80,6 @@ export function Layout({ children }: { children: ReactNode }) {
       <div className="main">
         <header className="topbar">
           <div className="topbar-right">
-            <LanguageSwitcher />
             <span className="user-chip">
               {user?.full_name || user?.username}{" "}
               <span className="role-badge">{user?.role}</span>

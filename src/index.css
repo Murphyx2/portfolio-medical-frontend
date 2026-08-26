@@ -1389,6 +1389,27 @@ input[type="radio"]:focus-visible {
   border-color: var(--mc-danger);
 }
 
+.settings-field .lang-switch {
+  width: 9rem;
+  padding: 0.5rem 0.65rem;
+  border: 1px solid var(--mc-border);
+  border-radius: 8px;
+  font-size: 0.9rem;
+  transition: border-color 120ms ease, box-shadow 120ms ease;
+}
+
+.settings-field .lang-switch:disabled {
+  background: var(--mc-lightest);
+  color: var(--mc-muted);
+  cursor: not-allowed;
+}
+
+.settings-field .lang-switch:focus-visible {
+  outline: none;
+  border-color: var(--mc-primary);
+  box-shadow: 0 0 0 3px rgba(46, 125, 50, 0.18);
+}
+
 .settings-field-help {
   font-size: 0.78rem;
   color: var(--mc-muted);

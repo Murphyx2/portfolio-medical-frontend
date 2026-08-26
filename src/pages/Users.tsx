@@ -11,6 +11,7 @@ import { useAuth } from "../store/auth";
 import { can } from "../utils/can";
 import { formatDateTime } from "../utils/date";
 import { flattenError } from "../utils/errors";
+import { roleLabel } from "../utils/roleLabel";
 
 const EMPTY = { username: "", email: "", first_name: "", last_name: "", password: "", role: "RECEPTIONIST" };
 const ACTIVITY_PAGE_SIZE = 20;
@@ -18,7 +19,7 @@ const ACTIVITY_PAGE_SIZE = 20;
 type ConfirmType = "deactivate" | "activate" | "unlock";
 
 export function Users() {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const { user } = useAuth();
   const isAdmin = can(user?.role, "assignAdminRole", "users");
   const canEdit = can(user?.role, "edit", "users");
@@ -183,7 +184,7 @@ export function Users() {
     { key: "username", header: t("users.username"), sortKey: "username" },
     { key: "full_name", header: t("common.name"), sortKey: "first_name" },
     { key: "email", header: t("users.email"), sortKey: "email" },
-    { key: "role", header: t("users.role"), sortKey: "role" },
+    { key: "role", header: t("users.role"), sortKey: "role", render: (r) => roleLabel(r.role, i18n.language) },
     {
       key: "status",
       header: t("common.status"),
@@ -296,7 +297,7 @@ export function Users() {
               <select value={form.role} onChange={(e) => setForm({ ...form, role: e.target.value })}>
                 {availableRoles.map((r) => (
                   <option key={r.value} value={r.value}>
-                    {r.label}
+                    {roleLabel(r.value, i18n.language, r.label)}
                   </option>
                 ))}
               </select>

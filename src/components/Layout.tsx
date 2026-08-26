@@ -19,6 +19,7 @@ import { NavLink, useNavigate } from "react-router-dom";
 
 import { useAuth } from "../store/auth";
 import { can, type Resource } from "../utils/can";
+import { roleLabel } from "../utils/roleLabel";
 import { Logo } from "./Logo";
 import { ToastHost } from "./ui";
 
@@ -43,7 +44,7 @@ const NAV: { to: string; key: string; resource?: Resource; icon: ComponentType<L
 ];
 
 export function Layout({ children }: { children: ReactNode }) {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const { user, logout } = useAuth();
   const navigate = useNavigate();
 
@@ -82,7 +83,7 @@ export function Layout({ children }: { children: ReactNode }) {
           <div className="topbar-right">
             <span className="user-chip">
               {user?.full_name || user?.username}{" "}
-              <span className="role-badge">{user?.role}</span>
+              <span className="role-badge">{roleLabel(user?.role, i18n.language)}</span>
             </span>
             <button className="btn ghost" onClick={handleLogout}>
               {t("auth.logout")}

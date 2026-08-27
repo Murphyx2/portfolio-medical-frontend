@@ -8,6 +8,7 @@ import { Field, FormModal } from "./ui";
 import { api, ApiError } from "../services/api";
 import type { ARS, ExtraPhone, MedicalCenter, Paginated, Patient, PatientGuardian } from "../services/types";
 import { useAuth } from "../store/auth";
+import { calculateAge } from "../utils/date";
 import { flattenError } from "../utils/errors";
 import { formatCedula } from "../utils/cedula";
 import { formatPhone, formatPhoneInput, isValidPhone, isValidRequiredPhone, stripToDigits } from "../utils/phone";
@@ -29,24 +30,6 @@ const EMPTY = {
   allergies: "",
   critical_conditions: "",
 };
-
-// Client-side mirror of the backend's age arithmetic, used only to decide
-// whether to show the Guardian/Parent section -- the server remains the
-// source of truth via PatientSerializer.validate(). Returns null (rather
-// than throwing) on an empty/unparseable date so the section just stays
-// hidden instead of crashing the form.
-function calcAge(birthDateStr: string): number | null {
-  if (!birthDateStr) return null;
-  const bd = new Date(birthDateStr);
-  if (Number.isNaN(bd.getTime())) return null;
-  const today = new Date();
-  let age = today.getFullYear() - bd.getFullYear();
-  const beforeBirthday =
-    today.getMonth() < bd.getMonth() ||
-    (today.getMonth() === bd.getMonth() && today.getDate() < bd.getDate());
-  if (beforeBirthday) age--;
-  return age;
-}
 
 /** Reusable patient create/edit form, shared by Patients.tsx and Encounters.tsx
  * (the latter's "+ New Patient" picker action). Self-contained: fetches its
@@ -122,7 +105,7 @@ export function PatientFormModal({
   }, []);
 
   const selectedArs = arsList.find((a) => String(a.id) === form.ars);
-  const isMinor = (calcAge(form.birth_date) ?? 99) < 18;
+  const isMinor = (calculateAge(form.birth_date) ?? 99) < 18;
 
   async function submit() {
     if (!isValidPhone(form.phone)) {

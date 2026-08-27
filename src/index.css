@@ -1512,3 +1512,306 @@ input[type="radio"]:focus-visible {
     transform: translateY(0);
   }
 }
+
+/* ---------- Tabs (shared primitive, first used by Expedientes Médicos) ---------- */
+
+.tabs {
+  display: flex;
+  gap: 0.25rem;
+  border-bottom: 1px solid var(--mc-border);
+  margin: 1rem 0 1rem;
+  overflow-x: auto;
+}
+
+.tab {
+  appearance: none;
+  background: none;
+  border: none;
+  border-bottom: 2px solid transparent;
+  padding: 0.6rem 0.9rem;
+  min-height: 44px;
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: var(--mc-muted);
+  cursor: pointer;
+  white-space: nowrap;
+}
+
+.tab:hover {
+  color: var(--mc-primary-dark);
+}
+
+.tab.active {
+  color: var(--mc-primary-dark);
+  border-bottom-color: var(--mc-primary);
+}
+
+.tab:focus-visible {
+  outline: 2px solid var(--mc-primary);
+  outline-offset: -2px;
+}
+
+.tab-panel {
+  outline: none;
+}
+
+/* ---------- Expediente snapshot header ---------- */
+
+.record-snapshot {
+  background: var(--mc-lightest);
+  border: 1px solid var(--mc-border);
+  border-radius: 10px;
+  padding: 0.9rem 1.1rem;
+  margin-bottom: 1rem;
+}
+
+.record-snapshot-name {
+  margin: 0 0 0.6rem;
+  color: var(--mc-primary-dark);
+}
+
+.record-snapshot-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+  gap: 0.5rem 1.5rem;
+}
+
+.record-snapshot-item {
+  font-size: 0.85rem;
+}
+
+.record-snapshot-label {
+  display: block;
+  color: var(--mc-muted);
+  font-size: 0.75rem;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+}
+
+.record-snapshot-value {
+  font-weight: 600;
+}
+
+.record-guardian-section {
+  margin-top: 0.9rem;
+  padding-top: 0.75rem;
+  border-top: 1px dashed var(--mc-border);
+}
+
+.record-guardian-list {
+  display: grid;
+  gap: 0.4rem;
+}
+
+.record-guardian-row {
+  font-size: 0.85rem;
+}
+
+/* ---------- AP (antecedentes patológicos) chip multi-select ---------- */
+
+.ap-multiselect {
+  display: grid;
+  gap: 0.9rem;
+}
+
+.ap-category-group {
+  display: grid;
+  gap: 0.4rem;
+}
+
+.ap-category-name {
+  margin: 0;
+  font-size: 0.8rem;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+  color: var(--mc-muted);
+}
+
+.ap-chip-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.45rem;
+}
+
+.ap-chip {
+  appearance: none;
+  border: 1px solid var(--mc-border);
+  background: var(--mc-white);
+  color: var(--mc-text);
+  border-radius: 999px;
+  padding: 0.4rem 0.85rem;
+  min-height: 36px;
+  font-size: 0.85rem;
+  cursor: pointer;
+  white-space: nowrap;
+}
+
+.ap-chip:hover:not(:disabled) {
+  border-color: var(--mc-primary);
+}
+
+.ap-chip:disabled {
+  cursor: not-allowed;
+  opacity: 0.7;
+}
+
+.ap-chip.selected {
+  background: var(--mc-primary);
+  border-color: var(--mc-primary);
+  color: #fff;
+}
+
+.ap-chip:focus-visible {
+  outline: 2px solid var(--mc-primary-dark);
+  outline-offset: 1px;
+}
+
+.ap-custom-add {
+  display: flex;
+  gap: 0.5rem;
+  align-items: center;
+}
+
+.ap-custom-add input {
+  flex: 1;
+  max-width: 260px;
+}
+
+.ap-empty-note {
+  color: var(--mc-muted);
+  font-size: 0.85rem;
+}
+
+/* ---------- Family AP (heredofamiliares) rows ---------- */
+
+.record-family-list {
+  display: grid;
+  gap: 0.6rem;
+  margin-bottom: 0.75rem;
+}
+
+.record-family-row {
+  background: var(--mc-lightest);
+  border-radius: 8px;
+  padding: 0.5rem 0.8rem;
+  font-size: 0.85rem;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.record-family-add {
+  border: 1px dashed var(--mc-border);
+  border-radius: 8px;
+  padding: 0.75rem 0.9rem;
+  margin-bottom: 0.75rem;
+}
+
+/* ---------- Vitals card ---------- */
+
+.vitals-card {
+  border: 1px solid var(--mc-border);
+  border-radius: 10px;
+  padding: 0.9rem 1.1rem;
+}
+
+.vitals-summary {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  flex-wrap: wrap;
+}
+
+.vitals-summary-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+  gap: 0.4rem 1.25rem;
+  flex: 1;
+}
+
+.vitals-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+  gap: 0.75rem 1.25rem;
+  margin-top: 0.9rem;
+}
+
+.vitals-ta-inputs {
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+}
+
+.vitals-ta-inputs input {
+  width: 4.5rem;
+}
+
+.vitals-imc-preview {
+  margin-top: 0.6rem;
+  font-size: 0.85rem;
+  color: var(--mc-muted);
+}
+
+/* ---------- Conclusiones / draft ---------- */
+
+.draft-banner {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  flex-wrap: wrap;
+  background: var(--mc-warning-bg);
+  border: 1px solid var(--mc-warning);
+  color: var(--mc-warning-text);
+  border-radius: 8px;
+  padding: 0.6rem 0.9rem;
+  margin-bottom: 0.9rem;
+  font-size: 0.85rem;
+}
+
+.draft-banner-actions {
+  display: flex;
+  gap: 0.5rem;
+}
+
+/* ---------- Historial ---------- */
+
+.record-history-list {
+  display: grid;
+  gap: 0.75rem;
+}
+
+.record-history-card {
+  border: 1px solid var(--mc-border);
+  border-radius: 10px;
+  padding: 0.75rem 1rem;
+  background: var(--mc-white);
+}
+
+.record-history-card.latest {
+  border-color: var(--mc-primary);
+}
+
+.record-history-meta {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 0.75rem;
+  flex-wrap: wrap;
+  margin-bottom: 0.4rem;
+  font-size: 0.85rem;
+  color: var(--mc-muted);
+}
+
+.record-history-body {
+  display: grid;
+  gap: 0.35rem;
+  font-size: 0.88rem;
+}
+
+.record-history-vitals {
+  color: var(--mc-muted);
+  font-size: 0.85rem;
+}

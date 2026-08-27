@@ -1,5 +1,5 @@
 import { useEffect, useId, useRef, useState } from "react";
-import type { FormEvent, ReactNode } from "react";
+import type { FormEvent, KeyboardEvent as ReactKeyboardEvent, ReactNode } from "react";
 import { useTranslation } from "react-i18next";
 
 import { MIN_SEARCH_CHARS } from "../hooks/useListControls";
@@ -290,6 +290,94 @@ export function Field({ label, children }: { label: string; children: ReactNode 
       <span>{label}</span>
       {children}
     </label>
+  );
+}
+
+export interface TabItem {
+  key: string;
+  label: string;
+}
+
+/**
+ * WAI-ARIA tabs pattern (roving tabindex: only the active tab is in the tab
+ * order, Left/Right/Home/End move focus+selection together) -- no existing
+ * precedent in this codebase, first used by the Expediente modal. Renders
+ * only the tablist strip; pair each tab with a `TabPanel` of the same
+ * `idPrefix`/key rendered by the caller so panel content can be conditional
+ * (e.g. only mounting the active tab's fields).
+ */
+export function Tabs({ items, active, onChange, idPrefix = "tab" }: {
+  items: TabItem[];
+  active: string;
+  onChange: (key: string) => void;
+  idPrefix?: string;
+}) {
+  const buttonRefs = useRef<Record<string, HTMLButtonElement | null>>({});
+
+  function selectAndFocus(key: string) {
+    onChange(key);
+    buttonRefs.current[key]?.focus();
+  }
+
+  function onKeyDown(e: ReactKeyboardEvent<HTMLButtonElement>, index: number) {
+    let nextIndex: number | null = null;
+    if (e.key === "ArrowRight") nextIndex = (index + 1) % items.length;
+    else if (e.key === "ArrowLeft") nextIndex = (index - 1 + items.length) % items.length;
+    else if (e.key === "Home") nextIndex = 0;
+    else if (e.key === "End") nextIndex = items.length - 1;
+    if (nextIndex === null) return;
+    e.preventDefault();
+    selectAndFocus(items[nextIndex].key);
+  }
+
+  return (
+    <div className="tabs" role="tablist">
+      {items.map((item, i) => {
+        const isActive = active === item.key;
+        return (
+          <button
+            key={item.key}
+            ref={(el) => {
+              buttonRefs.current[item.key] = el;
+            }}
+            type="button"
+            role="tab"
+            id={`${idPrefix}-tab-${item.key}`}
+            aria-selected={isActive}
+            aria-controls={`${idPrefix}-panel-${item.key}`}
+            tabIndex={isActive ? 0 : -1}
+            className={`tab${isActive ? " active" : ""}`}
+            onClick={() => onChange(item.key)}
+            onKeyDown={(e) => onKeyDown(e, i)}
+          >
+            {item.label}
+          </button>
+        );
+      })}
+    </div>
+  );
+}
+
+/** Content panel paired with one `Tabs` tab -- unmounts (rather than just
+ * hiding) inactive panels, since the Expediente modal's tabs hold live form
+ * state that lives in the parent regardless of which panel is mounted. */
+export function TabPanel({ tabKey, active, idPrefix = "tab", children }: {
+  tabKey: string;
+  active: string;
+  idPrefix?: string;
+  children: ReactNode;
+}) {
+  if (active !== tabKey) return null;
+  return (
+    <div
+      role="tabpanel"
+      id={`${idPrefix}-panel-${tabKey}`}
+      aria-labelledby={`${idPrefix}-tab-${tabKey}`}
+      tabIndex={0}
+      className="tab-panel"
+    >
+      {children}
+    </div>
   );
 }
 

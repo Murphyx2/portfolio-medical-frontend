@@ -7,7 +7,7 @@ import { PhoneNumberListField } from "./PhoneNumberListField";
 import { Field, FormModal } from "./ui";
 import { api, ApiError } from "../services/api";
 import type { ARS, ExtraPhone, Paginated, Patient, PatientGuardian } from "../services/types";
-import { calculateAge } from "../utils/date";
+import { calculateAge, todayLocalISO } from "../utils/date";
 import { flattenError } from "../utils/errors";
 import { formatCedula } from "../utils/cedula";
 import { formatPhone, formatPhoneInput, isValidPhone, isValidRequiredPhone, stripToDigits } from "../utils/phone";
@@ -165,6 +165,7 @@ export function PatientFormModal({
               value={form.birth_date}
               onChange={(isoDate) => setForm({ ...form, birth_date: isoDate })}
               required
+              max={todayLocalISO()}
             />
           </Field>
           <Field label={t("patients.gender")}>

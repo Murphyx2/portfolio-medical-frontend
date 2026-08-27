@@ -251,8 +251,16 @@ function LoadedRecordPhase({ record: initialRecord, focusNewEntry, canEdit, apCa
   }
 
   async function handleGuardarBorrador() {
-    await draftSave.flush();
-    showToast(t("records.toastDraftSaved"));
+    setSaving(true);
+    setSaveError("");
+    try {
+      await draftSave.flush();
+      showToast(t("records.toastDraftSaved"));
+    } catch (err) {
+      setSaveError(err instanceof ApiError ? flattenError(err.message) : String(err));
+    } finally {
+      setSaving(false);
+    }
   }
 
   async function handleDiscardDraft() {
@@ -427,6 +435,8 @@ function LoadedRecordPhase({ record: initialRecord, focusNewEntry, canEdit, apCa
           onChange={updateRecord}
         />
 
+        {saveError && <p className="form-error" role="alert">{saveError}</p>}
+
         {canEdit && (
           <div className="modal-actions">
             <button type="button" className="btn ghost" onClick={handleGuardarBorrador} disabled={saving || !hasAnyEntryContent(workingEntry)}>
@@ -517,6 +527,7 @@ function LoadedRecordPhase({ record: initialRecord, focusNewEntry, canEdit, apCa
           </div>
         )}
         {imageError && <p className="form-error" role="alert">{imageError}</p>}
+        {saveError && <p className="form-error" role="alert">{saveError}</p>}
 
         {canEdit && (
           <div className="modal-actions">

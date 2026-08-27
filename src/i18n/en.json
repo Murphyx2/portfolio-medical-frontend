@@ -115,6 +115,8 @@
     "guardianPhone": "Guardian's phone",
     "guardianNotOnFile": "No guardian information on file",
     "guardianCedulaTooltip": "This cedula belongs to the patient's guardian, not the patient",
+    "addGuardian": "Add guardian",
+    "removeGuardian": "Remove guardian",
     "sectionClinical": "Clinical information",
     "allergies": "Allergies",
     "criticalConditions": "Critical conditions"

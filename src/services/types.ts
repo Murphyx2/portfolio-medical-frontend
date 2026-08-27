@@ -95,6 +95,15 @@ export interface ExtraPhone {
   phone: string;
 }
 
+export interface PatientGuardian {
+  id?: number;
+  first_name: string;
+  last_name: string;
+  cedula: string;
+  nss: string;
+  phone: string;
+}
+
 export interface DoctorProfile {
   id: number;
   code: string;
@@ -137,11 +146,7 @@ export interface Patient {
   center_name: string | null;
   center_code: string | null;
   has_guardian: boolean;
-  guardian_first_name: string;
-  guardian_last_name: string;
-  guardian_cedula: string;
-  guardian_nss: string;
-  guardian_phone: string;
+  guardians: PatientGuardian[];
   allergies: string;
   critical_conditions: string;
   created_at: string;

@@ -53,11 +53,7 @@ function existingPatient(overrides: Partial<Patient> = {}): Patient {
     center_name: "INCAF",
     center_code: "INCAF",
     has_guardian: true,
-    guardian_first_name: "",
-    guardian_last_name: "",
-    guardian_cedula: "",
-    guardian_nss: "",
-    guardian_phone: "",
+    guardians: [],
     allergies: "Penicillin",
     critical_conditions: "",
     created_at: "",
@@ -133,5 +129,53 @@ describe("PatientFormModal", () => {
 
     await waitFor(() => expect(document.querySelector(".field-error")).not.toBeNull());
     expect(mockedApi.post).not.toHaveBeenCalled();
+  });
+
+  it("a minor patient posts a guardians array built from the guardian field group", async () => {
+    const onSaved = vi.fn();
+    mockedApi.post.mockResolvedValue(existingPatient({ id: 11 }));
+
+    render(<PatientFormModal onClose={vi.fn()} onSaved={onSaved} />);
+    await waitFor(() => expect(mockedApi.get).toHaveBeenCalledWith(expect.stringContaining("/centers/")));
+
+    fireEvent.change(screen.getByLabelText(/First name|Nombre/i), { target: { value: "Kid" } });
+    fireEvent.change(screen.getByLabelText(/Last name|Apellido/i), { target: { value: "Doe" } });
+    // DateField only commits form.birth_date (and thus the age/isMinor
+    // calculation) on blur, in its own displayed DD/MM/YYYY format -- a
+    // plain ISO fireEvent.change (as used for non-age-sensitive tests above)
+    // never reaches form state here.
+    const birthDateField = screen.getByLabelText(/Birth date|Fecha de nacimiento/i);
+    fireEvent.change(birthDateField, { target: { value: "01/01/2015" } });
+    fireEvent.blur(birthDateField);
+    fireEvent.change(screen.getByLabelText(/^Sex$|^Sexo$/i), { target: { value: "MALE" } });
+    fireEvent.change(screen.getByLabelText(/^Phone$|^Teléfono$/i), { target: { value: "8095550100" } });
+
+    fireEvent.change(screen.getByLabelText(/Guardian's first name|Nombre del tutor/i), {
+      target: { value: "Maria" },
+    });
+    fireEvent.change(screen.getByLabelText(/Guardian's last name|Apellido del tutor/i), {
+      target: { value: "Doe" },
+    });
+    fireEvent.change(screen.getByLabelText(/Guardian's cedula|Cédula del tutor/i), {
+      target: { value: "00112345678" },
+    });
+    fireEvent.change(screen.getByLabelText(/Guardian's phone|Teléfono del tutor/i), {
+      target: { value: "8095550199" },
+    });
+
+    fireEvent.click(screen.getByRole("button", { name: /Save|Guardar/i }));
+
+    await waitFor(() => expect(mockedApi.post).toHaveBeenCalledTimes(1));
+    const [, body] = mockedApi.post.mock.calls[0];
+    expect(body).toMatchObject({
+      guardians: [
+        expect.objectContaining({
+          first_name: "Maria",
+          last_name: "Doe",
+          cedula: "00112345678",
+          phone: "8095550199",
+        }),
+      ],
+    });
   });
 });

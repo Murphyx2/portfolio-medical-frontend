@@ -2,10 +2,11 @@ import { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 
 import { DateField } from "./DateField";
+import { GuardianListField } from "./GuardianListField";
 import { PhoneNumberListField } from "./PhoneNumberListField";
 import { Field, FormModal } from "./ui";
 import { api, ApiError } from "../services/api";
-import type { ARS, ExtraPhone, MedicalCenter, Paginated, Patient } from "../services/types";
+import type { ARS, ExtraPhone, MedicalCenter, Paginated, Patient, PatientGuardian } from "../services/types";
 import { useAuth } from "../store/auth";
 import { flattenError } from "../utils/errors";
 import { formatCedula } from "../utils/cedula";
@@ -25,11 +26,6 @@ const EMPTY = {
   ars_program: "",
   center: "",
   has_guardian: true,
-  guardian_first_name: "",
-  guardian_last_name: "",
-  guardian_cedula: "",
-  guardian_nss: "",
-  guardian_phone: "",
   allergies: "",
   critical_conditions: "",
 };
@@ -85,11 +81,6 @@ export function PatientFormModal({
           ars_program: patient.ars_program ? String(patient.ars_program) : "",
           center: patient.center ? String(patient.center) : "",
           has_guardian: patient.has_guardian,
-          guardian_first_name: patient.guardian_first_name,
-          guardian_last_name: patient.guardian_last_name,
-          guardian_cedula: patient.guardian_cedula,
-          guardian_nss: patient.guardian_nss,
-          guardian_phone: formatPhone(patient.guardian_phone),
           allergies: patient.allergies,
           critical_conditions: patient.critical_conditions,
         }
@@ -98,8 +89,18 @@ export function PatientFormModal({
   const [extraPhones, setExtraPhones] = useState<string[]>(
     () => patient?.extra_phones.map((p) => formatPhone(p.phone)) ?? [],
   );
+  // A brand-new patient, or an existing minor with no guardian on file yet
+  // (has_guardian defaults to true with zero rows), starts with one blank
+  // guardian row visible -- matches the pre-multi-guardian UX where the
+  // fields were always shown for a minor, rather than an empty list the
+  // user has to click "+" to populate.
+  const [guardians, setGuardians] = useState<PatientGuardian[]>(() =>
+    patient?.guardians?.length
+      ? patient.guardians
+      : [{ first_name: "", last_name: "", cedula: "", nss: "", phone: "" }],
+  );
   const [phoneError, setPhoneError] = useState("");
-  const [guardianPhoneError, setGuardianPhoneError] = useState("");
+  const [guardianPhoneErrors, setGuardianPhoneErrors] = useState<Record<number, string>>({});
   const [formError, setFormError] = useState("");
 
   useEffect(() => {
@@ -128,9 +129,15 @@ export function PatientFormModal({
       setPhoneError(t("common.phoneInvalid"));
       return;
     }
-    if (isMinor && form.has_guardian && !isValidRequiredPhone(form.guardian_phone)) {
-      setGuardianPhoneError(t("common.phoneInvalid"));
-      return;
+    if (isMinor && form.has_guardian) {
+      const badPhoneErrors: Record<number, string> = {};
+      guardians.forEach((g, i) => {
+        if (!isValidRequiredPhone(g.phone)) badPhoneErrors[i] = t("common.phoneInvalid");
+      });
+      if (Object.keys(badPhoneErrors).length > 0) {
+        setGuardianPhoneErrors(badPhoneErrors);
+        return;
+      }
     }
     const body = {
       ...form,
@@ -140,8 +147,7 @@ export function PatientFormModal({
         .filter((p) => p.trim() !== "")
         .map((p): ExtraPhone => ({ phone: p.replace(/\D/g, "") })),
       cedula: form.cedula.replace(/\D/g, ""),
-      guardian_cedula: form.guardian_cedula.replace(/\D/g, ""),
-      guardian_phone: form.guardian_phone.replace(/\D/g, ""),
+      guardians: isMinor && form.has_guardian ? guardians : [],
       ars: form.ars ? Number(form.ars) : null,
       ars_program: form.ars_program ? Number(form.ars_program) : null,
       center: form.center ? Number(form.center) : null,
@@ -281,59 +287,18 @@ export function PatientFormModal({
             {t("patients.guardianCheckbox")}
           </label>
           {form.has_guardian && (
-            <>
-              <div className="form-columns">
-                <Field label={t("patients.guardianFirstName")}>
-                  <input
-                    value={form.guardian_first_name}
-                    required
-                    onChange={(e) => setForm({ ...form, guardian_first_name: e.target.value })}
-                  />
-                </Field>
-                <Field label={t("patients.guardianLastName")}>
-                  <input
-                    value={form.guardian_last_name}
-                    required
-                    onChange={(e) => setForm({ ...form, guardian_last_name: e.target.value })}
-                  />
-                </Field>
-              </div>
-              <div className="form-columns">
-                <Field label={t("patients.guardianCedula")}>
-                  <input
-                    value={form.guardian_cedula}
-                    placeholder="000-0000000-0"
-                    inputMode="numeric"
-                    maxLength={13}
-                    required
-                    onChange={(e) => setForm({ ...form, guardian_cedula: formatCedula(e.target.value) })}
-                  />
-                </Field>
-                <Field label={t("patients.guardianPhone")}>
-                  <input
-                    type="tel"
-                    inputMode="tel"
-                    value={form.guardian_phone}
-                    placeholder="(809) 555-1212"
-                    maxLength={14}
-                    required
-                    onChange={(e) => {
-                      setForm({ ...form, guardian_phone: formatPhoneInput(e.target.value) });
-                      setGuardianPhoneError("");
-                    }}
-                  />
-                  {guardianPhoneError && <span className="field-error">{guardianPhoneError}</span>}
-                </Field>
-              </div>
-              <Field label={t("patients.guardianNss")}>
-                <input
-                  value={form.guardian_nss}
-                  inputMode="numeric"
-                  maxLength={11}
-                  onChange={(e) => setForm({ ...form, guardian_nss: stripToDigits(e.target.value).slice(0, 11) })}
-                />
-              </Field>
-            </>
+            <GuardianListField
+              values={guardians}
+              onChange={setGuardians}
+              phoneErrors={guardianPhoneErrors}
+              onPhoneErrorClear={(index) =>
+                setGuardianPhoneErrors((prev) => {
+                  const next = { ...prev };
+                  delete next[index];
+                  return next;
+                })
+              }
+            />
           )}
         </>
       )}

@@ -115,6 +115,8 @@
     "guardianPhone": "Teléfono del tutor",
     "guardianNotOnFile": "No hay información del tutor registrada",
     "guardianCedulaTooltip": "Esta cédula pertenece al tutor del paciente, no al paciente",
+    "addGuardian": "Agregar tutor",
+    "removeGuardian": "Eliminar tutor",
     "sectionClinical": "Información clínica",
     "allergies": "Alergias",
     "criticalConditions": "Condiciones críticas"

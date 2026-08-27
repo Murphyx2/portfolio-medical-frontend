@@ -98,7 +98,7 @@ export function EncounterFormModal({
           ars_name: selectedPatient.ars_name,
           ars_program: selectedPatient.ars_program,
           has_guardian: selectedPatient.has_guardian,
-          guardian_cedula: selectedPatient.guardian_cedula,
+          guardian_cedula: selectedPatient.guardians[0]?.cedula ?? "",
         }
       : null;
 

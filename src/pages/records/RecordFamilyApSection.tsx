@@ -136,6 +136,30 @@ export function RecordFamilyApSection({
     onChange((r) => ({ ...r, family_conditions: r.family_conditions.filter((c) => c.id !== id) }));
   }
 
+  // "+ add another" on an existing relative's row: opens the shared add
+  // form pre-loaded with that relative's identity, so adding a 2nd/3rd AP
+  // to the same relative never requires re-picking/retyping them -- the
+  // combo state (relationship/linkedPatient/relativeName) is exactly what
+  // currentComboConditions already keys off, so this is purely a
+  // convenience pre-fill, not new add logic.
+  async function addMoreFor(first: RecordFamilyCondition) {
+    setRelationship(first.relationship);
+    setRelationshipOther(first.relationship_other);
+    setRelativeName(first.relative_name);
+    setAddError("");
+    if (first.related_patient) {
+      try {
+        const patient = await api.get<Patient>(`/patients/${first.related_patient}/`);
+        setLinkedPatient(patient);
+      } catch {
+        setLinkedPatient(null);
+      }
+    } else {
+      setLinkedPatient(null);
+    }
+    setAddExpanded(true);
+  }
+
   return (
     <div>
       <div className="record-family-list">
@@ -143,7 +167,18 @@ export function RecordFamilyApSection({
         {[...groups.entries()].map(([key, group]) => (
           <div className="record-family-row" key={key}>
             <div>
-              <b>{group.label}</b>
+              <div className="record-family-row-header">
+                <b>{group.label}</b>
+                {canEdit && (
+                  <button
+                    type="button"
+                    className="btn ghost small"
+                    onClick={() => addMoreFor(group.conditions[0])}
+                  >
+                    + {t("records.addMoreAp")}
+                  </button>
+                )}
+              </div>
               <div className="ap-chip-row" style={{ marginTop: "0.35rem" }}>
                 {group.conditions.map((c) => (
                   <button

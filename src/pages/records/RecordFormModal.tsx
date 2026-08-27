@@ -22,7 +22,7 @@ import { RecordFamilyApSection } from "./RecordFamilyApSection";
 import { RecordHistoryList } from "./RecordHistoryList";
 import { RecordSnapshotHeader } from "./RecordSnapshotHeader";
 
-type TabKey = "clinical" | "conclusions" | "historial";
+type TabKey = "clinical" | "antecedentes" | "conclusions" | "historial";
 type EntryTargetKind = "draft" | "completed";
 
 const NUMERIC_FIELD_KEYS: (keyof WorkingEntryFields)[] = [
@@ -368,12 +368,13 @@ function LoadedRecordPhase({ record: initialRecord, focusNewEntry, canEdit, apCa
         onChange={(key) => changeTab(key as TabKey)}
         items={[
           { key: "clinical", label: t("records.tabClinical") },
+          { key: "antecedentes", label: t("records.tabAntecedentes") },
           { key: "conclusions", label: t("records.tabConclusions") },
           { key: "historial", label: t("records.tabHistorial") },
         ]}
       />
 
-      <TabPanel tabKey="clinical" active={activeTab} idPrefix="record">
+      <TabPanel tabKey="antecedentes" active={activeTab} idPrefix="record">
         <h4>{t("records.apFamilyTitle")}</h4>
         <RecordFamilyApSection
           record={record}
@@ -423,7 +424,9 @@ function LoadedRecordPhase({ record: initialRecord, focusNewEntry, canEdit, apCa
             onRemove={removePersonalCondition}
           />
         )}
+      </TabPanel>
 
+      <TabPanel tabKey="clinical" active={activeTab} idPrefix="record">
         <h4>{t("records.vitalsTitle")}</h4>
         <div className="vitals-card">
           <div className="vitals-summary">

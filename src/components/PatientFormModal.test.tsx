@@ -23,12 +23,6 @@ vi.mock("../store/auth", () => ({
 const mockedApi = vi.mocked(api);
 
 const ARS_LIST = { count: 0, next: null, previous: null, results: [] };
-const CENTERS_LIST = {
-  count: 1,
-  next: null,
-  previous: null,
-  results: [{ id: 1, name: "INCAF", code: "INCAF", address: "A", phone: "1", email: "", is_default: true, doctor_count: 0, active: true }],
-};
 
 function existingPatient(overrides: Partial<Patient> = {}): Patient {
   return {
@@ -67,19 +61,16 @@ beforeEach(() => {
   vi.clearAllMocks();
   mockedApi.get.mockImplementation((path: string) => {
     if (path.startsWith("/ars/")) return Promise.resolve(ARS_LIST) as never;
-    if (path.startsWith("/centers/")) return Promise.resolve(CENTERS_LIST) as never;
     return Promise.reject(new Error(`unexpected GET ${path}`));
   });
 });
 
 describe("PatientFormModal", () => {
-  it("creating a new patient defaults the center to the is_default center and posts on submit", async () => {
+  it("creating a new patient posts on submit without a center field (server defaults it)", async () => {
     const onSaved = vi.fn();
     mockedApi.post.mockResolvedValue(existingPatient({ id: 9 }));
 
     render(<PatientFormModal onClose={vi.fn()} onSaved={onSaved} />);
-
-    await waitFor(() => expect(mockedApi.get).toHaveBeenCalledWith(expect.stringContaining("/centers/")));
 
     fireEvent.change(screen.getByLabelText(/First name|Nombre/i), { target: { value: "Ana" } });
     fireEvent.change(screen.getByLabelText(/Last name|Apellido/i), { target: { value: "Perez" } });
@@ -92,7 +83,8 @@ describe("PatientFormModal", () => {
     await waitFor(() => expect(mockedApi.post).toHaveBeenCalledTimes(1));
     const [path, body] = mockedApi.post.mock.calls[0];
     expect(path).toBe("/patients/");
-    expect(body).toMatchObject({ first_name: "Ana", last_name: "Perez", center: 1 });
+    expect(body).toMatchObject({ first_name: "Ana", last_name: "Perez" });
+    expect(body).not.toHaveProperty("center");
     expect(onSaved).toHaveBeenCalledWith(existingPatient({ id: 9 }));
   });
 
@@ -113,7 +105,6 @@ describe("PatientFormModal", () => {
 
   it("blocks submit and shows an error when the phone number is invalid", async () => {
     render(<PatientFormModal onClose={vi.fn()} onSaved={vi.fn()} />);
-    await waitFor(() => expect(mockedApi.get).toHaveBeenCalledWith(expect.stringContaining("/centers/")));
 
     // Fill every other required field so only the phone check can block
     // submission -- otherwise native HTML5 required-field validation stops
@@ -135,7 +126,6 @@ describe("PatientFormModal", () => {
     mockedApi.post.mockResolvedValue(existingPatient({ id: 11 }));
 
     render(<PatientFormModal onClose={vi.fn()} onSaved={onSaved} />);
-    await waitFor(() => expect(mockedApi.get).toHaveBeenCalledWith(expect.stringContaining("/centers/")));
 
     fireEvent.change(screen.getByLabelText(/First name|Nombre/i), { target: { value: "Kid" } });
     fireEvent.change(screen.getByLabelText(/Last name|Apellido/i), { target: { value: "Doe" } });

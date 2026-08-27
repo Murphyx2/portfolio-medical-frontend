@@ -6,8 +6,7 @@ import { GuardianListField } from "./GuardianListField";
 import { PhoneNumberListField } from "./PhoneNumberListField";
 import { Field, FormModal } from "./ui";
 import { api, ApiError } from "../services/api";
-import type { ARS, ExtraPhone, MedicalCenter, Paginated, Patient, PatientGuardian } from "../services/types";
-import { useAuth } from "../store/auth";
+import type { ARS, ExtraPhone, Paginated, Patient, PatientGuardian } from "../services/types";
 import { calculateAge } from "../utils/date";
 import { flattenError } from "../utils/errors";
 import { formatCedula } from "../utils/cedula";
@@ -25,7 +24,6 @@ const EMPTY = {
   nss: "",
   ars: "",
   ars_program: "",
-  center: "",
   has_guardian: true,
 };
 
@@ -42,10 +40,7 @@ export function PatientFormModal({
   onSaved: (patient: Patient) => void;
 }) {
   const { t } = useTranslation();
-  const { user } = useAuth();
-  const canEditCenter = user?.role === "ADMIN";
   const [arsList, setArsList] = useState<ARS[]>([]);
-  const [centersList, setCentersList] = useState<MedicalCenter[]>([]);
   const [form, setForm] = useState(() =>
     patient
       ? {
@@ -60,7 +55,6 @@ export function PatientFormModal({
           nss: patient.nss,
           ars: patient.ars ? String(patient.ars) : "",
           ars_program: patient.ars_program ? String(patient.ars_program) : "",
-          center: patient.center ? String(patient.center) : "",
           has_guardian: patient.has_guardian,
         }
       : EMPTY,
@@ -87,17 +81,6 @@ export function PatientFormModal({
       .get<Paginated<ARS>>("/ars/?page_size=100")
       .then((r) => setArsList(r.results))
       .catch(() => {});
-    api
-      .get<Paginated<MedicalCenter>>("/centers/?page_size=100")
-      .then((r) => {
-        setCentersList(r.results);
-        if (!patient) {
-          const defaultCenter = r.results.find((c) => c.is_default);
-          if (defaultCenter) setForm((f) => ({ ...f, center: String(defaultCenter.id) }));
-        }
-      })
-      .catch(() => {});
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const selectedArs = arsList.find((a) => String(a.id) === form.ars);
@@ -129,7 +112,6 @@ export function PatientFormModal({
       guardians: isMinor && form.has_guardian ? guardians : [],
       ars: form.ars ? Number(form.ars) : null,
       ars_program: form.ars_program ? Number(form.ars_program) : null,
-      center: form.center ? Number(form.center) : null,
     };
     try {
       const saved = patient
@@ -233,20 +215,6 @@ export function PatientFormModal({
               {(selectedArs?.programs ?? []).map((p) => (
                 <option key={p.id} value={p.id}>
                   {p.name}
-                </option>
-              ))}
-            </select>
-          </Field>
-          <Field label={t("patients.center")}>
-            <select
-              value={form.center}
-              disabled={!canEditCenter}
-              onChange={(e) => setForm({ ...form, center: e.target.value })}
-            >
-              <option value="">—</option>
-              {centersList.map((c) => (
-                <option key={c.id} value={c.id}>
-                  {c.name}
                 </option>
               ))}
             </select>

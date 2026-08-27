@@ -33,6 +33,7 @@ export function RecordApTypes() {
   const [formError, setFormError] = useState("");
   const [categoriesModal, setCategoriesModal] = useState(false);
   const [quickCategoryModal, setQuickCategoryModal] = useState(false);
+  const [categoryFilter, setCategoryFilter] = useState("");
   const {
     rows,
     page,
@@ -50,7 +51,7 @@ export function RecordApTypes() {
     showInactive,
     setShowInactive,
     load,
-  } = useListPage<APType>("/ap-types/");
+  } = useListPage<APType>("/ap-types/", { extraParams: { category: categoryFilter } });
 
   function loadCategories() {
     api
@@ -109,7 +110,6 @@ export function RecordApTypes() {
   const columns: Column<APType>[] = [
     { key: "name", header: t("recordApTypes.name"), sortKey: "name" },
     { key: "category_name", header: t("recordApTypes.category") },
-    { key: "sort_order", header: t("recordApTypes.sortOrder"), sortKey: "sort_order" },
   ];
 
   return (
@@ -138,6 +138,14 @@ export function RecordApTypes() {
         search={search}
         setSearch={setSearch}
         searchSubmit={searchSubmit}
+        toolbarAfter={
+          <select value={categoryFilter} onChange={(e) => setCategoryFilter(e.target.value)}>
+            <option value="">{t("recordApTypes.allCategories")}</option>
+            {categories.map((c) => (
+              <option key={c.id} value={c.id}>{c.name}</option>
+            ))}
+          </select>
+        }
         isAdmin={isAdmin}
         showInactive={showInactive}
         onToggleInactive={setShowInactive}
@@ -205,6 +213,7 @@ export function RecordApTypes() {
           categories={categories}
           onClose={() => setCategoriesModal(false)}
           onChanged={loadCategories}
+          isAdmin={isAdmin}
         />
       )}
 
@@ -228,6 +237,7 @@ function CategoriesModal({
   onClose,
   onChanged,
   onCreated,
+  isAdmin,
 }: {
   categories: APCategory[];
   onClose: () => void;
@@ -238,6 +248,9 @@ function CategoriesModal({
    * auto-select it) and closes this modal immediately instead of staying
    * open on the category list. */
   onCreated?: (category: APCategory) => void;
+  /** Admin-only show-inactive toggle + restore action. Not needed in the
+   * quick-add flow (onCreated set), where the list/toggle never render. */
+  isAdmin?: boolean;
 }) {
   const { t } = useTranslation();
   // Quick-add mode (onCreated set) skips the category list and opens
@@ -246,6 +259,24 @@ function CategoriesModal({
   const [form, setForm] = useState(EMPTY_CATEGORY);
   const [editId, setEditId] = useState<number | null>(null);
   const [formError, setFormError] = useState("");
+  const [showInactive, setShowInactive] = useState(false);
+  // Own fetch (rather than always reusing the parent's active-only
+  // `categories` prop) so toggling "show inactive" here doesn't leak
+  // inactive rows into the AP Type form's category dropdown, which must
+  // stay active-only. Falls back to the parent's list until this modal's
+  // own first fetch resolves.
+  const [ownCategories, setOwnCategories] = useState<APCategory[] | null>(null);
+
+  function loadOwn() {
+    api
+      .get<Paginated<APCategory>>(
+        `/ap-categories/?page_size=100${showInactive ? "&include_inactive=true" : ""}`,
+      )
+      .then((r) => setOwnCategories(r.results))
+      .catch(() => {});
+  }
+
+  useEffect(loadOwn, [showInactive]);
 
   function openNew() {
     setForm(EMPTY_CATEGORY);
@@ -268,9 +299,11 @@ function CategoriesModal({
         await api.patch(`/ap-categories/${editId}/`, form);
         setFormOpen(false);
         onChanged();
+        loadOwn();
       } else {
         const created = await api.post<APCategory>("/ap-categories/", form);
         onChanged();
+        loadOwn();
         if (onCreated) {
           onCreated(created);
           onClose();
@@ -286,6 +319,13 @@ function CategoriesModal({
   async function remove(row: APCategory) {
     await api.delete(`/ap-categories/${row.id}/`);
     onChanged();
+    loadOwn();
+  }
+
+  async function restore(row: APCategory) {
+    await api.post(`/ap-categories/${row.id}/restore/`, {});
+    onChanged();
+    loadOwn();
   }
 
   const columns: Column<APCategory>[] = [
@@ -299,12 +339,23 @@ function CategoriesModal({
         <button className="btn primary small" onClick={openNew}>
           + {t("recordApTypes.newCategory")}
         </button>
+        {isAdmin && !onCreated && (
+          <label className="show-inactive-toggle">
+            <input
+              type="checkbox"
+              checked={showInactive}
+              onChange={(e) => setShowInactive(e.target.checked)}
+            />
+            {t("common.showInactive")}
+          </label>
+        )}
       </div>
       <Table<APCategory>
         columns={columns}
-        rows={categories}
+        rows={ownCategories ?? categories}
         onEdit={openEdit}
         onDelete={remove}
+        onRestore={isAdmin && !onCreated ? restore : undefined}
         getRowLabel={(row) => row.name}
         isInactive={(row) => !row.active}
       />

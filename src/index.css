@@ -12,11 +12,11 @@
   --mc-warning-text: #7a3e00;
   --mc-white: #ffffff;
   --mc-topbar-height: 3.25rem;
-  /* Appointment status palette: SCHEDULED (--mc-primary) and CANCELLED
-     (--mc-danger) reuse the base tokens above; COMPLETED and NO_SHOW get
-     their own tokens here so they read as distinct hues (blue "done" /
+  /* Appointment status palette: COMPLETED (--mc-primary) and CANCELLED
+     (--mc-danger) reuse the base tokens above; SCHEDULED and NO_SHOW get
+     their own tokens here so they read as distinct hues (blue "upcoming" /
      neutral grey "no signal") instead of near-duplicating the green. */
-  --mc-status-completed: #1565c0;
+  --mc-status-scheduled: #1565c0;
   --mc-status-no-show: #757575;
 }
 
@@ -1243,9 +1243,9 @@ input[type="radio"]:focus-visible {
   color: #fff;
 }
 
-.status-scheduled { background: var(--mc-primary); }
+.status-scheduled { background: var(--mc-status-scheduled); }
 .status-confirmed { background: #00897b; }
-.status-completed { background: var(--mc-status-completed); }
+.status-completed { background: var(--mc-primary); }
 .status-cancelled { background: var(--mc-danger); }
 .status-no_show { background: var(--mc-status-no-show); }
 .status-active { background: var(--mc-primary-dark); }
@@ -1795,6 +1795,13 @@ input[type="radio"]:focus-visible {
   display: flex;
   justify-content: space-between;
   align-items: center;
+  gap: 0.75rem;
+}
+
+.record-family-row-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
   gap: 0.75rem;
 }
 

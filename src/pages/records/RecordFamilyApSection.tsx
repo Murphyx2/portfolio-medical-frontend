@@ -50,6 +50,7 @@ export function RecordFamilyApSection({
   const [relativeName, setRelativeName] = useState("");
   const [relativeConditions, setRelativeConditions] = useState<RecordPersonalCondition[]>([]);
   const [addError, setAddError] = useState("");
+  const [addExpanded, setAddExpanded] = useState(false);
 
   useEffect(() => {
     if (!linkedPatient) {
@@ -143,12 +144,21 @@ export function RecordFamilyApSection({
       </div>
 
       {canEdit && (
+        <div className="ap-section-toggle-row">
+          <button type="button" className="btn ghost small" onClick={() => setAddExpanded((v) => !v)}>
+            {addExpanded ? t("records.hideFamilyApForm") : t("records.addFamilyAp")}
+          </button>
+        </div>
+      )}
+
+      {canEdit && addExpanded && (
         <div className="record-family-add">
           <div className="form-columns">
             <Field label={t("records.relatedPatient")}>
               <SearchableSelect<Patient>
                 value={linkedPatient}
                 onSelect={setLinkedPatient}
+                onClear={() => setLinkedPatient(null)}
                 search={searchPatients}
                 placeholder={t("records.patientPickerPlaceholder")}
                 getLabel={(p) => p.full_name}

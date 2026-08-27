@@ -101,20 +101,6 @@ export function RecordList({
       render: (r) => (r.last_visit_at ? formatDateTime(r.last_visit_at) : t("records.noRecordShort")),
     },
     { key: "created_by_name", header: t("records.createdBy"), sortKey: "created_by__username" },
-    ...(canCreateEntry
-      ? [
-          {
-            key: "newEntry",
-            header: "",
-            align: "center" as const,
-            render: (r: MedicalRecord) => (
-              <button type="button" className="btn ghost small" onClick={() => openDetail(r, { newEntry: true })}>
-                {t("records.newEntry")}
-              </button>
-            ),
-          },
-        ]
-      : []),
   ];
 
   return (
@@ -136,6 +122,19 @@ export function RecordList({
       rows={rows}
       onDelete={onDelete}
       onRestore={onRestore}
+      extraActions={
+        canCreateEntry
+          ? (r) => (
+              <button
+                type="button"
+                className="btn ghost small"
+                onClick={() => openDetail(r, { newEntry: true })}
+              >
+                {t("records.newEntry")}
+              </button>
+            )
+          : undefined
+      }
       getRowLabel={(r) => r.patient_info.full_name}
       isInactive={(r) => !r.active}
       sortKey={sortKey}

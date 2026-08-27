@@ -395,6 +395,7 @@ export function Table<T extends { id: number }>({
   onEdit,
   onDelete,
   onRestore,
+  extraActions,
   isInactive,
   getRowLabel,
   emptyLabel,
@@ -407,6 +408,10 @@ export function Table<T extends { id: number }>({
   onEdit?: (row: T) => void;
   onDelete?: (row: T) => void | Promise<void>;
   onRestore?: (row: T) => void | Promise<void>;
+  /** Extra row-action content rendered ahead of Edit/Delete/Restore inside
+   * the same Acciones cell (e.g. Records' "Nueva entrada" button), instead
+   * of forcing callers to add their own standalone column. */
+  extraActions?: (row: T) => ReactNode;
   isInactive?: (row: T) => boolean;
   /** Human-readable label for a row, interpolated into the delete/restore confirm message. Falls back to the row id. */
   getRowLabel?: (row: T) => string;
@@ -416,7 +421,7 @@ export function Table<T extends { id: number }>({
   onSort?: (key: string) => void;
 }) {
   const { t } = useTranslation();
-  const hasActions = Boolean(onEdit || onDelete || onRestore);
+  const hasActions = Boolean(onEdit || onDelete || onRestore || extraActions);
   const [confirming, setConfirming] = useState<{ type: "delete" | "restore"; row: T } | null>(null);
   const [actionError, setActionError] = useState("");
   const [actionPending, setActionPending] = useState(false);
@@ -503,6 +508,7 @@ export function Table<T extends { id: number }>({
               {hasActions && (
                 <td className="col-center">
                   <div className="row-actions">
+                    {extraActions?.(row)}
                     {onEdit && (
                       <button
                         className="btn small"
@@ -643,6 +649,7 @@ export function SearchBar({ value, onChange, placeholder, label, onSubmit }: {
 export function SearchableSelect<T extends { id: number }>({
   value,
   onSelect,
+  onClear,
   search,
   placeholder,
   getLabel,
@@ -652,6 +659,9 @@ export function SearchableSelect<T extends { id: number }>({
 }: {
   value: T | null;
   onSelect: (item: T) => void;
+  /** When provided, a "×" clear button renders next to a filled value so
+   * the selection can be reset to null without picking a replacement. */
+  onClear?: () => void;
   search: (query: string) => Promise<{ results: T[]; count: number }>;
   placeholder: string;
   getLabel: (item: T) => string;
@@ -741,17 +751,32 @@ export function SearchableSelect<T extends { id: number }>({
   return (
     <div className="searchable-select" ref={wrapRef}>
       {!editing && value ? (
-        <button type="button" className="searchable-select-trigger" onClick={startEdit}>
-          <span className="searchable-select-value">
-            <span className="searchable-select-label">{getLabel(value)}</span>
-            {getSublabel && (
-              <span className="searchable-select-sublabel">{getSublabel(value)}</span>
-            )}
-          </span>
-          <span className="searchable-select-caret" aria-hidden="true">
-            ▾
-          </span>
-        </button>
+        <div className="searchable-select-filled">
+          <button type="button" className="searchable-select-trigger" onClick={startEdit}>
+            <span className="searchable-select-value">
+              <span className="searchable-select-label">{getLabel(value)}</span>
+              {getSublabel && (
+                <span className="searchable-select-sublabel">{getSublabel(value)}</span>
+              )}
+            </span>
+            <span className="searchable-select-caret" aria-hidden="true">
+              ▾
+            </span>
+          </button>
+          {onClear && (
+            <button
+              type="button"
+              className="searchable-select-clear"
+              aria-label={t("common.clear")}
+              onClick={(e) => {
+                e.stopPropagation();
+                onClear();
+              }}
+            >
+              ×
+            </button>
+          )}
+        </div>
       ) : (
         <div className="searchable-select-input-wrap">
           <input

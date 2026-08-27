@@ -167,6 +167,7 @@ function LoadedRecordPhase({ record: initialRecord, focusNewEntry, canEdit, apCa
   const [saveError, setSaveError] = useState("");
   const [saving, setSaving] = useState(false);
   const [vitalsExpanded, setVitalsExpanded] = useState(focusNewEntry);
+  const [personalApExpanded, setPersonalApExpanded] = useState(false);
   const [confirmingExit, setConfirmingExit] = useState(false);
   const [confirmingDiscardDraft, setConfirmingDiscardDraft] = useState(false);
 
@@ -340,6 +341,11 @@ function LoadedRecordPhase({ record: initialRecord, focusNewEntry, canEdit, apCa
     setRecord((r) => updater(r));
   }
 
+  async function removePersonalCondition(id: number) {
+    await api.delete(`/personal-conditions/${id}/`);
+    updateRecord((r) => ({ ...r, personal_conditions: r.personal_conditions.filter((c) => c.id !== id) }));
+  }
+
   const imcPreview = computeImcPreview(workingEntry, record);
   const canEditEntries = can(user?.role, "edit", "records");
 
@@ -378,20 +384,45 @@ function LoadedRecordPhase({ record: initialRecord, focusNewEntry, canEdit, apCa
         />
 
         <h4>{t("records.apPersonalTitle")}</h4>
-        <ApMultiSelect
-          categories={apCategories}
-          types={apTypes}
-          conditions={record.personal_conditions}
-          disabled={!canEdit}
-          onAdd={async (payload) => {
-            const created = await api.post<RecordPersonalCondition>("/personal-conditions/", { record: record.id, ...payload });
-            updateRecord((r) => ({ ...r, personal_conditions: [...r.personal_conditions, created] }));
-          }}
-          onRemove={async (id) => {
-            await api.delete(`/personal-conditions/${id}/`);
-            updateRecord((r) => ({ ...r, personal_conditions: r.personal_conditions.filter((c) => c.id !== id) }));
-          }}
-        />
+        <div className="ap-section-summary">
+          {record.personal_conditions.length === 0 ? (
+            <p className="ap-empty-note">{t("records.apSelectedNone")}</p>
+          ) : (
+            <div className="ap-chip-row">
+              {record.personal_conditions.map((c) => (
+                <button
+                  key={c.id}
+                  type="button"
+                  className="ap-chip selected"
+                  disabled={!canEdit}
+                  onClick={() => removePersonalCondition(c.id)}
+                >
+                  {c.label} ×
+                </button>
+              ))}
+            </div>
+          )}
+        </div>
+        {canEdit && (
+          <div className="ap-section-toggle-row">
+            <button type="button" className="btn ghost small" onClick={() => setPersonalApExpanded((v) => !v)}>
+              {personalApExpanded ? t("records.hidePersonalApForm") : t("records.addPersonalAp")}
+            </button>
+          </div>
+        )}
+        {canEdit && personalApExpanded && (
+          <ApMultiSelect
+            categories={apCategories}
+            types={apTypes}
+            conditions={record.personal_conditions}
+            disabled={!canEdit}
+            onAdd={async (payload) => {
+              const created = await api.post<RecordPersonalCondition>("/personal-conditions/", { record: record.id, ...payload });
+              updateRecord((r) => ({ ...r, personal_conditions: [...r.personal_conditions, created] }));
+            }}
+            onRemove={removePersonalCondition}
+          />
+        )}
 
         <h4>{t("records.vitalsTitle")}</h4>
         <div className="vitals-card">

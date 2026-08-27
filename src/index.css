@@ -773,6 +773,38 @@ input[type="radio"]:focus-visible {
   text-align: left;
 }
 
+.searchable-select-filled {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+}
+
+.searchable-select-filled .searchable-select-trigger {
+  flex: 1;
+  min-width: 0;
+}
+
+.searchable-select-clear {
+  flex-shrink: 0;
+  width: 1.9rem;
+  height: 1.9rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid var(--mc-border);
+  border-radius: 8px;
+  background: var(--mc-white);
+  color: var(--mc-muted);
+  font-size: 1.1rem;
+  line-height: 1;
+  cursor: pointer;
+}
+
+.searchable-select-clear:hover {
+  color: var(--mc-danger, #c0392b);
+  border-color: var(--mc-danger, #c0392b);
+}
+
 .searchable-select-value {
   display: flex;
   flex-direction: column;
@@ -1680,6 +1712,14 @@ input[type="radio"]:focus-visible {
 .ap-empty-note {
   color: var(--mc-muted);
   font-size: 0.85rem;
+}
+
+.ap-section-summary {
+  margin-bottom: 0.5rem;
+}
+
+.ap-section-toggle-row {
+  margin-bottom: 0.75rem;
 }
 
 /* ---------- Family AP (heredofamiliares) rows ---------- */

@@ -257,7 +257,7 @@ function CategoriesModal({
   ];
 
   return (
-    <Dialog title={t("recordApTypes.categoriesTitle")} onClose={onClose}>
+    <Dialog title={t("recordApTypes.categoriesTitle")} onClose={onClose} wide>
       <div className="page-actions-stack" style={{ marginBottom: "0.75rem" }}>
         <button className="btn primary small" onClick={openNew}>
           + {t("recordApTypes.newCategory")}

@@ -11,7 +11,7 @@ import { useAuth } from "../store/auth";
 import { can } from "../utils/can";
 import { flattenError } from "../utils/errors";
 
-const EMPTY = { name: "", requires_doctor: false, requires_diagnosis: true };
+const EMPTY = { name: "", requires_doctor: false };
 
 export function ServiceTypes() {
   const { t } = useTranslation();
@@ -50,11 +50,7 @@ export function ServiceTypes() {
   }
 
   function openEdit(t: ServiceType) {
-    setForm({
-      name: t.name,
-      requires_doctor: t.requires_doctor,
-      requires_diagnosis: t.requires_diagnosis,
-    });
+    setForm({ name: t.name, requires_doctor: t.requires_doctor });
     setEditId(t.id);
     setFormError("");
     setModal(true);
@@ -90,15 +86,6 @@ export function ServiceTypes() {
       render: (row) => (
         <span className={`badge status-${row.requires_doctor ? "active" : "inactive"}`}>
           {row.requires_doctor ? t("common.yes") : t("common.no")}
-        </span>
-      ),
-    },
-    {
-      key: "requires_diagnosis",
-      header: t("serviceTypes.requiresDiagnosis"),
-      render: (row) => (
-        <span className={`badge status-${row.requires_diagnosis ? "active" : "inactive"}`}>
-          {row.requires_diagnosis ? t("common.yes") : t("common.no")}
         </span>
       ),
     },
@@ -155,7 +142,11 @@ export function ServiceTypes() {
           error={formError}
         >
           <Field label={t("serviceTypes.name")}>
-            <input value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} required />
+            <input
+              value={form.name}
+              onChange={(e) => setForm({ ...form, name: e.target.value.toUpperCase() })}
+              required
+            />
           </Field>
           <label className="show-inactive-toggle">
             <input
@@ -164,14 +155,6 @@ export function ServiceTypes() {
               onChange={(e) => setForm({ ...form, requires_doctor: e.target.checked })}
             />
             {t("serviceTypes.requiresDoctor")}
-          </label>
-          <label className="show-inactive-toggle">
-            <input
-              type="checkbox"
-              checked={form.requires_diagnosis}
-              onChange={(e) => setForm({ ...form, requires_diagnosis: e.target.checked })}
-            />
-            {t("serviceTypes.requiresDiagnosis")}
           </label>
         </FormModal>
       )}

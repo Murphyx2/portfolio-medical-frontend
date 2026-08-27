@@ -135,7 +135,11 @@ export function RoomTypes() {
           error={formError}
         >
           <Field label={t("roomTypes.name")}>
-            <input value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} required />
+            <input
+              value={form.name}
+              onChange={(e) => setForm({ ...form, name: e.target.value.toUpperCase() })}
+              required
+            />
           </Field>
         </FormModal>
       )}

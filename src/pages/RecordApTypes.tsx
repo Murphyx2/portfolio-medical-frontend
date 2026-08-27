@@ -32,6 +32,7 @@ export function RecordApTypes() {
   const [editId, setEditId] = useState<number | null>(null);
   const [formError, setFormError] = useState("");
   const [categoriesModal, setCategoriesModal] = useState(false);
+  const [quickCategoryModal, setQuickCategoryModal] = useState(false);
   const {
     rows,
     page,
@@ -170,24 +171,32 @@ export function RecordApTypes() {
             <input value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} required />
           </Field>
           <Field label={t("recordApTypes.category")}>
-            <select
-              value={form.category}
-              onChange={(e) => setForm({ ...form, category: Number(e.target.value) })}
-              required
-            >
-              <option value={0} disabled>—</option>
-              {categoryOptions.map((c) => (
-                <option key={c.id} value={c.id}>{c.name}</option>
-              ))}
-            </select>
+            <div className="inline-field-with-action">
+              <select
+                value={form.category}
+                onChange={(e) => setForm({ ...form, category: Number(e.target.value) })}
+                required
+              >
+                <option value={0} disabled>—</option>
+                {categoryOptions.map((c) => (
+                  <option key={c.id} value={c.id}>{c.name}</option>
+                ))}
+              </select>
+              <button type="button" className="btn ghost small" onClick={() => setQuickCategoryModal(true)}>
+                + {t("recordApTypes.newCategory")}
+              </button>
+            </div>
           </Field>
-          <Field label={t("recordApTypes.sortOrder")}>
-            <input
-              type="number"
-              value={form.sort_order}
-              onChange={(e) => setForm({ ...form, sort_order: Number(e.target.value) })}
-            />
-          </Field>
+          {editId && (
+            <Field label={t("recordApTypes.sortOrder")}>
+              <input
+                type="number"
+                min={0}
+                value={form.sort_order}
+                onChange={(e) => setForm({ ...form, sort_order: Number(e.target.value) })}
+              />
+            </Field>
+          )}
         </FormModal>
       )}
 
@@ -196,6 +205,15 @@ export function RecordApTypes() {
           categories={categories}
           onClose={() => setCategoriesModal(false)}
           onChanged={loadCategories}
+        />
+      )}
+
+      {quickCategoryModal && (
+        <CategoriesModal
+          categories={categories}
+          onClose={() => setQuickCategoryModal(false)}
+          onChanged={loadCategories}
+          onCreated={(created) => setForm((f) => ({ ...f, category: created.id }))}
         />
       )}
     </Page>
@@ -209,13 +227,22 @@ function CategoriesModal({
   categories,
   onClose,
   onChanged,
+  onCreated,
 }: {
   categories: APCategory[];
   onClose: () => void;
   onChanged: () => void;
+  /** When provided, this modal is being opened as a quick-add from inside
+   * the AP Type form rather than the standalone "manage categories" flow --
+   * a successful create hands the new category back to the caller (to
+   * auto-select it) and closes this modal immediately instead of staying
+   * open on the category list. */
+  onCreated?: (category: APCategory) => void;
 }) {
   const { t } = useTranslation();
-  const [formOpen, setFormOpen] = useState(false);
+  // Quick-add mode (onCreated set) skips the category list and opens
+  // straight into the add form -- the caller only wants one new category.
+  const [formOpen, setFormOpen] = useState(Boolean(onCreated));
   const [form, setForm] = useState(EMPTY_CATEGORY);
   const [editId, setEditId] = useState<number | null>(null);
   const [formError, setFormError] = useState("");
@@ -237,10 +264,20 @@ function CategoriesModal({
   async function submit() {
     setFormError("");
     try {
-      if (editId) await api.patch(`/ap-categories/${editId}/`, form);
-      else await api.post("/ap-categories/", form);
-      setFormOpen(false);
-      onChanged();
+      if (editId) {
+        await api.patch(`/ap-categories/${editId}/`, form);
+        setFormOpen(false);
+        onChanged();
+      } else {
+        const created = await api.post<APCategory>("/ap-categories/", form);
+        onChanged();
+        if (onCreated) {
+          onCreated(created);
+          onClose();
+        } else {
+          setFormOpen(false);
+        }
+      }
     } catch (err) {
       setFormError(err instanceof ApiError ? flattenError(err.message) : String(err));
     }
@@ -283,13 +320,16 @@ function CategoriesModal({
           <Field label={t("recordApTypes.name")}>
             <input value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} required />
           </Field>
-          <Field label={t("recordApTypes.sortOrder")}>
-            <input
-              type="number"
-              value={form.sort_order}
-              onChange={(e) => setForm({ ...form, sort_order: Number(e.target.value) })}
-            />
-          </Field>
+          {editId && (
+            <Field label={t("recordApTypes.sortOrder")}>
+              <input
+                type="number"
+                min={0}
+                value={form.sort_order}
+                onChange={(e) => setForm({ ...form, sort_order: Number(e.target.value) })}
+              />
+            </Field>
+          )}
         </FormModal>
       )}
     </Dialog>

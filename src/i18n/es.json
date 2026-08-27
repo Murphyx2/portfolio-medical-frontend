@@ -54,6 +54,7 @@
     "loading": "Cargando...",
     "noData": "No se encontraron datos",
     "back": "Volver",
+    "showLess": "Ver menos",
     "close": "Cerrar",
     "discardChangesTitle": "¿Descartar los cambios?",
     "discardChangesMessage": "Tienes cambios sin guardar. Si sales ahora, se perderán.",
@@ -117,10 +118,7 @@
     "guardianNotOnFile": "No hay información del tutor registrada",
     "guardianCedulaTooltip": "Esta cédula pertenece al tutor del paciente, no al paciente",
     "addGuardian": "Agregar tutor",
-    "removeGuardian": "Eliminar tutor",
-    "sectionClinical": "Información clínica",
-    "allergies": "Alergias",
-    "criticalConditions": "Condiciones críticas"
+    "removeGuardian": "Eliminar tutor"
   },
   "doctors": {
     "title": "Médicos",
@@ -208,8 +206,7 @@
     "new": "Nuevo tipo",
     "name": "Nombre",
     "back": "Volver a Servicios",
-    "requiresDoctor": "Requiere médico",
-    "requiresDiagnosis": "Requiere diagnóstico"
+    "requiresDoctor": "Requiere médico"
   },
   "users": {
     "title": "Usuarios",

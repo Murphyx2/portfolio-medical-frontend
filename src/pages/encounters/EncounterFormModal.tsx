@@ -113,8 +113,7 @@ export function EncounterFormModal({
 
   // The Service type selector is gone from the UI -- derive it from the
   // first selected service's own type instead, purely to feed the
-  // requires_doctor/requires_diagnosis flags below (still required by the
-  // backend on submit).
+  // requires_doctor flag below (still required by the backend on submit).
   const firstSelectedService = services.find((sv) => sv.id === form.services.find((s) => s.service)?.service);
   const derivedServiceType = serviceTypes.find((st) => st.id === firstSelectedService?.type);
   // Not every service needs a doctor present (e.g. a lab-only visit) --

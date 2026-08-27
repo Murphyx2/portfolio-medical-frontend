@@ -53,6 +53,25 @@ export function RecordFamilyApSection({
   const [addExpanded, setAddExpanded] = useState(false);
 
   useEffect(() => {
+    // Pre-fill the free-text relative name from the patient's on-file
+    // guardian the first time the add form opens, so the user isn't forced
+    // to retype an identity already captured on the Patient record. Never
+    // clobbers in-progress input, never pre-fills Parentesco -- the doctor/
+    // nurse still has to pick that themselves.
+    if (!addExpanded || linkedPatient || relativeName.trim()) return;
+    const guardian = record.patient_info.guardians?.[0];
+    if (!guardian) return;
+    const fullName = `${guardian.first_name} ${guardian.last_name}`.trim();
+    if (!fullName) return;
+    const alreadyOnFile = record.family_conditions.some(
+      (c) => !c.related_patient && c.relative_name === fullName,
+    );
+    if (alreadyOnFile) return;
+    setRelativeName(fullName);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [addExpanded]);
+
+  useEffect(() => {
     if (!linkedPatient) {
       setRelativeConditions([]);
       return;

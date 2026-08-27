@@ -12,6 +12,12 @@
   --mc-warning-text: #7a3e00;
   --mc-white: #ffffff;
   --mc-topbar-height: 3.25rem;
+  /* Appointment status palette: SCHEDULED (--mc-primary) and CANCELLED
+     (--mc-danger) reuse the base tokens above; COMPLETED and NO_SHOW get
+     their own tokens here so they read as distinct hues (blue "done" /
+     neutral grey "no signal") instead of near-duplicating the green. */
+  --mc-status-completed: #1565c0;
+  --mc-status-no-show: #757575;
 }
 
 * {
@@ -316,6 +322,22 @@ body {
   font-family: inherit;
   background: var(--mc-white);
   color: var(--mc-text);
+}
+
+.inline-field-with-action {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.inline-field-with-action select {
+  flex: 1;
+  min-width: 0;
+}
+
+.inline-field-with-action .btn {
+  flex-shrink: 0;
+  white-space: nowrap;
 }
 
 .field textarea {
@@ -945,11 +967,46 @@ input[type="radio"]:focus-visible {
   white-space: nowrap;
 }
 
-.service-chip-overflow {
+.service-chip-toggle {
+  appearance: none;
   background: transparent;
-  border: 1px solid var(--mc-border);
-  color: var(--mc-muted);
-  cursor: help;
+  border: 1px dashed var(--mc-border);
+  color: var(--mc-primary-dark);
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.2rem;
+  font-family: inherit;
+}
+
+.service-chip-toggle:hover {
+  background: var(--mc-lightest);
+  border-color: var(--mc-primary);
+}
+
+.service-chip-toggle:focus-visible {
+  outline: 2px solid var(--mc-primary-dark);
+  outline-offset: 1px;
+}
+
+.service-chip-toggle-caret {
+  font-size: 0.65rem;
+}
+
+.service-chip-list-overflow {
+  width: 100%;
+  animation: chip-list-reveal 150ms ease-out;
+}
+
+@keyframes chip-list-reveal {
+  from {
+    opacity: 0;
+    transform: translateY(-2px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
 }
 
 /* Nested inside .field (unlike Rooms.tsx's own page-level .list-toolbar
@@ -1188,9 +1245,9 @@ input[type="radio"]:focus-visible {
 
 .status-scheduled { background: var(--mc-primary); }
 .status-confirmed { background: #00897b; }
-.status-completed { background: var(--mc-primary-dark); }
+.status-completed { background: var(--mc-status-completed); }
 .status-cancelled { background: var(--mc-danger); }
-.status-no_show { background: var(--mc-muted); }
+.status-no_show { background: var(--mc-status-no-show); }
 .status-active { background: var(--mc-primary-dark); }
 .status-inactive { background: var(--mc-muted); }
 .status-locked { background: #ef6c00; }

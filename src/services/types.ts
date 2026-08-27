@@ -315,7 +315,6 @@ export interface ServiceType {
   id: number;
   name: string;
   requires_doctor: boolean;
-  requires_diagnosis: boolean;
   active: boolean;
 }
 

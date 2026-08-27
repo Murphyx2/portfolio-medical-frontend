@@ -1,34 +1,21 @@
 import { useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
 
+import { ChipList } from "../../components/ChipList";
 import { SearchBar } from "../../components/ui";
 import { toSentenceCase } from "../../utils/text";
 
-/** Compact display of a doctor's offered services inside a table cell: up to
- * `max` quiet chips, then a single muted "+N" overflow chip carrying a
- * native title tooltip with the rest -- keeps a long list from turning the
- * row into a wall of tags. Renders a muted dash when there are none. */
+/** Compact display of a doctor's offered services inside a table cell --
+ * thin wrapper around the shared ChipList, applying toSentenceCase to
+ * service names. */
 export function ServiceChipList({ items, max = 3 }: { items: { id: number; name: string }[]; max?: number }) {
-  const { t } = useTranslation();
-  if (!items.length) return <span className="muted">{"—"}</span>;
-  const visible = items.slice(0, max);
-  const overflow = items.slice(max);
   return (
-    <span className="service-chip-list">
-      {visible.map((s) => (
-        <span key={s.id} className="service-chip">
-          {toSentenceCase(s.name)}
-        </span>
-      ))}
-      {overflow.length > 0 && (
-        <span
-          className="service-chip service-chip-overflow"
-          title={overflow.map((s) => toSentenceCase(s.name)).join(", ")}
-        >
-          {t("doctors.moreServices", { count: overflow.length })}
-        </span>
-      )}
-    </span>
+    <ChipList
+      items={items}
+      max={max}
+      getLabel={(s) => toSentenceCase(s.name)}
+      moreLabelKey="doctors.moreServices"
+    />
   );
 }
 

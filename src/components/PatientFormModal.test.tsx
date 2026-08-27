@@ -96,7 +96,7 @@ describe("PatientFormModal", () => {
     expect(onSaved).toHaveBeenCalledWith(existingPatient({ id: 9 }));
   });
 
-  it("editing an existing patient pre-fills fields including allergies and PATCHes on submit", async () => {
+  it("editing an existing patient pre-fills fields and PATCHes on submit", async () => {
     const onSaved = vi.fn();
     const patient = existingPatient();
     mockedApi.patch.mockResolvedValue(patient);
@@ -104,7 +104,6 @@ describe("PatientFormModal", () => {
     render(<PatientFormModal patient={patient} onClose={vi.fn()} onSaved={onSaved} />);
 
     expect(screen.getByDisplayValue("Jane")).toBeInTheDocument();
-    expect(screen.getByDisplayValue("Penicillin")).toBeInTheDocument();
 
     fireEvent.click(screen.getByRole("button", { name: /Save|Guardar/i }));
 

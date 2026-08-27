@@ -27,8 +27,6 @@ const EMPTY = {
   ars_program: "",
   center: "",
   has_guardian: true,
-  allergies: "",
-  critical_conditions: "",
 };
 
 /** Reusable patient create/edit form, shared by Patients.tsx and Encounters.tsx
@@ -64,8 +62,6 @@ export function PatientFormModal({
           ars_program: patient.ars_program ? String(patient.ars_program) : "",
           center: patient.center ? String(patient.center) : "",
           has_guardian: patient.has_guardian,
-          allergies: patient.allergies,
-          critical_conditions: patient.critical_conditions,
         }
       : EMPTY,
   );
@@ -321,24 +317,6 @@ export function PatientFormModal({
           onChange={(e) => setForm({ ...form, address: e.target.value })}
         />
       </Field>
-
-      <h4>{t("patients.sectionClinical")}</h4>
-      <div className="form-columns">
-        <Field label={t("patients.allergies")}>
-          <textarea
-            value={form.allergies}
-            rows={2}
-            onChange={(e) => setForm({ ...form, allergies: e.target.value })}
-          />
-        </Field>
-        <Field label={t("patients.criticalConditions")}>
-          <textarea
-            value={form.critical_conditions}
-            rows={2}
-            onChange={(e) => setForm({ ...form, critical_conditions: e.target.value })}
-          />
-        </Field>
-      </div>
     </FormModal>
   );
 }

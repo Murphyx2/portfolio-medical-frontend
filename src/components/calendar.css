@@ -113,7 +113,8 @@
 }
 
 .appointment-calendar .rbc-today {
-  background-color: rgba(46, 125, 50, 0.08);
+  background-color: rgba(46, 125, 50, 0.16);
+  box-shadow: inset 0 0 0 2px var(--mc-primary-dark);
 }
 
 .appointment-calendar .rbc-date-cell {
@@ -180,7 +181,7 @@
 }
 
 .appointment-calendar .rbc-event.rbc-status-completed {
-  background: var(--mc-primary-dark);
+  background: var(--mc-status-completed);
 }
 
 .appointment-calendar .rbc-event.rbc-status-cancelled {
@@ -188,7 +189,7 @@
 }
 
 .appointment-calendar .rbc-event.rbc-status-no_show {
-  background: var(--mc-muted);
+  background: var(--mc-status-no-show);
 }
 
 .appointment-calendar .rbc-event-label {

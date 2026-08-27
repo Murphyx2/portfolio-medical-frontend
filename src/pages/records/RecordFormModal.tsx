@@ -375,16 +375,9 @@ function LoadedRecordPhase({ record: initialRecord, focusNewEntry, canEdit, apCa
       />
 
       <TabPanel tabKey="antecedentes" active={activeTab} idPrefix="record">
-        <h4>{t("records.apFamilyTitle")}</h4>
-        <RecordFamilyApSection
-          record={record}
-          apCategories={apCategories}
-          apTypes={apTypes}
-          canEdit={canEdit}
-          onChange={updateRecord}
-        />
+        <h4>{t("records.apSummaryTitle")}</h4>
 
-        <h4>{t("records.apPersonalTitle")}</h4>
+        <h5 className="ap-category-name">{t("records.apPersonalTitle")}</h5>
         <div className="ap-section-summary">
           {record.personal_conditions.length === 0 ? (
             <p className="ap-empty-note">{t("records.apSelectedNone")}</p>
@@ -423,6 +416,23 @@ function LoadedRecordPhase({ record: initialRecord, focusNewEntry, canEdit, apCa
             }}
             onRemove={removePersonalCondition}
           />
+        )}
+
+        <h5 className="ap-category-name">{t("records.apFamilyTitle")}</h5>
+        <RecordFamilyApSection
+          record={record}
+          apCategories={apCategories}
+          apTypes={apTypes}
+          canEdit={canEdit}
+          onChange={updateRecord}
+        />
+
+        {canEdit && (
+          <div className="modal-actions">
+            <button type="button" className="btn ghost" onClick={handleGuardarBorrador} disabled={saving || !hasAnyEntryContent(workingEntry)}>
+              {t("records.saveDraft")}
+            </button>
+          </div>
         )}
       </TabPanel>
 
@@ -507,6 +517,14 @@ function LoadedRecordPhase({ record: initialRecord, focusNewEntry, canEdit, apCa
           </div>
         )}
         {imageError && <p className="form-error" role="alert">{imageError}</p>}
+
+        {canEdit && (
+          <div className="modal-actions">
+            <button type="button" className="btn ghost" onClick={handleGuardarBorrador} disabled={saving || !hasAnyEntryContent(workingEntry)}>
+              {t("records.saveDraft")}
+            </button>
+          </div>
+        )}
       </TabPanel>
 
       <TabPanel tabKey="conclusions" active={activeTab} idPrefix="record">

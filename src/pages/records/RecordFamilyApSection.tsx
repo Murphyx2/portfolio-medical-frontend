@@ -136,6 +136,20 @@ export function RecordFamilyApSection({
     onChange((r) => ({ ...r, family_conditions: r.family_conditions.filter((c) => c.id !== id) }));
   }
 
+  // "+ Agregar familiar": always starts a genuinely blank form, regardless
+  // of what the shared add-form last held (e.g. after using "+ Agregar
+  // otro" on an existing relative, or just having typed into it) -- without
+  // this reset, reopening the same toggle silently kept showing the
+  // previous relative's data instead of a clean slate for someone new.
+  function addNewMember() {
+    setLinkedPatient(null);
+    setRelationship("");
+    setRelationshipOther("");
+    setRelativeName("");
+    setAddError("");
+    setAddExpanded(true);
+  }
+
   // "+ add another" on an existing relative's row: opens the shared add
   // form pre-loaded with that relative's identity, so adding a 2nd/3rd AP
   // to the same relative never requires re-picking/retyping them -- the
@@ -199,8 +213,12 @@ export function RecordFamilyApSection({
 
       {canEdit && (
         <div className="ap-section-toggle-row">
-          <button type="button" className="btn ghost small" onClick={() => setAddExpanded((v) => !v)}>
-            {addExpanded ? t("records.hideFamilyApForm") : t("records.addFamilyAp")}
+          <button
+            type="button"
+            className="btn ghost small"
+            onClick={addExpanded ? () => setAddExpanded(false) : addNewMember}
+          >
+            {addExpanded ? t("records.hideFamilyApForm") : t("records.addFamilyMember")}
           </button>
         </div>
       )}

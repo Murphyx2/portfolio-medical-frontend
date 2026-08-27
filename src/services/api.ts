@@ -23,6 +23,14 @@ function notifyMutationSuccess(method: string): void {
   toastListeners.forEach((listener) => listener(message));
 }
 
+/** Fires a toast with caller-chosen copy instead of the generic
+ * Guardado/Eliminado one -- used together with `silent` request options
+ * where a spec mandates specific wording (e.g. Expedientes Médicos'
+ * "Borrador guardado" / "Entrada guardada"). */
+export function showToast(message: string): void {
+  toastListeners.forEach((listener) => listener(message));
+}
+
 export class ApiError extends Error {
   status: number;
 
@@ -40,18 +48,27 @@ export function setAccessToken(access: string | null): void {
   accessToken = access;
 }
 
+export interface RequestOptions extends RequestInit {
+  /** Suppresses the automatic Guardado/Eliminado toast for this call --
+   * used where the caller fires its own toast via `showToast` instead (e.g.
+   * Records' draft autosave, which must stay silent, and its explicit save
+   * actions, which use spec-mandated copy instead of the generic one). */
+  silent?: boolean;
+}
+
 async function request<T>(
   path: string,
-  options: RequestInit = {},
+  options: RequestOptions = {},
   retry = true,
 ): Promise<T> {
-  const headers = new Headers(options.headers);
+  const { silent, ...init } = options;
+  const headers = new Headers(init.headers);
   headers.set("Content-Type", "application/json");
   const token = getAccessToken();
   if (token) headers.set("Authorization", `Bearer ${token}`);
 
   const res = await fetch(`${apiBase}${path}`, {
-    ...options,
+    ...init,
     headers,
     credentials: "include",
   });
@@ -72,8 +89,8 @@ async function request<T>(
     throw new ApiError(message, res.status);
   }
 
-  const method = (options.method ?? "GET").toUpperCase();
-  if (method !== "GET") notifyMutationSuccess(method);
+  const method = (init.method ?? "GET").toUpperCase();
+  if (method !== "GET" && !silent) notifyMutationSuccess(method);
 
   if (res.status === 204) return undefined as T;
   return (await res.json()) as T;
@@ -117,13 +134,13 @@ export function tryRefresh(): Promise<boolean> {
 }
 
 export const api = {
-  get: <T>(path: string, options?: RequestInit) =>
+  get: <T>(path: string, options?: RequestOptions) =>
     request<T>(path, { ...options, method: "GET" }),
-  post: <T>(path: string, body: unknown, options?: RequestInit) =>
+  post: <T>(path: string, body: unknown, options?: RequestOptions) =>
     request<T>(path, { ...options, method: "POST", body: JSON.stringify(body) }),
-  patch: <T>(path: string, body: unknown, options?: RequestInit) =>
+  patch: <T>(path: string, body: unknown, options?: RequestOptions) =>
     request<T>(path, { ...options, method: "PATCH", body: JSON.stringify(body) }),
-  delete: <T>(path: string, options?: RequestInit) =>
+  delete: <T>(path: string, options?: RequestOptions) =>
     request<T>(path, { ...options, method: "DELETE" }),
 };
 

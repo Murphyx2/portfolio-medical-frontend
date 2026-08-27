@@ -37,6 +37,7 @@ export interface ListPageProps<T extends { id: number }> {
   onEdit?: (row: T) => void;
   onDelete?: (row: T) => void | Promise<void>;
   onRestore?: (row: T) => void | Promise<void>;
+  extraActions?: (row: T) => ReactNode;
   isInactive?: (row: T) => boolean;
   getRowLabel?: (row: T) => string;
   emptyLabel?: string;
@@ -85,6 +86,7 @@ export function ListPage<T extends { id: number }>({
   onEdit,
   onDelete,
   onRestore,
+  extraActions,
   isInactive,
   getRowLabel,
   emptyLabel,
@@ -143,6 +145,7 @@ export function ListPage<T extends { id: number }>({
         onEdit={onEdit}
         onDelete={onDelete}
         onRestore={onRestore}
+        extraActions={extraActions}
         isInactive={isInactive}
         getRowLabel={getRowLabel}
         emptyLabel={emptyLabel}

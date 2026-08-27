@@ -9,8 +9,9 @@ import { formatDateTime } from "../../utils/date";
 /** Records list: toolbar/table/columns, wired onto F1's `ListPage` shell.
  * Records does NOT run a custom confirm-action flow (unlike Encounters) --
  * delete/restore go straight through `ListPage`/`Table`'s built-in confirm,
- * so this component only needs the column defs and a click-to-detail
- * launcher per identifying column (patient/cedula/nss). */
+ * so this component only needs the column defs and a click-to-open launcher
+ * per identifying column (patient/cedula/nss), plus the "Nueva entrada" row
+ * action (spec §5) as an extra column ahead of Table's own Acciones column. */
 export function RecordList({
   initialLoading,
   search,
@@ -31,7 +32,7 @@ export function RecordList({
   sortDir,
   onSort,
   openDetail,
-  openingId,
+  canCreateEntry,
 }: {
   initialLoading: boolean;
   search: string;
@@ -51,8 +52,8 @@ export function RecordList({
   sortKey: string | null;
   sortDir: SortDir | null;
   onSort: (key: string) => void;
-  openDetail: (rec: MedicalRecord) => void;
-  openingId: number | null;
+  openDetail: (rec: MedicalRecord, opts?: { newEntry?: boolean }) => void;
+  canCreateEntry: boolean;
 }) {
   const { t } = useTranslation();
 
@@ -62,8 +63,8 @@ export function RecordList({
       header: t("records.patient"),
       sortKey: "patient__search_name",
       render: (r) => (
-        <button type="button" className="row-link" disabled={openingId === r.id} onClick={() => openDetail(r)}>
-          {openingId === r.id ? t("common.loading") : <MaskedValue value={r.patient_info.full_name} />}
+        <button type="button" className="row-link" onClick={() => openDetail(r)}>
+          <MaskedValue value={r.patient_info.full_name} />
         </button>
       ),
     },
@@ -71,7 +72,7 @@ export function RecordList({
       key: "cedula",
       header: t("patients.cedula"),
       render: (r) => (
-        <button type="button" className="row-link" disabled={openingId === r.id} onClick={() => openDetail(r)}>
+        <button type="button" className="row-link" onClick={() => openDetail(r)}>
           <MaskedValue
             value={
               r.patient_info.cedula
@@ -88,14 +89,18 @@ export function RecordList({
       key: "nss",
       header: t("patients.nss"),
       render: (r) => (
-        <button type="button" className="row-link" disabled={openingId === r.id} onClick={() => openDetail(r)}>
+        <button type="button" className="row-link" onClick={() => openDetail(r)}>
           <MaskedValue value={r.patient_info.nss} />
         </button>
       ),
     },
-    { key: "title", header: t("records.recordTitle"), sortKey: "title" },
-    { key: "date", header: t("records.date"), sortKey: "date", render: (r) => formatDateTime(r.date) },
-    { key: "created_by_name", header: t("records.doctor"), sortKey: "created_by__username" },
+    {
+      key: "last_visit_at",
+      header: t("records.lastVisit"),
+      sortKey: "last_visit_at",
+      render: (r) => (r.last_visit_at ? formatDateTime(r.last_visit_at) : t("records.noRecordShort")),
+    },
+    { key: "created_by_name", header: t("records.createdBy"), sortKey: "created_by__username" },
   ];
 
   return (
@@ -117,6 +122,19 @@ export function RecordList({
       rows={rows}
       onDelete={onDelete}
       onRestore={onRestore}
+      extraActions={
+        canCreateEntry
+          ? (r) => (
+              <button
+                type="button"
+                className="btn ghost small"
+                onClick={() => openDetail(r, { newEntry: true })}
+              >
+                {t("records.newEntry")}
+              </button>
+            )
+          : undefined
+      }
       getRowLabel={(r) => r.patient_info.full_name}
       isInactive={(r) => !r.active}
       sortKey={sortKey}

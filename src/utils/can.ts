@@ -17,6 +17,7 @@ export type Resource =
   | "patients"
   | "encounters"
   | "records"
+  | "recordApTypes"
   | "rooms"
   | "roomTypes"
   | "medicines"
@@ -80,7 +81,17 @@ const POLICY: Partial<Record<Resource, Partial<Record<Action, Role[]>>>> = {
     // or any "open record" button anywhere in the app.
     view: ["ADMIN", "DOCTOR", "NURSE"],
     create: ["ADMIN", "DOCTOR", "NURSE"],
-    delete: ["ADMIN", "DOCTOR", "NURSE"],
+    edit: ["ADMIN", "DOCTOR", "NURSE"],
+    // Narrowed per Expedientes Médicos spec section 3: only Admin may
+    // soft-delete an expediente (was ["ADMIN","DOCTOR","NURSE"]).
+    delete: ["ADMIN"],
+  },
+  recordApTypes: {
+    // AP (Antecedentes Patológicos) catalog: same viewers as Records, but
+    // catalog management is Admin-only (spec section 3).
+    view: ["ADMIN", "DOCTOR", "NURSE"],
+    edit: ["ADMIN"],
+    delete: ["ADMIN"],
   },
   rooms: {
     view: ALL_ROLES,

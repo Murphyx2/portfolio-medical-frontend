@@ -374,7 +374,19 @@
     "uploadImage": "Upload image",
     "caption": "Caption",
     "patientPickerPlaceholder": "Search patient by name, cedula or NSS…",
-    "imageTooLarge": "Image must be smaller than {{max}} MB."
+    "imageTooLarge": "Image must be smaller than {{max}} MB.",
+    "manageApTypes": "Manage AP types"
+  },
+  "recordApTypes": {
+    "title": "Pathological history types",
+    "new": "New type",
+    "name": "Name",
+    "category": "Category",
+    "sortOrder": "Sort order",
+    "back": "Back to Medical Records",
+    "manageCategories": "Manage categories",
+    "categoriesTitle": "AP categories",
+    "newCategory": "New category"
   },
   "settings": {
     "title": "System settings",

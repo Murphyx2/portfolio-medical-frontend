@@ -256,6 +256,22 @@ export interface Service {
   active: boolean;
 }
 
+export interface APCategory {
+  id: number;
+  name: string;
+  sort_order: number;
+  active: boolean;
+}
+
+export interface APType {
+  id: number;
+  category: number;
+  category_name: string;
+  name: string;
+  sort_order: number;
+  active: boolean;
+}
+
 export interface RoomType {
   id: number;
   name: string;

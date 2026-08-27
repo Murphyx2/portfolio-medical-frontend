@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
-import { useSearchParams } from "react-router-dom";
+import { useNavigate, useSearchParams } from "react-router-dom";
 
 import { Page } from "../components/ui";
 import { RecordDetailWithLogs, type LogFields } from "./records/RecordDetailWithLogs";
@@ -16,8 +16,10 @@ import { can } from "../utils/can";
 export function Records() {
   const { t } = useTranslation();
   const { user } = useAuth();
+  const navigate = useNavigate();
   const canCreate = can(user?.role, "create", "records");
   const canDelete = can(user?.role, "delete", "records");
+  const canManageApTypes = can(user?.role, "edit", "recordApTypes");
   const isAdmin = can(user?.role, "restore", "records");
   const [patients, setPatients] = useState<Patient[]>([]);
   const [maxUploadMb, setMaxUploadMb] = useState<number | undefined>(undefined);
@@ -145,11 +147,18 @@ export function Records() {
     <Page
       title={t("records.title")}
       actions={
-        canCreate && (
-          <button className="btn primary" onClick={openRecordForm}>
-            + {t("records.newRecord")}
-          </button>
-        )
+        <div className="page-actions-stack">
+          {canCreate && (
+            <button className="btn primary" onClick={openRecordForm}>
+              + {t("records.newRecord")}
+            </button>
+          )}
+          {canManageApTypes && (
+            <button className="btn ghost" onClick={() => navigate("/records/types")}>
+              {t("records.manageApTypes")}
+            </button>
+          )}
+        </div>
       }
     >
       <RecordList

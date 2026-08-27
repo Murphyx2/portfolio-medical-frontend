@@ -374,7 +374,19 @@
     "uploadImage": "Subir imagen",
     "caption": "Título de la imagen",
     "patientPickerPlaceholder": "Buscar paciente por nombre, cédula o NSS…",
-    "imageTooLarge": "La imagen debe ser menor de {{max}} MB."
+    "imageTooLarge": "La imagen debe ser menor de {{max}} MB.",
+    "manageApTypes": "Administrar tipos de AP"
+  },
+  "recordApTypes": {
+    "title": "Tipos de antecedentes patológicos",
+    "new": "Nuevo tipo",
+    "name": "Nombre",
+    "category": "Categoría",
+    "sortOrder": "Orden",
+    "back": "Volver a Expedientes Médicos",
+    "manageCategories": "Gestionar categorías",
+    "categoriesTitle": "Categorías de AP",
+    "newCategory": "Nueva categoría"
   },
   "settings": {
     "title": "Configuración del sistema",

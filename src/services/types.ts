@@ -187,6 +187,7 @@ export interface RecordImage {
   caption: string;
   uploaded_by: number | null;
   active: boolean;
+  created_at: string;
 }
 
 export interface PatientLite {

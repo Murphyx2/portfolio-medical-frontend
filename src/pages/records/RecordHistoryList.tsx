@@ -120,14 +120,16 @@ function familyApChips(e: RecordEntry, t: TFn): string[] {
   });
 }
 
-interface VitalCell {
+export interface VitalCell {
   label: string;
   value: string;
 }
 
 /** 8-cell vitals grid -- same cells for compact and detail (spec §3: there's
- * nothing to clamp since 8 is already the max), only non-null cells render. */
-function vitalsCells(e: RecordEntry, t: TFn): VitalCell[] {
+ * nothing to clamp since 8 is already the max), only non-null cells render.
+ * Also reused by RecordVitalsSection.tsx (Datos clínicos collapsed mini-grid)
+ * so both surfaces read the exact same 8 cells from an entry's snapshot. */
+export function vitalsCells(e: RecordEntry, t: TFn): VitalCell[] {
   const cells: VitalCell[] = [];
   if (e.ta_systolic != null && e.ta_diastolic != null) {
     cells.push({ label: t("records.ta"), value: `${e.ta_systolic}/${e.ta_diastolic} mmHg` });

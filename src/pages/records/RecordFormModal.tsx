@@ -19,15 +19,16 @@ import { can } from "../../utils/can";
 import { formatCedula } from "../../utils/cedula";
 import { flattenError } from "../../utils/errors";
 import { RecordFamilyApSection } from "./RecordFamilyApSection";
+import { RecordHabitsSection } from "./RecordHabitsSection";
 import { RecordHistoryList } from "./RecordHistoryList";
 import { RecordSnapshotHeader } from "./RecordSnapshotHeader";
 
-type TabKey = "clinical" | "antecedentes" | "conclusions" | "historial";
+type TabKey = "clinical" | "habits" | "antecedentes" | "conclusions" | "historial";
 type EntryTargetKind = "draft" | "completed";
 
-const NUMERIC_FIELD_KEYS: (keyof WorkingEntryFields)[] = [
+const NUMERIC_FIELD_KEYS = [
   "ta_systolic", "ta_diastolic", "fc", "fr", "weight_lb", "height_cm", "talla_cm", "temperature_c", "glucose",
-];
+] as const satisfies readonly (keyof WorkingEntryFields)[];
 
 function normalizeNum(v: string): number | null {
   return v.trim() === "" ? null : Number(v);
@@ -43,7 +44,9 @@ function fieldsEqual(a: WorkingEntryFields, b: WorkingEntryFields): boolean {
     a.vitals_notes.trim() === b.vitals_notes.trim() &&
     a.dx.trim() === b.dx.trim() &&
     a.tx.trim() === b.tx.trim() &&
-    a.observaciones.trim() === b.observaciones.trim()
+    a.observaciones.trim() === b.observaciones.trim() &&
+    a.habits_notes.trim() === b.habits_notes.trim() &&
+    JSON.stringify(a.habits) === JSON.stringify(b.habits)
   );
 }
 
@@ -376,11 +379,31 @@ function LoadedRecordPhase({ record: initialRecord, focusNewEntry, canEdit, apCa
         onChange={(key) => changeTab(key as TabKey)}
         items={[
           { key: "clinical", label: t("records.tabClinical") },
+          { key: "habits", label: t("records.tabHabits") },
           { key: "antecedentes", label: t("records.tabAntecedentes") },
           { key: "conclusions", label: t("records.tabConclusions") },
           { key: "historial", label: t("records.tabHistorial") },
         ]}
       />
+
+      <TabPanel tabKey="habits" active={activeTab} idPrefix="record">
+        <RecordHabitsSection
+          workingEntry={workingEntry}
+          updateField={updateField}
+          record={record}
+          canEdit={canEdit}
+        />
+
+        {saveError && <p className="form-error" role="alert">{saveError}</p>}
+
+        {canEdit && (
+          <div className="modal-actions">
+            <button type="button" className="btn ghost" onClick={handleGuardarBorrador} disabled={saving || !hasAnyEntryContent(workingEntry)}>
+              {t("records.saveDraft")}
+            </button>
+          </div>
+        )}
+      </TabPanel>
 
       <TabPanel tabKey="antecedentes" active={activeTab} idPrefix="record">
         <h4>{t("records.apSummaryTitle")}</h4>

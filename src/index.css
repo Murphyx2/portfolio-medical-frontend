@@ -1858,6 +1858,158 @@ input[type="radio"]:focus-visible {
   color: var(--mc-muted);
 }
 
+/* ---------- Hábitos tab ---------- */
+
+.habits-toolbar {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 0.75rem;
+  flex-wrap: wrap;
+  margin-bottom: 1rem;
+}
+
+.habits-chip-summary {
+  margin-top: 0.4rem;
+}
+
+.habits-draft-chip {
+  background: var(--mc-lightest);
+  color: var(--mc-primary-dark);
+  border: 1px solid var(--mc-light);
+  border-radius: 999px;
+  padding: 0.3rem 0.7rem;
+  font-size: 0.8rem;
+  font-weight: 600;
+}
+
+.habits-columns {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1.25rem;
+}
+
+@media (max-width: 900px) {
+  .habits-columns {
+    grid-template-columns: 1fr;
+  }
+}
+
+.habit-column {
+  display: grid;
+  gap: 0.75rem;
+  align-content: start;
+}
+
+.habit-card {
+  border: 1px solid var(--mc-border);
+  border-radius: 10px;
+  padding: 0.9rem 1.1rem;
+}
+
+.habit-card-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.6rem;
+  flex-wrap: wrap;
+}
+
+.habit-status-group {
+  display: inline-flex;
+  gap: 0.35rem;
+  flex-wrap: wrap;
+}
+
+.habit-status-pill {
+  appearance: none;
+  border: 1px solid var(--mc-border);
+  background: var(--mc-white);
+  color: var(--mc-text);
+  border-radius: 999px;
+  padding: 0.3rem 0.7rem;
+  min-height: 32px;
+  font-size: 0.8rem;
+  cursor: pointer;
+  white-space: nowrap;
+}
+
+.habit-status-pill:hover:not(:disabled) {
+  border-color: var(--mc-primary);
+}
+
+.habit-status-pill:disabled {
+  cursor: not-allowed;
+  opacity: 0.7;
+}
+
+.habit-status-pill.selected {
+  background: var(--mc-primary);
+  border-color: var(--mc-primary);
+  color: #fff;
+}
+
+.habit-status-pill.selected.warn {
+  background: var(--mc-warning);
+  border-color: var(--mc-warning);
+  color: #fff;
+}
+
+.habit-status-pill:focus-visible {
+  outline: 2px solid var(--mc-primary-dark);
+  outline-offset: 1px;
+}
+
+.habit-detail-panel {
+  border-top: 1px dashed var(--mc-border);
+  margin-top: 0.75rem;
+  padding-top: 0.75rem;
+  display: grid;
+  gap: 0.6rem;
+}
+
+.habit-detail-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+  gap: 0.6rem 1rem;
+}
+
+.habit-badge-info {
+  background: var(--mc-muted);
+  display: inline-block;
+  justify-self: start;
+}
+
+.habit-help-text {
+  font-size: 0.8rem;
+  color: var(--mc-muted);
+  margin: 0;
+}
+
+.habit-switch {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  font-size: 0.85rem;
+  color: var(--mc-text);
+}
+
+.habit-switch input {
+  accent-color: var(--mc-primary);
+}
+
+.habit-otro-row {
+  background: var(--mc-lightest);
+  border-radius: 8px;
+  padding: 0.5rem 0.8rem;
+  font-size: 0.85rem;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 0.75rem;
+  margin-bottom: 0.6rem;
+}
+
 /* ---------- Conclusiones / draft ---------- */
 
 .draft-banner {

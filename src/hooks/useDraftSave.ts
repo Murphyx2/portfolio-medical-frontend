@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useRef } from "react";
 
 import { api } from "../services/api";
-import type { RecordEntry } from "../services/types";
+import type { HabitsDraft, RecordEntry } from "../services/types";
 
 export interface WorkingEntryFields {
   ta_systolic: string;
@@ -17,6 +17,8 @@ export interface WorkingEntryFields {
   dx: string;
   tx: string;
   observaciones: string;
+  habits: HabitsDraft;
+  habits_notes: string;
 }
 
 export const EMPTY_WORKING_ENTRY: WorkingEntryFields = {
@@ -33,6 +35,8 @@ export const EMPTY_WORKING_ENTRY: WorkingEntryFields = {
   dx: "",
   tx: "",
   observaciones: "",
+  habits: {},
+  habits_notes: "",
 };
 
 export function fieldsFromEntry(entry: RecordEntry): WorkingEntryFields {
@@ -50,11 +54,18 @@ export function fieldsFromEntry(entry: RecordEntry): WorkingEntryFields {
     dx: entry.dx,
     tx: entry.tx,
     observaciones: entry.observaciones,
+    habits: entry.habits ?? {},
+    habits_notes: entry.habits_notes ?? "",
   };
 }
 
 export function hasAnyEntryContent(fields: WorkingEntryFields): boolean {
-  return Object.values(fields).some((v) => v.trim() !== "");
+  const { habits, habits_notes, ...stringFields } = fields;
+  return (
+    Object.values(stringFields).some((v) => v.trim() !== "")
+    || habits_notes.trim() !== ""
+    || Object.keys(habits).length > 0
+  );
 }
 
 export function buildEntryBody(fields: WorkingEntryFields): Record<string, unknown> {
@@ -73,6 +84,8 @@ export function buildEntryBody(fields: WorkingEntryFields): Record<string, unkno
     dx: fields.dx,
     tx: fields.tx,
     observaciones: fields.observaciones,
+    habits: fields.habits,
+    habits_notes: fields.habits_notes,
   };
 }
 

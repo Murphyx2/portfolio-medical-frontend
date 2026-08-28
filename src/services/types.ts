@@ -247,6 +247,97 @@ export interface FamilyApSnapshotItem extends ApSnapshotItem {
   relative_name: string;
 }
 
+export type SubstanceHabitStatus = "no_registrado" | "nunca" | "ex" | "ocasional" | "activo";
+export type ActividadFisicaStatus = "no_registrado" | "sedentario" | "insuficiente" | "adecuado" | "intenso";
+export type SuenoStatus = "no_registrado" | "reparador" | "irregular" | "insomnio";
+
+export interface TabacoHabit {
+  status: SubstanceHabitStatus;
+  tipo?: string[];
+  cantidad_dia?: number | null;
+  tiempo_anios?: number | null;
+  dejo_fecha?: string | null;
+  humo_ajeno?: boolean;
+}
+export interface VapeoHabit {
+  status: SubstanceHabitStatus;
+  frecuencia_tipo?: "veces_dia" | "dias_semana";
+  frecuencia_valor?: number | null;
+  nicotina_mg?: number | null;
+  nicotina?: string[];
+  tiempo_anios?: number | null;
+  dejo_fecha?: string | null;
+}
+export interface AlcoholHabit {
+  status: SubstanceHabitStatus;
+  ud_semana?: number | null;
+  bebida?: string[];
+  tiempo_anios?: number | null;
+  dejo_fecha?: string | null;
+}
+export interface CafeHabit {
+  status: SubstanceHabitStatus;
+  tazas_dia?: number | null;
+  tipo?: string[];
+}
+export interface PsicoactivasHabit {
+  status: SubstanceHabitStatus;
+  tipo?: string[];
+  tipo_otro?: string;
+  frecuencia?: string;
+  via?: string;
+  tiempo_anios?: number | null;
+  dejo_fecha?: string | null;
+}
+export interface ActividadFisicaHabit {
+  status: ActividadFisicaStatus;
+  dias_semana?: number | null;
+  minutos_sesion?: number | null;
+  tipo?: string;
+}
+export interface SuenoHabit {
+  status: SuenoStatus;
+  horas_noche?: number | null;
+  duerme_mal?: boolean;
+  somnolencia_diurna?: boolean;
+}
+export interface PatronAlimentarioHabit {
+  tags: string[];
+}
+export interface OtroHabitItem {
+  name: string;
+  note?: string;
+}
+
+export interface HabitsDraft {
+  tabaco?: TabacoHabit;
+  alcohol?: AlcoholHabit;
+  cafe?: CafeHabit;
+  vapeo?: VapeoHabit;
+  psicoactivas?: PsicoactivasHabit;
+  actividad_fisica?: ActividadFisicaHabit;
+  sueno?: SuenoHabit;
+  patron_alimentario?: PatronAlimentarioHabit;
+  otros?: OtroHabitItem[];
+}
+
+export interface HabitsSnapshotEntry {
+  status: string;
+  at: string;
+  pack_years?: string;
+}
+export interface HabitsSnapshot {
+  tabaco?: HabitsSnapshotEntry;
+  alcohol?: HabitsSnapshotEntry;
+  cafe?: HabitsSnapshotEntry;
+  vapeo?: HabitsSnapshotEntry;
+  psicoactivas?: HabitsSnapshotEntry;
+  actividad_fisica?: HabitsSnapshotEntry;
+  sueno?: HabitsSnapshotEntry;
+  patron_alimentario?: { tags: string[]; at: string };
+  otros?: { items: OtroHabitItem[]; at: string };
+}
+
 export interface RecordEntry {
   id: number;
   record: number;
@@ -267,6 +358,8 @@ export interface RecordEntry {
   dx: string;
   tx: string;
   observaciones: string;
+  habits: HabitsDraft | null;
+  habits_notes: string;
   personal_ap_snapshot: ApSnapshotItem[];
   family_ap_snapshot: FamilyApSnapshotItem[];
   completed_at: string | null;
@@ -298,6 +391,7 @@ export interface MedicalRecord {
   last_fr_at: string | null;
   last_glucose: number | null;
   last_glucose_at: string | null;
+  habits_snapshot: HabitsSnapshot;
   images: RecordImage[];
   personal_conditions: RecordPersonalCondition[];
   family_conditions: RecordFamilyCondition[];

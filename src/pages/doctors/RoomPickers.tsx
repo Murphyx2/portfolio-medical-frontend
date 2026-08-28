@@ -1,35 +1,14 @@
 import { useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
 
+import { ChipList } from "../../components/ChipList";
 import { SearchBar } from "../../components/ui";
 import { toSentenceCase } from "../../utils/text";
 
-/** Compact display of a doctor's assigned rooms inside a table cell: up to
- * `max` quiet chips, then a single muted "+N" overflow chip carrying a
- * native title tooltip with the rest -- mirrors ServiceChipList. Renders a
- * muted dash when there are none. */
+/** Compact display of a doctor's assigned rooms inside a table cell -- thin
+ * wrapper around the shared ChipList, mirrors ServiceChipList. */
 export function RoomChipList({ items, max = 3 }: { items: { id: number; name: string }[]; max?: number }) {
-  const { t } = useTranslation();
-  if (!items.length) return <span className="muted">{"—"}</span>;
-  const visible = items.slice(0, max);
-  const overflow = items.slice(max);
-  return (
-    <span className="service-chip-list">
-      {visible.map((r) => (
-        <span key={r.id} className="service-chip">
-          {r.name}
-        </span>
-      ))}
-      {overflow.length > 0 && (
-        <span
-          className="service-chip service-chip-overflow"
-          title={overflow.map((r) => r.name).join(", ")}
-        >
-          {t("doctors.moreRooms", { count: overflow.length })}
-        </span>
-      )}
-    </span>
-  );
+  return <ChipList items={items} max={max} getLabel={(r) => r.name} moreLabelKey="doctors.moreRooms" />;
 }
 
 interface RoomPickItem {

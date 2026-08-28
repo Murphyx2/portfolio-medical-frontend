@@ -40,3 +40,20 @@ export function nextLocalISO(dateStr: string): string {
 export function prevLocalISO(dateStr: string): string {
   return shiftLocalISO(dateStr, -1);
 }
+
+/** Client-side mirror of the backend's age arithmetic (PatientSerializer),
+ * shared by PatientFormModal's minor/guardian-section check and the
+ * Expediente snapshot header's Edad field. Returns null (rather than
+ * throwing) on an empty/unparseable date so callers can just render "—". */
+export function calculateAge(birthDateStr: string | null | undefined): number | null {
+  if (!birthDateStr) return null;
+  const bd = new Date(birthDateStr);
+  if (Number.isNaN(bd.getTime())) return null;
+  const today = new Date();
+  let age = today.getFullYear() - bd.getFullYear();
+  const beforeBirthday =
+    today.getMonth() < bd.getMonth() ||
+    (today.getMonth() === bd.getMonth() && today.getDate() < bd.getDate());
+  if (beforeBirthday) age--;
+  return age;
+}

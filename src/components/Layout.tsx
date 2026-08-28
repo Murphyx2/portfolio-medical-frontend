@@ -8,6 +8,7 @@ import {
   Hospital,
   LayoutDashboard,
   Pill,
+  Settings,
   Shield,
   Stethoscope,
   Users,
@@ -18,7 +19,8 @@ import { NavLink, useNavigate } from "react-router-dom";
 
 import { useAuth } from "../store/auth";
 import { can, type Resource } from "../utils/can";
-import { LanguageSwitcher } from "./LanguageSwitcher";
+import { roleLabel } from "../utils/roleLabel";
+import { Logo } from "./Logo";
 import { ToastHost } from "./ui";
 
 // Nav visibility derives from the same `can(role, "view", resource)` check
@@ -38,10 +40,11 @@ const NAV: { to: string; key: string; resource?: Resource; icon: ComponentType<L
   { to: "/appointments", key: "nav.appointments", resource: "appointments", icon: Calendar },
   { to: "/records", key: "nav.records", resource: "records", icon: Folder },
   { to: "/users", key: "nav.users", resource: "users", icon: Users },
+  { to: "/settings", key: "nav.settings", resource: "settings", icon: Settings },
 ];
 
 export function Layout({ children }: { children: ReactNode }) {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const { user, logout } = useAuth();
   const navigate = useNavigate();
 
@@ -57,7 +60,10 @@ export function Layout({ children }: { children: ReactNode }) {
   return (
     <div className="app-shell">
       <aside className="sidebar">
-        <span className="brand">{t("app.name")}</span>
+        <NavLink to="/" end className="brand">
+          <Logo size={28} />
+          <span>{t("app.name")}</span>
+        </NavLink>
         <nav className="nav">
           {items.map((item) => (
             <NavLink
@@ -75,10 +81,9 @@ export function Layout({ children }: { children: ReactNode }) {
       <div className="main">
         <header className="topbar">
           <div className="topbar-right">
-            <LanguageSwitcher />
             <span className="user-chip">
               {user?.full_name || user?.username}{" "}
-              <span className="role-badge">{user?.role}</span>
+              <span className="role-badge">{roleLabel(user?.role, i18n.language)}</span>
             </span>
             <button className="btn ghost" onClick={handleLogout}>
               {t("auth.logout")}

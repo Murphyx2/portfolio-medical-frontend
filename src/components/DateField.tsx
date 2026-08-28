@@ -50,11 +50,15 @@ export function DateField({
   onChange,
   required,
   ariaLabel,
+  max,
 }: {
   value: string;
   onChange: (isoDate: string) => void;
   required?: boolean;
   ariaLabel?: string;
+  /** ISO `YYYY-MM-DD` upper bound (e.g. today, for a birth date) -- disables
+   * later dates in the native popup and rejects a matching typed value. */
+  max?: string;
 }) {
   const { t } = useTranslation();
   const [display, setDisplay] = useState(isoToDisplay(value));
@@ -65,8 +69,15 @@ export function DateField({
   }, [value]);
 
   function commit(next: string) {
-    setDisplay(next);
     const iso = displayToIso(next);
+    if (iso && max && iso > max) {
+      // A well-formed but out-of-range (future) date -- snap the display
+      // back to the last committed value instead of leaving the rejected
+      // date sitting in the field, which would otherwise look accepted.
+      setDisplay(isoToDisplay(value));
+      return;
+    }
+    setDisplay(next);
     if (iso) onChange(iso);
   }
 
@@ -105,6 +116,7 @@ export function DateField({
         tabIndex={-1}
         aria-hidden="true"
         value={value}
+        max={max}
         onChange={(e) => e.target.value && commit(isoToDisplay(e.target.value))}
       />
     </div>

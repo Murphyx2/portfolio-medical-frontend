@@ -1,0 +1,210 @@
+/* Restyles react-big-calendar's stock look to match the app's design
+ * tokens (colors/spacing/fonts from index.css's --mc-* custom properties)
+ * instead of shipping its default Bootstrap-flavored theme unstyled. */
+
+.appointment-calendar {
+  background: var(--mc-white);
+  border: 1px solid var(--mc-border);
+  border-radius: 12px;
+  padding: 1rem;
+  /* Week/day time grids don't reflow below their minimum column width --
+     scroll the calendar itself horizontally rather than letting it blow
+     out the page (matches the app-wide rule for wide content). */
+  overflow-x: auto;
+}
+
+.appointment-calendar .rbc-calendar {
+  font-family: inherit;
+  color: var(--mc-text);
+  min-width: 640px;
+}
+
+/* ---------- toolbar (Today / Back / Next + view switch) ---------- */
+
+.appointment-calendar .rbc-toolbar {
+  margin-bottom: 1rem;
+  gap: 0.5rem;
+  font-size: 0.9rem;
+}
+
+.appointment-calendar .rbc-toolbar .rbc-toolbar-label {
+  font-weight: 600;
+  font-size: 1.05rem;
+  color: var(--mc-primary-dark);
+}
+
+.appointment-calendar .rbc-toolbar button {
+  font-family: inherit;
+  font-size: 0.85rem;
+  color: var(--mc-text);
+  background: var(--mc-white);
+  border: 1px solid var(--mc-border);
+  padding: 0.4rem 0.85rem;
+  border-radius: 8px;
+  transition: background-color 0.15s, color 0.15s, border-color 0.15s;
+}
+
+.appointment-calendar .rbc-toolbar button:hover {
+  background: var(--mc-lightest);
+  border-color: var(--mc-light);
+  color: var(--mc-primary-dark);
+}
+
+.appointment-calendar .rbc-toolbar button:focus-visible {
+  outline: 2px solid var(--mc-primary);
+  outline-offset: 1px;
+}
+
+.appointment-calendar .rbc-toolbar button:active,
+.appointment-calendar .rbc-toolbar button.rbc-active {
+  background: var(--mc-primary);
+  border-color: var(--mc-primary);
+  color: #fff;
+  box-shadow: none;
+}
+
+.appointment-calendar .rbc-toolbar button:active:hover,
+.appointment-calendar .rbc-toolbar button.rbc-active:hover,
+.appointment-calendar .rbc-toolbar button.rbc-active:focus {
+  background: var(--mc-primary-dark);
+  border-color: var(--mc-primary-dark);
+  color: #fff;
+}
+
+.appointment-calendar .rbc-btn-group button + button {
+  margin-left: 0;
+}
+
+/* ---------- month grid ---------- */
+
+.appointment-calendar .rbc-month-view,
+.appointment-calendar .rbc-time-view {
+  border: 1px solid var(--mc-border);
+  border-radius: 8px;
+  overflow: hidden;
+}
+
+.appointment-calendar .rbc-header {
+  padding: 0.55rem 0.4rem;
+  font-weight: 600;
+  font-size: 0.8rem;
+  color: var(--mc-primary-dark);
+  background: var(--mc-lightest);
+  border-color: var(--mc-border);
+  text-transform: uppercase;
+  letter-spacing: 0.02em;
+}
+
+.appointment-calendar .rbc-month-row,
+.appointment-calendar .rbc-day-bg,
+.appointment-calendar .rbc-header + .rbc-header,
+.appointment-calendar .rbc-day-slot,
+.appointment-calendar .rbc-time-content,
+.appointment-calendar .rbc-timeslot-group {
+  border-color: var(--mc-border);
+}
+
+.appointment-calendar .rbc-off-range-bg {
+  background: var(--mc-lightest);
+}
+
+.appointment-calendar .rbc-off-range {
+  color: var(--mc-muted);
+}
+
+.appointment-calendar .rbc-today {
+  background-color: var(--mc-warning-bg);
+  box-shadow: inset 0 0 0 2px var(--mc-warning);
+}
+
+.appointment-calendar .rbc-date-cell {
+  padding: 0.3rem 0.5rem;
+  font-size: 0.85rem;
+}
+
+.appointment-calendar .rbc-date-cell.rbc-now {
+  font-weight: 700;
+  color: var(--mc-primary-dark);
+}
+
+.appointment-calendar .rbc-show-more {
+  color: var(--mc-primary-dark);
+  font-weight: 600;
+  background: transparent;
+}
+
+.appointment-calendar .rbc-show-more:hover,
+.appointment-calendar .rbc-show-more:focus {
+  color: var(--mc-primary);
+}
+
+/* ---------- events, colored by status (reuses the .status-* badge
+   palette from index.css so Calendar and List/table stay visually
+   consistent) ---------- */
+
+.appointment-calendar .rbc-event {
+  background: var(--mc-primary);
+  border: none;
+  border-radius: 6px;
+  padding: 0.15rem 0.4rem;
+  font-size: 0.78rem;
+  box-shadow: none;
+  transition: filter 0.1s;
+}
+
+.appointment-calendar .rbc-event:hover {
+  filter: brightness(0.92);
+}
+
+.appointment-calendar .rbc-event.rbc-selected {
+  box-shadow: 0 0 0 2px var(--mc-primary-dark);
+}
+
+/* The library's own stylesheet sets a plain `:focus` outline (fires on
+   every mouse click, not just keyboard); replace it with a focus-visible-
+   only ring so clicking an event doesn't flash a mismatched blue outline. */
+.appointment-calendar .rbc-event:focus {
+  outline: none;
+}
+
+.appointment-calendar .rbc-event:focus-visible {
+  outline: 2px solid var(--mc-primary-dark);
+  outline-offset: 1px;
+}
+
+.appointment-calendar .rbc-event.rbc-status-scheduled {
+  background: var(--mc-status-scheduled);
+}
+
+.appointment-calendar .rbc-event.rbc-status-confirmed {
+  background: #00897b;
+}
+
+.appointment-calendar .rbc-event.rbc-status-completed {
+  background: var(--mc-primary);
+}
+
+.appointment-calendar .rbc-event.rbc-status-cancelled {
+  background: var(--mc-danger);
+}
+
+.appointment-calendar .rbc-event.rbc-status-no_show {
+  background: var(--mc-status-no-show);
+}
+
+.appointment-calendar .rbc-event-label {
+  font-size: 0.72rem;
+  opacity: 0.9;
+}
+
+/* ---------- time grid (week/day) ---------- */
+
+.appointment-calendar .rbc-current-time-indicator {
+  background-color: var(--mc-danger);
+}
+
+.appointment-calendar .rbc-time-header-content,
+.appointment-calendar .rbc-time-gutter {
+  font-size: 0.8rem;
+  color: var(--mc-muted);
+}

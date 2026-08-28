@@ -160,7 +160,11 @@ export function Services() {
             <input value={form.simon} onChange={(e) => onSimonChange(e.target.value)} required maxLength={6} placeholder="123456" />
           </Field>
           <Field label={t("services.name")}>
-            <input value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} required />
+            <input
+              value={form.name}
+              onChange={(e) => setForm({ ...form, name: e.target.value.toUpperCase() })}
+              required
+            />
           </Field>
           <Field label={t("services.type")}>
             <select value={form.type} onChange={(e) => setForm({ ...form, type: Number(e.target.value) })} required>

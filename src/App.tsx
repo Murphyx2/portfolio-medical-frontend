@@ -14,8 +14,10 @@ import { Login } from "./pages/Login";
 import { Medicines } from "./pages/Medicines";
 import { Patients } from "./pages/Patients";
 import { Records } from "./pages/Records";
+import { RecordApTypes } from "./pages/RecordApTypes";
 import { Rooms } from "./pages/Rooms";
 import { RoomTypes } from "./pages/RoomTypes";
+import { Settings } from "./pages/Settings";
 import { ServiceTypes } from "./pages/ServiceTypes";
 import { Services } from "./pages/Services";
 import { Users } from "./pages/Users";
@@ -40,9 +42,11 @@ const ROUTES: { path: string; element: ReactNode; resource?: Resource }[] = [
   { path: "/appointments", element: <Appointments />, resource: "appointments" },
   { path: "/encounters", element: <Encounters />, resource: "encounters" },
   { path: "/records", element: <Records />, resource: "records" },
+  { path: "/records/types", element: <RecordApTypes />, resource: "recordApTypes" },
   { path: "/services", element: <Services />, resource: "services" },
   { path: "/services/types", element: <ServiceTypes />, resource: "serviceTypes" },
   { path: "/users", element: <Users />, resource: "users" },
+  { path: "/settings", element: <Settings />, resource: "settings" },
 ];
 
 export default function App() {

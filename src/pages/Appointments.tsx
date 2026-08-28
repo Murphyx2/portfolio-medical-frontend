@@ -1,11 +1,13 @@
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState, type ReactNode } from "react";
 import { useTranslation } from "react-i18next";
 
+import { AppointmentCalendar, getVisibleRange } from "../components/AppointmentCalendar";
 import { DateNavigator } from "../components/DateNavigator";
 import { DateTimeField } from "../components/DateTimeField";
 import { ListPage } from "../components/ListPage";
 import { PatientFormModal } from "../components/PatientFormModal";
-import { ConfirmDialog, Field, FormModal, MaskedValue, SearchableSelect, useRowConfirm, Page, type Column } from "../components/ui";
+import { ConfirmDialog, Dialog, Field, FormModal, MaskedValue, SearchableSelect, SearchBar, useRowConfirm, Page, type Column } from "../components/ui";
+import { useCalendarAppointments } from "../hooks/useCalendarAppointments";
 import { useDoctorServiceFilter } from "../hooks/useDoctorServiceFilter";
 import { useListPage } from "../hooks/useListPage";
 import { api, ApiError } from "../services/api";
@@ -16,11 +18,12 @@ import type {
   DoctorProfile,
   Paginated,
   Patient,
+  Role,
   Service,
   ServiceType,
 } from "../services/types";
 import { useAuth } from "../store/auth";
-import { can } from "../utils/can";
+import { can, canEditAppointment } from "../utils/can";
 import { formatCedula } from "../utils/cedula";
 import { formatDateTime, nextLocalISO, todayLocalISO } from "../utils/date";
 import { flattenError } from "../utils/errors";
@@ -38,11 +41,152 @@ function toDateTimeLocalInput(iso: string): string {
   return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
 }
 
+// `value` is the "YYYY-MM-DDTHH:mm" shape DateTimeField emits -- `new
+// Date(...)` parses it in the browser's local timezone, matching how the
+// field displays it.
+function isPastLocal(value: string): boolean {
+  return !!value && new Date(value) < new Date();
+}
+
+const genderLabelKeys: Record<string, string> = {
+  MALE: "patients.genderMale",
+  FEMALE: "patients.genderFemale",
+};
+
+/** Read-only "appointment details" dialog opened by clicking a row's
+ * patient name or date/time cell — mirrors the click-to-detail pattern in
+ * Patients.tsx / Encounters.tsx, giving a full view without forcing users
+ * through the Edit form just to look. */
+export function AppointmentDetailsDialog({
+  appointment,
+  onClose,
+  showActions,
+  canEdit,
+  role,
+  canConfirm,
+  canComplete,
+  canCancel,
+  canDelete,
+  isAdmin,
+  onEdit,
+  onReschedule,
+  onConfirm,
+  onComplete,
+  onCancel,
+  onDelete,
+  onRestore,
+}: {
+  appointment: Appointment;
+  onClose: () => void;
+  /** Renders the same row-actions the table's "actions" column shows
+   * (Edit/Reschedule/Confirm/Complete/Cancel/Delete/Restore), for Calendar
+   * mode where events are too small to carry buttons of their own. When
+   * omitted/false, behavior is byte-for-byte identical to before this prop
+   * existed -- List mode's usage must not pass it. */
+  showActions?: boolean;
+  canEdit?: boolean;
+  /** Requesting user's role, used only for the Edit button's status-aware
+   * check (canEditAppointment) -- COMPLETED appointments are locked to
+   * ADMIN/CENTER_MANAGER regardless of the base `canEdit` permission. */
+  role?: Role;
+  canConfirm?: boolean;
+  canComplete?: boolean;
+  canCancel?: boolean;
+  canDelete?: boolean;
+  isAdmin?: boolean;
+  onEdit?: (a: Appointment) => void;
+  onReschedule?: (a: Appointment) => void;
+  onConfirm?: (a: Appointment) => void;
+  onComplete?: (a: Appointment) => void;
+  onCancel?: (a: Appointment) => void;
+  onDelete?: (a: Appointment) => void;
+  onRestore?: (a: Appointment) => void;
+}) {
+  const { t } = useTranslation();
+  const statusLabel = (s: string) => t(`appointments.status${s[0]}${s.slice(1).toLowerCase()}`);
+  const genderLabelKey = genderLabelKeys[appointment.patient_info.gender];
+  const genderLabel = genderLabelKey ? t(genderLabelKey) : undefined;
+
+  return (
+    <Dialog title={t("appointments.details")} onClose={onClose} wide>
+      <div className="encounter-detail-badges">
+        <span className={`badge status-${appointment.status.toLowerCase()}`}>{statusLabel(appointment.status)}</span>
+      </div>
+
+      <div className="form-columns">
+        <div>
+          <h4>{t("appointments.patient")}</h4>
+          <div className="kv-grid">
+            <div><b>{t("common.name")}:</b> <MaskedValue value={appointment.patient_info.full_name} /></div>
+            <div><b>{t("appointments.phone")}:</b> <MaskedValue value={formatPhone(appointment.patient_info.phone)} /></div>
+            {genderLabel && <div><b>{t("patients.gender")}:</b> {genderLabel}</div>}
+          </div>
+        </div>
+        <div>
+          <h4>{t("appointments.dateTime")}</h4>
+          <div className="kv-grid">
+            <div><b>{t("appointments.doctor")}:</b> {appointment.doctor_info.full_name}</div>
+            <div><b>{t("appointments.service")}:</b> {appointment.service_detail?.name ?? "—"}</div>
+            <div><b>{t("appointments.dateTime")}:</b> {formatDateTime(appointment.date_time)}</div>
+            <div><b>{t("appointments.duration")}:</b> {appointment.duration_minutes}</div>
+            <div><b>{t("appointments.center")}:</b> {appointment.center_name ?? "—"}</div>
+          </div>
+        </div>
+      </div>
+
+      <h4>{t("appointments.notes")}</h4>
+      <p>{appointment.notes || "—"}</p>
+
+      {appointment.status === "CANCELLED" && (
+        <>
+          <h4>{t("appointments.cancelReason")}</h4>
+          <p>{appointment.cancel_reason || "—"}</p>
+        </>
+      )}
+
+      <div className="kv-grid">
+        <div><b>{t("appointments.createdBy")}:</b> {appointment.created_by_name}</div>
+        <div><b>{t("appointments.createdAt")}:</b> {formatDateTime(appointment.created_at)}</div>
+      </div>
+
+      <div className="modal-actions">
+        {showActions && (
+          <div className="row-actions">
+            {canEditAppointment(role, appointment.status) && appointment.active && (
+              <button className="btn small ghost" onClick={() => onEdit?.(appointment)}>{t("common.edit")}</button>
+            )}
+            {canEdit && (appointment.status === "SCHEDULED" || appointment.status === "CONFIRMED") && (
+              <button className="btn small ghost" onClick={() => onReschedule?.(appointment)}>{t("appointments.reschedule")}</button>
+            )}
+            {canConfirm && appointment.status === "SCHEDULED" && (
+              <button className="btn small" onClick={() => onConfirm?.(appointment)}>{t("appointments.confirm")}</button>
+            )}
+            {canComplete && appointment.status === "CONFIRMED" && (
+              <button className="btn small" onClick={() => onComplete?.(appointment)}>{t("appointments.complete")}</button>
+            )}
+            {canCancel && (appointment.status === "SCHEDULED" || appointment.status === "CONFIRMED") && (
+              <button className="btn small danger" onClick={() => onCancel?.(appointment)}>{t("appointments.cancel")}</button>
+            )}
+            {canDelete && appointment.active && (
+              <button className="btn small danger" onClick={() => onDelete?.(appointment)}>{t("common.delete")}</button>
+            )}
+            {isAdmin && !appointment.active && (
+              <button className="btn small" onClick={() => onRestore?.(appointment)}>{t("common.restore")}</button>
+            )}
+          </div>
+        )}
+        <button type="button" className="btn ghost" onClick={onClose}>{t("common.close")}</button>
+      </div>
+    </Dialog>
+  );
+}
+
 export function Appointments() {
   const { t } = useTranslation();
   const { user } = useAuth();
   const canCreate = can(user?.role, "create", "appointments");
   const canEdit = can(user?.role, "edit", "appointments");
+  const canConfirm = can(user?.role, "confirm", "appointments");
   const canComplete = can(user?.role, "complete", "appointments");
   const canCancel = can(user?.role, "cancel", "appointments");
   const canDelete = can(user?.role, "delete", "appointments");
@@ -57,13 +201,29 @@ export function Appointments() {
   const [editingAppointment, setEditingAppointment] = useState<Appointment | null>(null);
   const [form, setForm] = useState(EMPTY);
   const [formError, setFormError] = useState("");
+  const [dateTimeError, setDateTimeError] = useState("");
   const [rescheduleTarget, setRescheduleTarget] = useState<Appointment | null>(null);
   const [rescheduleDateTime, setRescheduleDateTime] = useState("");
   const [rescheduleError, setRescheduleError] = useState("");
+  const [rescheduleDateTimeError, setRescheduleDateTimeError] = useState("");
   const [cancelTarget, setCancelTarget] = useState<Appointment | null>(null);
   const [cancelReason, setCancelReason] = useState("");
   const [cancelError, setCancelError] = useState("");
-  const confirm = useRowConfirm<"complete" | "delete" | "restore", Appointment>();
+  const [detailsTarget, setDetailsTarget] = useState<Appointment | null>(null);
+  // Calendar mode: List and Calendar are two independent views over the
+  // same data (default view is Calendar, per the plan) -- List keeps
+  // today's exact single-day/table/pagination UI below, Calendar renders
+  // AppointmentCalendar instead and fetches its own wider date range.
+  const [viewMode, setViewMode] = useState<"list" | "calendar">("calendar");
+  const [calendarRange, setCalendarRange] = useState(() => getVisibleRange(new Date(), "month"));
+  const [calendarSearch, setCalendarSearch] = useState("");
+  const [calendarDetailsTarget, setCalendarDetailsTarget] = useState<Appointment | null>(null);
+  const {
+    appointments: calendarAppointments,
+    loading: calendarLoading,
+    reload: reloadCalendar,
+  } = useCalendarAppointments(calendarRange.start, calendarRange.end);
+  const confirm = useRowConfirm<"confirm" | "complete" | "delete" | "restore", Appointment>();
   const {
     rows,
     page,
@@ -88,6 +248,19 @@ export function Appointments() {
       date_time__lt: `${nextLocalISO(dateFilter)}T00:00:00`,
     },
   });
+
+  // Client-side substring filter over the already-fetched calendar range --
+  // no per-keystroke refetch (unlike List mode's server-side search).
+  const filteredCalendarAppointments = useMemo(() => {
+    const q = calendarSearch.trim().toLowerCase();
+    if (!q) return calendarAppointments;
+    return calendarAppointments.filter(
+      (a) =>
+        a.patient_info.full_name.toLowerCase().includes(q) ||
+        a.doctor_info.full_name.toLowerCase().includes(q) ||
+        (a.service_detail?.name ?? "").toLowerCase().includes(q),
+    );
+  }, [calendarAppointments, calendarSearch]);
 
   const { availableDoctors, availableServices } = useDoctorServiceFilter({
     doctors,
@@ -134,6 +307,7 @@ export function Appointments() {
       notes: a.notes,
     });
     setFormError("");
+    setDateTimeError("");
     setModal(true);
   }
 
@@ -145,6 +319,11 @@ export function Appointments() {
     }
     if (!form.service) {
       setFormError(t("appointments.serviceRequired"));
+      return;
+    }
+    const originalDateTime = editingAppointment ? toDateTimeLocalInput(editingAppointment.date_time) : null;
+    if (form.date_time !== originalDateTime && isPastLocal(form.date_time)) {
+      setDateTimeError(t("appointments.dateTimePast"));
       return;
     }
     const body = {
@@ -159,6 +338,7 @@ export function Appointments() {
       else await api.post("/appointments/", body);
       setModal(false);
       load();
+      reloadCalendar();
     } catch (err) {
       setFormError(err instanceof ApiError ? flattenError(err.message) : String(err));
     }
@@ -168,17 +348,24 @@ export function Appointments() {
     setRescheduleTarget(a);
     setRescheduleDateTime(toDateTimeLocalInput(a.date_time));
     setRescheduleError("");
+    setRescheduleDateTimeError("");
   }
 
   async function submitReschedule() {
     if (!rescheduleTarget) return;
     setRescheduleError("");
+    const originalDateTime = toDateTimeLocalInput(rescheduleTarget.date_time);
+    if (rescheduleDateTime !== originalDateTime && isPastLocal(rescheduleDateTime)) {
+      setRescheduleDateTimeError(t("appointments.dateTimePast"));
+      return;
+    }
     try {
       await api.post(`/appointments/${rescheduleTarget.id}/reschedule/`, {
         date_time: new Date(rescheduleDateTime).toISOString(),
       });
       setRescheduleTarget(null);
       load();
+      reloadCalendar();
     } catch (err) {
       setRescheduleError(err instanceof ApiError ? flattenError(err.message) : String(err));
     }
@@ -201,6 +388,7 @@ export function Appointments() {
       await api.post(`/appointments/${cancelTarget.id}/cancel/`, { reason: cancelReason.trim() });
       setCancelTarget(null);
       load();
+      reloadCalendar();
     } catch (err) {
       setCancelError(err instanceof ApiError ? flattenError(err.message) : String(err));
     }
@@ -214,6 +402,7 @@ export function Appointments() {
         await api.post(`/appointments/${row.id}/${type}/`, {});
       }
       load();
+      reloadCalendar();
     });
   }
 
@@ -223,6 +412,8 @@ export function Appointments() {
         const time = formatDateTime(row.date_time);
         const patient = row.patient_info.full_name;
         switch (type) {
+          case "confirm":
+            return { title: t("appointments.confirm"), message: t("appointments.confirmConfirm", { patient, time }), confirmLabel: t("appointments.confirm"), danger: false };
           case "complete":
             return { title: t("appointments.complete"), message: t("appointments.completeConfirm", { patient, time }), confirmLabel: t("appointments.complete"), danger: false };
           case "delete":
@@ -235,9 +426,30 @@ export function Appointments() {
 
   const statusLabel = (s: string) => t(`appointments.status${s[0]}${s.slice(1).toLowerCase()}`);
 
+  // Matches Patients.tsx/Encounters.tsx's click-to-detail pattern: the
+  // patient name and date/time cells open a read-only details dialog
+  // instead of forcing users through the Edit form just to look.
+  const openDetailLink = (r: Appointment, content: ReactNode) => (
+    <button type="button" className="row-link" onClick={() => setDetailsTarget(r)}>
+      {content}
+    </button>
+  );
+
+  // Calendar mode's details dialog (`showActions`) reuses the exact same
+  // handlers as the table's row-actions column below -- wrapped so picking
+  // an action first closes the details dialog it was opened from, instead
+  // of leaving it stacked underneath the edit/reschedule/cancel/confirm
+  // dialog that opens next.
+  function fromCalendarDetails<T extends unknown[]>(fn: (...args: T) => void) {
+    return (...args: T) => {
+      setCalendarDetailsTarget(null);
+      fn(...args);
+    };
+  }
+
   const columns: Column<Appointment>[] = [
-    { key: "date_time", header: t("appointments.dateTime"), sortKey: "date_time", render: (r) => formatDateTime(r.date_time) },
-    { key: "patient", header: t("appointments.patient"), sortKey: "patient__search_name", render: (r) => r.patient_info.full_name },
+    { key: "date_time", header: t("appointments.dateTime"), sortKey: "date_time", render: (r) => openDetailLink(r, formatDateTime(r.date_time)) },
+    { key: "patient", header: t("appointments.patient"), sortKey: "patient__search_name", render: (r) => openDetailLink(r, r.patient_info.full_name) },
     { key: "doctor", header: t("appointments.doctor"), sortKey: "doctor__user__last_name", render: (r) => r.doctor_info.full_name },
     { key: "service", header: t("appointments.service"), render: (r) => r.service_detail?.name ?? "—" },
     { key: "phone", header: t("appointments.phone"), render: (r) => <MaskedValue value={formatPhone(r.patient_info.phone)} /> },
@@ -262,16 +474,19 @@ export function Appointments() {
       align: "center",
       render: (r) => (
         <div className="row-actions">
-          {canEdit && r.active && (
+          {canEditAppointment(user?.role, r.status) && r.active && (
             <button className="btn small ghost" onClick={() => openEdit(r)}>{t("common.edit")}</button>
           )}
-          {canEdit && r.status === "SCHEDULED" && (
+          {canEdit && (r.status === "SCHEDULED" || r.status === "CONFIRMED") && (
             <button className="btn small ghost" onClick={() => openReschedule(r)}>{t("appointments.reschedule")}</button>
           )}
-          {canComplete && r.status === "SCHEDULED" && (
+          {canConfirm && r.status === "SCHEDULED" && (
+            <button className="btn small" onClick={() => confirm.open("confirm", r)}>{t("appointments.confirm")}</button>
+          )}
+          {canComplete && r.status === "CONFIRMED" && (
             <button className="btn small" onClick={() => confirm.open("complete", r)}>{t("appointments.complete")}</button>
           )}
-          {canCancel && r.status === "SCHEDULED" && (
+          {canCancel && (r.status === "SCHEDULED" || r.status === "CONFIRMED") && (
             <button className="btn small danger" onClick={() => openCancel(r)}>{t("appointments.cancel")}</button>
           )}
           {canDelete && r.active && (
@@ -294,39 +509,79 @@ export function Appointments() {
         canCreate && (
           <button
             className="btn primary"
-            onClick={() => { setEditingAppointment(null); setForm(EMPTY); setSelectedPatient(null); setFormError(""); setModal(true); }}
+            onClick={() => { setEditingAppointment(null); setForm(EMPTY); setSelectedPatient(null); setFormError(""); setDateTimeError(""); setModal(true); }}
           >
             + {t("appointments.new")}
           </button>
         )
       }
     >
-      <ListPage<Appointment>
-        initialLoading={initialLoading}
-        search={search}
-        setSearch={setSearch}
-        searchSubmit={searchSubmit}
-        toolbarBefore={
-          <DateNavigator
-            value={dateFilter}
-            onChange={(isoDate) => setDateFilter(isoDate || todayLocalISO())}
-            ariaLabel={t("appointments.date")}
+      <div className="view-toggle" role="tablist" aria-label={t("appointments.viewToggle")}>
+        <button
+          type="button"
+          role="tab"
+          aria-selected={viewMode === "calendar"}
+          className={viewMode === "calendar" ? "view-toggle-btn active" : "view-toggle-btn"}
+          onClick={() => setViewMode("calendar")}
+        >
+          {t("appointments.viewCalendar")}
+        </button>
+        <button
+          type="button"
+          role="tab"
+          aria-selected={viewMode === "list"}
+          className={viewMode === "list" ? "view-toggle-btn active" : "view-toggle-btn"}
+          onClick={() => setViewMode("list")}
+        >
+          {t("appointments.viewList")}
+        </button>
+      </div>
+
+      {viewMode === "list" ? (
+        <ListPage<Appointment>
+          initialLoading={initialLoading}
+          search={search}
+          setSearch={setSearch}
+          searchSubmit={searchSubmit}
+          toolbarBefore={
+            <DateNavigator
+              value={dateFilter}
+              onChange={(isoDate) => setDateFilter(isoDate || todayLocalISO())}
+              ariaLabel={t("appointments.date")}
+            />
+          }
+          isAdmin={isAdmin}
+          showInactive={showInactive}
+          onToggleInactive={setShowInactive}
+          page={page}
+          count={count}
+          pageSize={pageSize}
+          onPageChange={setPage}
+          onPageSizeChange={changePageSize}
+          columns={columns}
+          rows={rows}
+          sortKey={sortKey}
+          sortDir={sortDir}
+          onSort={handleSort}
+        />
+      ) : (
+        <>
+          <div className="list-toolbar">
+            <SearchBar
+              value={calendarSearch}
+              onChange={setCalendarSearch}
+              placeholder={t("common.searchPlaceholder")}
+              label={t("common.search")}
+            />
+            {calendarLoading && <span className="calendar-loading">{t("common.loading")}</span>}
+          </div>
+          <AppointmentCalendar
+            appointments={filteredCalendarAppointments}
+            onSelectAppointment={(a) => setCalendarDetailsTarget(a)}
+            onRangeChange={setCalendarRange}
           />
-        }
-        isAdmin={isAdmin}
-        showInactive={showInactive}
-        onToggleInactive={setShowInactive}
-        page={page}
-        count={count}
-        pageSize={pageSize}
-        onPageChange={setPage}
-        onPageSizeChange={changePageSize}
-        columns={columns}
-        rows={rows}
-        sortKey={sortKey}
-        sortDir={sortDir}
-        onSort={handleSort}
-      />
+        </>
+      )}
 
       {modal && (
         <FormModal
@@ -389,10 +644,12 @@ export function Appointments() {
           <Field label={t("appointments.dateTime")}>
             <DateTimeField
               value={form.date_time}
-              onChange={(v) => setForm({ ...form, date_time: v })}
+              onChange={(v) => { setForm({ ...form, date_time: v }); setDateTimeError(""); }}
               ariaLabel={t("appointments.dateTime")}
+              min={editingAppointment ? undefined : new Date().toISOString().slice(0, 16)}
               required
             />
+            {dateTimeError && <span className="field-error">{dateTimeError}</span>}
           </Field>
           <Field label={t("appointments.notes")}>
             <textarea value={form.notes} onChange={(e) => setForm({ ...form, notes: e.target.value })} />
@@ -418,10 +675,12 @@ export function Appointments() {
           <Field label={t("appointments.dateTime")}>
             <DateTimeField
               value={rescheduleDateTime}
-              onChange={setRescheduleDateTime}
+              onChange={(v) => { setRescheduleDateTime(v); setRescheduleDateTimeError(""); }}
               ariaLabel={t("appointments.dateTime")}
+              min={new Date().toISOString().slice(0, 16)}
               required
             />
+            {rescheduleDateTimeError && <span className="field-error">{rescheduleDateTimeError}</span>}
           </Field>
         </FormModal>
       )}
@@ -442,6 +701,32 @@ export function Appointments() {
             />
           </Field>
         </FormModal>
+      )}
+
+      {detailsTarget && (
+        <AppointmentDetailsDialog appointment={detailsTarget} onClose={() => setDetailsTarget(null)} />
+      )}
+
+      {calendarDetailsTarget && (
+        <AppointmentDetailsDialog
+          appointment={calendarDetailsTarget}
+          onClose={() => setCalendarDetailsTarget(null)}
+          showActions
+          canEdit={canEdit}
+          role={user?.role}
+          canConfirm={canConfirm}
+          canComplete={canComplete}
+          canCancel={canCancel}
+          canDelete={canDelete}
+          isAdmin={isAdmin}
+          onEdit={fromCalendarDetails(openEdit)}
+          onReschedule={fromCalendarDetails(openReschedule)}
+          onConfirm={fromCalendarDetails((a) => confirm.open("confirm", a))}
+          onComplete={fromCalendarDetails((a) => confirm.open("complete", a))}
+          onCancel={fromCalendarDetails(openCancel)}
+          onDelete={fromCalendarDetails((a) => confirm.open("delete", a))}
+          onRestore={fromCalendarDetails((a) => confirm.open("restore", a))}
+        />
       )}
 
       {confirm.confirming && confirmCopy && (

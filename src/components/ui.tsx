@@ -1,5 +1,5 @@
 import { useEffect, useId, useRef, useState } from "react";
-import type { FormEvent, ReactNode } from "react";
+import type { FormEvent, KeyboardEvent as ReactKeyboardEvent, ReactNode } from "react";
 import { useTranslation } from "react-i18next";
 
 import { MIN_SEARCH_CHARS } from "../hooks/useListControls";
@@ -51,7 +51,7 @@ export function useRowConfirm<K extends string, T>() {
 }
 
 export function Page({ title, actions, children }: {
-  title: string;
+  title: ReactNode;
   actions?: ReactNode;
   children: ReactNode;
 }) {
@@ -293,6 +293,94 @@ export function Field({ label, children }: { label: string; children: ReactNode 
   );
 }
 
+export interface TabItem {
+  key: string;
+  label: string;
+}
+
+/**
+ * WAI-ARIA tabs pattern (roving tabindex: only the active tab is in the tab
+ * order, Left/Right/Home/End move focus+selection together) -- no existing
+ * precedent in this codebase, first used by the Expediente modal. Renders
+ * only the tablist strip; pair each tab with a `TabPanel` of the same
+ * `idPrefix`/key rendered by the caller so panel content can be conditional
+ * (e.g. only mounting the active tab's fields).
+ */
+export function Tabs({ items, active, onChange, idPrefix = "tab" }: {
+  items: TabItem[];
+  active: string;
+  onChange: (key: string) => void;
+  idPrefix?: string;
+}) {
+  const buttonRefs = useRef<Record<string, HTMLButtonElement | null>>({});
+
+  function selectAndFocus(key: string) {
+    onChange(key);
+    buttonRefs.current[key]?.focus();
+  }
+
+  function onKeyDown(e: ReactKeyboardEvent<HTMLButtonElement>, index: number) {
+    let nextIndex: number | null = null;
+    if (e.key === "ArrowRight") nextIndex = (index + 1) % items.length;
+    else if (e.key === "ArrowLeft") nextIndex = (index - 1 + items.length) % items.length;
+    else if (e.key === "Home") nextIndex = 0;
+    else if (e.key === "End") nextIndex = items.length - 1;
+    if (nextIndex === null) return;
+    e.preventDefault();
+    selectAndFocus(items[nextIndex].key);
+  }
+
+  return (
+    <div className="tabs" role="tablist">
+      {items.map((item, i) => {
+        const isActive = active === item.key;
+        return (
+          <button
+            key={item.key}
+            ref={(el) => {
+              buttonRefs.current[item.key] = el;
+            }}
+            type="button"
+            role="tab"
+            id={`${idPrefix}-tab-${item.key}`}
+            aria-selected={isActive}
+            aria-controls={`${idPrefix}-panel-${item.key}`}
+            tabIndex={isActive ? 0 : -1}
+            className={`tab${isActive ? " active" : ""}`}
+            onClick={() => onChange(item.key)}
+            onKeyDown={(e) => onKeyDown(e, i)}
+          >
+            {item.label}
+          </button>
+        );
+      })}
+    </div>
+  );
+}
+
+/** Content panel paired with one `Tabs` tab -- unmounts (rather than just
+ * hiding) inactive panels, since the Expediente modal's tabs hold live form
+ * state that lives in the parent regardless of which panel is mounted. */
+export function TabPanel({ tabKey, active, idPrefix = "tab", children }: {
+  tabKey: string;
+  active: string;
+  idPrefix?: string;
+  children: ReactNode;
+}) {
+  if (active !== tabKey) return null;
+  return (
+    <div
+      role="tabpanel"
+      id={`${idPrefix}-panel-${tabKey}`}
+      aria-labelledby={`${idPrefix}-tab-${tabKey}`}
+      tabIndex={0}
+      className="tab-panel"
+    >
+      {children}
+    </div>
+  );
+}
+
 export interface Column<T> {
   key: string;
   header: ReactNode;
@@ -307,6 +395,7 @@ export function Table<T extends { id: number }>({
   onEdit,
   onDelete,
   onRestore,
+  extraActions,
   isInactive,
   getRowLabel,
   emptyLabel,
@@ -319,6 +408,10 @@ export function Table<T extends { id: number }>({
   onEdit?: (row: T) => void;
   onDelete?: (row: T) => void | Promise<void>;
   onRestore?: (row: T) => void | Promise<void>;
+  /** Extra row-action content rendered ahead of Edit/Delete/Restore inside
+   * the same Acciones cell (e.g. Records' "Nueva entrada" button), instead
+   * of forcing callers to add their own standalone column. */
+  extraActions?: (row: T) => ReactNode;
   isInactive?: (row: T) => boolean;
   /** Human-readable label for a row, interpolated into the delete/restore confirm message. Falls back to the row id. */
   getRowLabel?: (row: T) => string;
@@ -328,7 +421,7 @@ export function Table<T extends { id: number }>({
   onSort?: (key: string) => void;
 }) {
   const { t } = useTranslation();
-  const hasActions = Boolean(onEdit || onDelete || onRestore);
+  const hasActions = Boolean(onEdit || onDelete || onRestore || extraActions);
   const [confirming, setConfirming] = useState<{ type: "delete" | "restore"; row: T } | null>(null);
   const [actionError, setActionError] = useState("");
   const [actionPending, setActionPending] = useState(false);
@@ -415,6 +508,7 @@ export function Table<T extends { id: number }>({
               {hasActions && (
                 <td className="col-center">
                   <div className="row-actions">
+                    {extraActions?.(row)}
                     {onEdit && (
                       <button
                         className="btn small"
@@ -555,6 +649,7 @@ export function SearchBar({ value, onChange, placeholder, label, onSubmit }: {
 export function SearchableSelect<T extends { id: number }>({
   value,
   onSelect,
+  onClear,
   search,
   placeholder,
   getLabel,
@@ -564,6 +659,9 @@ export function SearchableSelect<T extends { id: number }>({
 }: {
   value: T | null;
   onSelect: (item: T) => void;
+  /** When provided, a "×" clear button renders next to a filled value so
+   * the selection can be reset to null without picking a replacement. */
+  onClear?: () => void;
   search: (query: string) => Promise<{ results: T[]; count: number }>;
   placeholder: string;
   getLabel: (item: T) => string;
@@ -653,17 +751,32 @@ export function SearchableSelect<T extends { id: number }>({
   return (
     <div className="searchable-select" ref={wrapRef}>
       {!editing && value ? (
-        <button type="button" className="searchable-select-trigger" onClick={startEdit}>
-          <span className="searchable-select-value">
-            <span className="searchable-select-label">{getLabel(value)}</span>
-            {getSublabel && (
-              <span className="searchable-select-sublabel">{getSublabel(value)}</span>
-            )}
-          </span>
-          <span className="searchable-select-caret" aria-hidden="true">
-            ▾
-          </span>
-        </button>
+        <div className="searchable-select-filled">
+          <button type="button" className="searchable-select-trigger" onClick={startEdit}>
+            <span className="searchable-select-value">
+              <span className="searchable-select-label">{getLabel(value)}</span>
+              {getSublabel && (
+                <span className="searchable-select-sublabel">{getSublabel(value)}</span>
+              )}
+            </span>
+            <span className="searchable-select-caret" aria-hidden="true">
+              ▾
+            </span>
+          </button>
+          {onClear && (
+            <button
+              type="button"
+              className="searchable-select-clear"
+              aria-label={t("common.clear")}
+              onClick={(e) => {
+                e.stopPropagation();
+                onClear();
+              }}
+            >
+              ×
+            </button>
+          )}
+        </div>
       ) : (
         <div className="searchable-select-input-wrap">
           <input

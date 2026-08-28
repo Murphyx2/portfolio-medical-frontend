@@ -1,30 +1,38 @@
 import { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
-import { useSearchParams } from "react-router-dom";
+import { useNavigate, useSearchParams } from "react-router-dom";
 
+import { PatientFormModal } from "../components/PatientFormModal";
 import { Page } from "../components/ui";
-import { RecordDetailWithLogs, type LogFields } from "./records/RecordDetailWithLogs";
 import { RecordFormModal } from "./records/RecordFormModal";
 import { RecordList } from "./records/RecordList";
 import { useListPage } from "../hooks/useListPage";
-import { api, upload } from "../services/api";
-import type { ConsultationLog, MedicalRecord, Paginated, Patient } from "../services/types";
+import { api } from "../services/api";
+import { getUploadLimits } from "../services/settings";
+import type { APCategory, APType, MedicalRecord, Paginated, Patient } from "../services/types";
 import { useAuth } from "../store/auth";
 import { can } from "../utils/can";
 
 export function Records() {
   const { t } = useTranslation();
   const { user } = useAuth();
+  const navigate = useNavigate();
   const canCreate = can(user?.role, "create", "records");
   const canDelete = can(user?.role, "delete", "records");
+  const canManageApTypes = can(user?.role, "edit", "recordApTypes");
   const isAdmin = can(user?.role, "restore", "records");
-  const [patients, setPatients] = useState<Patient[]>([]);
-  const [detail, setDetail] = useState<MedicalRecord | null>(null);
-  const [logs, setLogs] = useState<ConsultationLog[]>([]);
-  const [modal, setModal] = useState<"record" | null>(null);
-  const [formInitialPatient, setFormInitialPatient] = useState<Patient | null>(null);
-  const [openingId, setOpeningId] = useState<number | null>(null);
+  const [maxUploadMb, setMaxUploadMb] = useState<number | undefined>(undefined);
+  const [apCategories, setApCategories] = useState<APCategory[]>([]);
+  const [apTypes, setApTypes] = useState<APType[]>([]);
+
+  const [modalOpen, setModalOpen] = useState(false);
+  const [activeRecord, setActiveRecord] = useState<MedicalRecord | null>(null);
+  const [recordLoading, setRecordLoading] = useState(false);
+  const [selectedPatient, setSelectedPatient] = useState<Patient | null>(null);
+  const [focusNewEntry, setFocusNewEntry] = useState(false);
+  const [patientModal, setPatientModal] = useState(false);
   const [searchParams] = useSearchParams();
+
   const {
     rows,
     page,
@@ -42,78 +50,69 @@ export function Records() {
     showInactive,
     setShowInactive,
     load,
-  } = useListPage<MedicalRecord>("/medical-records/", { initialSort: { key: "date", dir: "desc" } });
+  } = useListPage<MedicalRecord>("/medical-records/", { initialSort: { key: "last_visit_at", dir: "desc" } });
 
   useEffect(() => {
-    // Patient options for the "new record" picker: fetched once, not on
-    // every page/sort/search change (unlike `load`, which re-runs then).
-    api.get<Paginated<Patient>>("/patients/?page_size=100").then((r) => setPatients(r.results)).catch(() => {});
+    if (canCreate) getUploadLimits().then((r) => setMaxUploadMb(r.max_image_upload_mb)).catch(() => {});
+    api.get<Paginated<APCategory>>("/ap-categories/?page_size=100").then((r) => setApCategories(r.results)).catch(() => {});
+    api.get<Paginated<APType>>("/ap-types/?page_size=200").then((r) => setApTypes(r.results)).catch(() => {});
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  async function openDetail(rec: MedicalRecord) {
-    setOpeningId(rec.id);
+  /** One living expediente per patient (§9 of the plan): resolves to the
+   * patient's existing MedicalRecord if one exists, or creates the bare
+   * anchor row otherwise -- shared by the patient-picker's onSelect, the
+   * "Crear paciente" return path, and the ?patient= deep link, so none of
+   * them can ever attempt a second POST /medical-records/ for the same
+   * patient (the backend's uniqueness constraint would reject it anyway). */
+  async function resolveRecordForPatient(patient: Patient) {
+    setSelectedPatient(patient);
+    setRecordLoading(true);
     try {
-      // Independent requests (neither depends on the other's result): fire
-      // them concurrently instead of waiting for the record detail before
-      // starting the logs fetch.
-      const [full, logsResult] = await Promise.all([
-        api.get<MedicalRecord>(`/medical-records/${rec.id}/`),
-        api
-          .get<Paginated<ConsultationLog>>(`/consultation-logs/?patient=${rec.patient}&page_size=20`)
-          .catch(() => ({ results: [] as ConsultationLog[] })),
-      ]);
-      setDetail(full);
-      setLogs(logsResult.results);
+      const existing = await api.get<Paginated<MedicalRecord>>(`/medical-records/?patient=${patient.id}&page_size=1`);
+      if (existing.results.length > 0) {
+        setActiveRecord(existing.results[0]);
+      } else if (canCreate) {
+        const created = await api.post<MedicalRecord>("/medical-records/", { patient: patient.id });
+        setActiveRecord(created);
+        load();
+      }
     } finally {
-      setOpeningId(null);
+      setRecordLoading(false);
     }
   }
 
   useEffect(() => {
     // Arriving from Encounters.tsx's "Open Record" action (?patient=<id>):
-    // jump straight to that patient's most recent record, or -- if they
-    // don't have one yet -- open the "new record" form pre-filled for them,
-    // instead of leaving the visitor to search the list manually. This is
-    // the single home for this cross-page handoff pattern -- deliberately
-    // kept at the page level, not inside any extracted component.
+    // jump straight to that patient's expediente instead of leaving the
+    // visitor to search the list manually.
     const patientId = searchParams.get("patient");
     if (!patientId) return;
     (async () => {
       try {
-        const existing = await api.get<Paginated<MedicalRecord>>(
-          `/medical-records/?patient=${patientId}&page_size=1`,
-        );
-        if (existing.results.length > 0) {
-          await openDetail(existing.results[0]);
-          return;
-        }
-        if (!canCreate) return;
         const patient = await api.get<Patient>(`/patients/${patientId}/`);
-        setFormInitialPatient(patient);
-        setModal("record");
+        setModalOpen(true);
+        setFocusNewEntry(false);
+        await resolveRecordForPatient(patient);
       } catch {
-        /* patient/records lookup failed -- leave the list view as-is */
+        /* patient lookup failed -- leave the list view as-is */
       }
     })();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [searchParams]);
 
-  async function uploadImage(file: File, caption: string) {
-    if (!detail) return;
-    const fd = new FormData();
-    fd.append("record", String(detail.id));
-    fd.append("image", file);
-    fd.append("caption", caption);
-    await upload("/images/", fd);
-    const full = await api.get<MedicalRecord>(`/medical-records/${detail.id}/`);
-    setDetail(full);
+  function openNew() {
+    setActiveRecord(null);
+    setSelectedPatient(null);
+    setFocusNewEntry(false);
+    setModalOpen(true);
   }
 
-  async function createLog(fields: LogFields) {
-    if (!detail) return;
-    await api.post("/consultation-logs/", { ...fields, patient: detail.patient });
-    const r = await api.get<Paginated<ConsultationLog>>(`/consultation-logs/?patient=${detail.patient}&page_size=20`);
-    setLogs(r.results);
+  function openRow(row: MedicalRecord, opts?: { newEntry?: boolean }) {
+    setActiveRecord(row);
+    setSelectedPatient(null);
+    setFocusNewEntry(Boolean(opts?.newEntry));
+    setModalOpen(true);
   }
 
   async function removeRecord(rec: MedicalRecord) {
@@ -126,20 +125,22 @@ export function Records() {
     load();
   }
 
-  function openRecordForm() {
-    setFormInitialPatient(patients[0] ?? null);
-    setModal("record");
-  }
-
   return (
     <Page
       title={t("records.title")}
       actions={
-        canCreate && (
-          <button className="btn primary" onClick={openRecordForm}>
-            + {t("records.newRecord")}
-          </button>
-        )
+        <div className="page-actions-stack">
+          {canCreate && (
+            <button className="btn primary" onClick={openNew}>
+              + {t("records.newRecord")}
+            </button>
+          )}
+          {canManageApTypes && (
+            <button className="btn ghost" onClick={() => navigate("/records/types")}>
+              {t("records.manageApTypes")}
+            </button>
+          )}
+        </div>
       }
     >
       <RecordList
@@ -161,29 +162,32 @@ export function Records() {
         sortKey={sortKey}
         sortDir={sortDir}
         onSort={handleSort}
-        openDetail={openDetail}
-        openingId={openingId}
+        openDetail={openRow}
+        canCreateEntry={canCreate}
       />
 
-      {detail && (
-        <RecordDetailWithLogs
-          key={detail.id}
-          detail={detail}
-          logs={logs}
-          onClose={() => setDetail(null)}
-          canCreate={canCreate}
-          onUploadImage={uploadImage}
-          onCreateLog={createLog}
+      {modalOpen && (
+        <RecordFormModal
+          record={activeRecord}
+          recordLoading={recordLoading}
+          selectedPatient={selectedPatient}
+          onSelectPatient={resolveRecordForPatient}
+          onRequestNewPatient={() => setPatientModal(true)}
+          focusNewEntry={focusNewEntry}
+          apCategories={apCategories}
+          apTypes={apTypes}
+          maxUploadMb={maxUploadMb}
+          onClose={() => setModalOpen(false)}
+          onEntrySaved={load}
         />
       )}
 
-      {modal === "record" && (
-        <RecordFormModal
-          initialPatient={formInitialPatient}
-          onClose={() => setModal(null)}
-          onSaved={() => {
-            setModal(null);
-            load();
+      {patientModal && (
+        <PatientFormModal
+          onClose={() => setPatientModal(false)}
+          onSaved={(p) => {
+            setPatientModal(false);
+            resolveRecordForPatient(p);
           }}
         />
       )}

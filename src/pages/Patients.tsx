@@ -161,11 +161,13 @@ export function Patients() {
       sortKey: "cedula",
       render: (r) => {
         // For a minor with guardian info on file, this column shows the
-        // guardian's cedula instead of the patient's own -- the same value
-        // can therefore legitimately repeat across sibling rows. The
-        // patient's own cedula is always shown in the detail modal.
-        const showsGuardian = (r.age ?? 99) < 18 && r.has_guardian && !!r.guardian_cedula;
-        const raw = showsGuardian ? r.guardian_cedula : r.cedula;
+        // first guardian's cedula instead of the patient's own -- the same
+        // value can therefore legitimately repeat across sibling rows (or
+        // across a patient's own several guardians). The patient's own
+        // cedula, and every guardian, is always shown in the detail modal.
+        const primaryGuardianCedula = r.guardians[0]?.cedula;
+        const showsGuardian = (r.age ?? 99) < 18 && r.has_guardian && !!primaryGuardianCedula;
+        const raw = showsGuardian ? primaryGuardianCedula : r.cedula;
         const formatted = raw ? (raw.includes("•") ? raw : formatCedula(raw)) : "";
         return openDetailLink(
           r,
@@ -286,33 +288,29 @@ export function Patients() {
           {(detail.age ?? 99) < 18 && (
             <>
               <h4>{t("patients.sectionGuardian")}</h4>
-              {detail.has_guardian ? (
-                <div className="kv-grid">
-                  <div>
-                    <b>{t("patients.guardianFirstName")}:</b> <MaskedValue value={detail.guardian_first_name} />
+              {detail.has_guardian && detail.guardians.length > 0 ? (
+                detail.guardians.map((g, i) => (
+                  <div className="kv-grid" key={g.id ?? i}>
+                    <div>
+                      <b>{t("patients.guardianFirstName")}:</b> <MaskedValue value={g.first_name} />
+                    </div>
+                    <div>
+                      <b>{t("patients.guardianLastName")}:</b> <MaskedValue value={g.last_name} />
+                    </div>
+                    <div>
+                      <b>{t("patients.guardianCedula")}:</b>{" "}
+                      <MaskedValue
+                        value={g.cedula ? (g.cedula.includes("•") ? g.cedula : formatCedula(g.cedula)) : ""}
+                      />
+                    </div>
+                    <div>
+                      <b>{t("patients.guardianNss")}:</b> <MaskedValue value={g.nss} />
+                    </div>
+                    <div>
+                      <b>{t("patients.guardianPhone")}:</b> <MaskedValue value={formatPhone(g.phone)} />
+                    </div>
                   </div>
-                  <div>
-                    <b>{t("patients.guardianLastName")}:</b> <MaskedValue value={detail.guardian_last_name} />
-                  </div>
-                  <div>
-                    <b>{t("patients.guardianCedula")}:</b>{" "}
-                    <MaskedValue
-                      value={
-                        detail.guardian_cedula
-                          ? detail.guardian_cedula.includes("•")
-                            ? detail.guardian_cedula
-                            : formatCedula(detail.guardian_cedula)
-                          : ""
-                      }
-                    />
-                  </div>
-                  <div>
-                    <b>{t("patients.guardianNss")}:</b> <MaskedValue value={detail.guardian_nss} />
-                  </div>
-                  <div>
-                    <b>{t("patients.guardianPhone")}:</b> <MaskedValue value={formatPhone(detail.guardian_phone)} />
-                  </div>
-                </div>
+                ))
               ) : (
                 <p className="muted">{t("patients.guardianNotOnFile")}</p>
               )}

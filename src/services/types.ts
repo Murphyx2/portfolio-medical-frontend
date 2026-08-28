@@ -45,6 +45,22 @@ export interface LoginResponse {
   user: User;
 }
 
+export interface SystemSettings {
+  login_lockout_threshold: number;
+  login_lockout_minutes: number;
+  password_min_length: number;
+  access_token_lifetime_minutes: number;
+  refresh_token_lifetime_days: number;
+  login_rate_limit_per_min: number;
+  anon_rate_limit_per_min: number;
+  user_rate_limit_per_min: number;
+  max_image_upload_mb: number;
+  media_token_ttl_minutes: number;
+  default_page_size: number;
+  updated_by: number | null;
+  updated_at: string;
+}
+
 export interface Paginated<T> {
   count: number;
   next: string | null;
@@ -76,6 +92,15 @@ export interface RoomLite {
 
 export interface ExtraPhone {
   id?: number;
+  phone: string;
+}
+
+export interface PatientGuardian {
+  id?: number;
+  first_name: string;
+  last_name: string;
+  cedula: string;
+  nss: string;
   phone: string;
 }
 
@@ -121,11 +146,7 @@ export interface Patient {
   center_name: string | null;
   center_code: string | null;
   has_guardian: boolean;
-  guardian_first_name: string;
-  guardian_last_name: string;
-  guardian_cedula: string;
-  guardian_nss: string;
-  guardian_phone: string;
+  guardians: PatientGuardian[];
   allergies: string;
   critical_conditions: string;
   created_at: string;
@@ -171,6 +192,179 @@ export interface PatientLite {
   gender: string;
   cedula: string;
   nss: string;
+  birth_date: string | null;
+  has_guardian: boolean;
+  guardians: PatientGuardian[];
+}
+
+export type RecordEntryStatus = "DRAFT" | "COMPLETED";
+
+export type FamilyRelationship =
+  | "MADRE"
+  | "PADRE"
+  | "HERMANA"
+  | "HERMANO"
+  | "HIJA"
+  | "HIJO"
+  | "ABUELA"
+  | "ABUELO"
+  | "TIA"
+  | "TIO"
+  | "OTRO";
+
+export interface RecordPersonalCondition {
+  id: number;
+  record: number;
+  ap_type: number | null;
+  custom_label: string;
+  is_custom: boolean;
+  label: string;
+}
+
+export interface RecordFamilyCondition {
+  id: number;
+  record: number;
+  related_patient: number | null;
+  relationship: FamilyRelationship;
+  relationship_other: string;
+  relative_name: string;
+  ap_type: number | null;
+  custom_label: string;
+  is_custom: boolean;
+  label: string;
+}
+
+export interface ApSnapshotItem {
+  ap_type_id: number | null;
+  label: string;
+  is_custom: boolean;
+}
+
+export interface FamilyApSnapshotItem extends ApSnapshotItem {
+  related_patient_id: number | null;
+  relationship: FamilyRelationship;
+  relationship_other: string;
+  relative_name: string;
+}
+
+export type SubstanceHabitStatus = "no_registrado" | "nunca" | "ex" | "ocasional" | "activo";
+export type ActividadFisicaStatus = "no_registrado" | "sedentario" | "insuficiente" | "adecuado" | "intenso";
+export type SuenoStatus = "no_registrado" | "reparador" | "irregular" | "insomnio";
+
+export interface TabacoHabit {
+  status: SubstanceHabitStatus;
+  tipo?: string[];
+  cantidad_dia?: number | null;
+  tiempo_anios?: number | null;
+  dejo_fecha?: string | null;
+  humo_ajeno?: boolean;
+}
+export interface VapeoHabit {
+  status: SubstanceHabitStatus;
+  frecuencia_tipo?: "veces_dia" | "dias_semana";
+  frecuencia_valor?: number | null;
+  nicotina_mg?: number | null;
+  nicotina?: string[];
+  tiempo_anios?: number | null;
+  dejo_fecha?: string | null;
+}
+export interface AlcoholHabit {
+  status: SubstanceHabitStatus;
+  ud_semana?: number | null;
+  bebida?: string[];
+  tiempo_anios?: number | null;
+  dejo_fecha?: string | null;
+}
+export interface CafeHabit {
+  status: SubstanceHabitStatus;
+  tazas_dia?: number | null;
+  tipo?: string[];
+}
+export interface PsicoactivasHabit {
+  status: SubstanceHabitStatus;
+  tipo?: string[];
+  tipo_otro?: string;
+  frecuencia?: string;
+  via?: string;
+  tiempo_anios?: number | null;
+  dejo_fecha?: string | null;
+}
+export interface ActividadFisicaHabit {
+  status: ActividadFisicaStatus;
+  dias_semana?: number | null;
+  minutos_sesion?: number | null;
+  tipo?: string;
+}
+export interface SuenoHabit {
+  status: SuenoStatus;
+  horas_noche?: number | null;
+  duerme_mal?: boolean;
+  somnolencia_diurna?: boolean;
+}
+export interface PatronAlimentarioHabit {
+  tags: string[];
+}
+export interface OtroHabitItem {
+  name: string;
+  note?: string;
+}
+
+export interface HabitsDraft {
+  tabaco?: TabacoHabit;
+  alcohol?: AlcoholHabit;
+  cafe?: CafeHabit;
+  vapeo?: VapeoHabit;
+  psicoactivas?: PsicoactivasHabit;
+  actividad_fisica?: ActividadFisicaHabit;
+  sueno?: SuenoHabit;
+  patron_alimentario?: PatronAlimentarioHabit;
+  otros?: OtroHabitItem[];
+}
+
+export interface HabitsSnapshotEntry {
+  status: string;
+  at: string;
+  pack_years?: string;
+}
+export interface HabitsSnapshot {
+  tabaco?: HabitsSnapshotEntry;
+  alcohol?: HabitsSnapshotEntry;
+  cafe?: HabitsSnapshotEntry;
+  vapeo?: HabitsSnapshotEntry;
+  psicoactivas?: HabitsSnapshotEntry;
+  actividad_fisica?: HabitsSnapshotEntry;
+  sueno?: HabitsSnapshotEntry;
+  patron_alimentario?: { tags: string[]; at: string };
+  otros?: { items: OtroHabitItem[]; at: string };
+}
+
+export interface RecordEntry {
+  id: number;
+  record: number;
+  author: number;
+  author_name: string;
+  status: RecordEntryStatus;
+  ta_systolic: number | null;
+  ta_diastolic: number | null;
+  fc: number | null;
+  fr: number | null;
+  weight_lb: string | null;
+  height_cm: string | null;
+  talla_cm: string | null;
+  temperature_c: string | null;
+  glucose: number | null;
+  vitals_notes: string;
+  imc: string | null;
+  dx: string;
+  tx: string;
+  observaciones: string;
+  habits: HabitsDraft | null;
+  habits_notes: string;
+  personal_ap_snapshot: ApSnapshotItem[];
+  family_ap_snapshot: FamilyApSnapshotItem[];
+  completed_at: string | null;
+  created_at: string;
+  updated_at: string;
 }
 
 export interface MedicalRecord {
@@ -181,30 +375,26 @@ export interface MedicalRecord {
   created_by_name: string;
   center: number | null;
   center_name: string | null;
-  title: string;
-  date: string;
-  diagnosis: string;
-  treatment: string;
-  medicine_and_doses: string;
-  notes: string;
+  last_visit_at: string | null;
+  last_height_cm: string | null;
+  last_height_at: string | null;
+  last_weight_lb: string | null;
+  last_weight_at: string | null;
+  last_imc: string | null;
+  last_imc_at: string | null;
+  last_ta_systolic: number | null;
+  last_ta_diastolic: number | null;
+  last_ta_at: string | null;
+  last_fc: number | null;
+  last_fc_at: string | null;
+  last_fr: number | null;
+  last_fr_at: string | null;
+  last_glucose: number | null;
+  last_glucose_at: string | null;
+  habits_snapshot: HabitsSnapshot;
   images: RecordImage[];
-  active: boolean;
-}
-
-export interface ConsultationLog {
-  id: number;
-  patient: number;
-  patient_info: PatientLite;
-  doctor: number;
-  doctor_name: string;
-  center: number | null;
-  center_name: string | null;
-  date: string;
-  subjective: string;
-  objective: string;
-  assessment: string;
-  plan: string;
-  notes: string;
+  personal_conditions: RecordPersonalCondition[];
+  family_conditions: RecordFamilyCondition[];
   active: boolean;
 }
 
@@ -219,7 +409,6 @@ export interface ServiceType {
   id: number;
   name: string;
   requires_doctor: boolean;
-  requires_diagnosis: boolean;
   active: boolean;
 }
 
@@ -232,6 +421,22 @@ export interface Service {
   co_pago: string;
   privado: string;
   created_at: string;
+  active: boolean;
+}
+
+export interface APCategory {
+  id: number;
+  name: string;
+  sort_order: number;
+  active: boolean;
+}
+
+export interface APType {
+  id: number;
+  category: number;
+  category_name: string;
+  name: string;
+  sort_order: number;
   active: boolean;
 }
 

@@ -37,6 +37,7 @@ export function RecordImageGallery({
   const [queue, setQueue] = useState<QueuedImage[]>([]);
   const [sheetOpen, setSheetOpen] = useState(false);
   const [submitting, setSubmitting] = useState(false);
+  const [batchError, setBatchError] = useState("");
   const [removingId, setRemovingId] = useState<number | null>(null);
   const [removeError, setRemoveError] = useState("");
 
@@ -75,10 +76,12 @@ export function RecordImageGallery({
     queue.forEach((q) => URL.revokeObjectURL(q.previewUrl));
     setQueue([]);
     setSheetOpen(false);
+    setBatchError("");
   }
 
   async function submitQueue() {
     setSubmitting(true);
+    setBatchError("");
     let anyUploaded = false;
     for (const item of queue) {
       if (item.status === "done") continue;
@@ -100,14 +103,24 @@ export function RecordImageGallery({
         setQueue((prev) => prev.map((q) => (q.id === item.id ? { ...q, status: "error", error: message } : q)));
       }
     }
+    // A failure here (expired session, network hiccup) must not fail
+    // silently: the upload(s) already succeeded server-side, so leaving this
+    // unhandled would strand the user with a "saved" toast and a gallery
+    // that never reflects it, with zero visible error.
+    let refetchFailed = false;
     if (anyUploaded) {
-      const fresh = await api.get<MedicalRecord>(`/medical-records/${recordId}/`);
-      onChanged(fresh);
+      try {
+        const fresh = await api.get<MedicalRecord>(`/medical-records/${recordId}/`);
+        onChanged(fresh);
+      } catch (err) {
+        refetchFailed = true;
+        setBatchError(err instanceof ApiError ? err.message : String(err));
+      }
     }
     setSubmitting(false);
     setQueue((prev) => {
       const hasErrors = prev.some((q) => q.status === "error");
-      if (!hasErrors) {
+      if (!hasErrors && !refetchFailed) {
         prev.forEach((q) => URL.revokeObjectURL(q.previewUrl));
         setSheetOpen(false);
         return [];
@@ -207,6 +220,7 @@ export function RecordImageGallery({
               )}
             </div>
           ))}
+          {batchError && <p className="form-error" role="alert">{batchError}</p>}
           <div className="modal-actions">
             <button type="button" className="btn ghost" onClick={closeSheet} disabled={submitting}>
               {t("common.cancel")}

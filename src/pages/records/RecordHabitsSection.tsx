@@ -711,20 +711,34 @@ export function RecordHabitsSection({ workingEntry, updateField, record, canEdit
             );
           })()}
 
-          <div className="habit-card">
-            <div className="habit-card-header">
-              <div className="name">{t("records.habitPatronAlimentario")}</div>
-              <span className="date">{snapshot.patron_alimentario?.at ? formatDateTime(snapshot.patron_alimentario.at) : "—"}</span>
-            </div>
-            <div className="habit-detail-panel">
-              <ChipMultiToggle
-                options={DIET_TAG_KEYS.map((k) => ({ value: k, label: t(`records.diet${cap(k)}`) }))}
-                values={habits.patron_alimentario?.tags ?? []}
-                onChange={(tags) => setHabit("patron_alimentario", { tags })}
-                disabled={!canEdit}
-              />
-            </div>
-          </div>
+          {(() => {
+            const key = "patron_alimentario" as const;
+            const tags = habits.patron_alimentario?.tags ?? [];
+            const open = isExpanded(key, tags.length > 0);
+            return (
+              <div className="habit-card">
+                <div className="habit-card-header">
+                  <div className="name">{t("records.habitPatronAlimentario")}</div>
+                  {!open ? (
+                    <button type="button" className="btn ghost small" disabled={!canEdit} onClick={() => toggleExpanded(key, true)}>
+                      {t("records.showDietTags")}
+                    </button>
+                  ) : null}
+                  <span className="date">{snapshot.patron_alimentario?.at ? formatDateTime(snapshot.patron_alimentario.at) : "—"}</span>
+                </div>
+                {open && (
+                  <div className="habit-detail-panel">
+                    <ChipMultiToggle
+                      options={DIET_TAG_KEYS.map((k) => ({ value: k, label: t(`records.diet${cap(k)}`) }))}
+                      values={tags}
+                      onChange={(next) => setHabit("patron_alimentario", { tags: next })}
+                      disabled={!canEdit}
+                    />
+                  </div>
+                )}
+              </div>
+            );
+          })()}
 
           <OtrosHabitCard
             items={habits.otros ?? []}

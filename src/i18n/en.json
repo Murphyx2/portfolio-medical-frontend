@@ -399,6 +399,7 @@
     "habitActividadFisica": "Physical activity",
     "habitSueno": "Sleep",
     "habitPatronAlimentario": "Diet pattern",
+    "showDietTags": "Show tags",
     "addOtroHabito": "+ Add another habit",
     "otroHabitoName": "Habit name",
     "otroHabitoNote": "Note (optional)",

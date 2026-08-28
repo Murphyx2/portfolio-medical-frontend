@@ -1310,6 +1310,26 @@ input[type="radio"]:focus-visible {
   font-weight: 600;
 }
 
+.under-construction-banner {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.6rem;
+  color: var(--mc-warning-text);
+  background: var(--mc-warning-bg);
+  border: 1px solid var(--mc-warning);
+  border-radius: 8px;
+  padding: 0.65rem 0.9rem;
+  margin: 0 0 1.25rem;
+  font-size: 0.85rem;
+  line-height: 1.45;
+}
+
+.under-construction-banner svg {
+  flex-shrink: 0;
+  color: var(--mc-warning);
+  margin-top: 0.1rem;
+}
+
 .encounter-alert-warning {
   display: flex;
   align-items: flex-start;

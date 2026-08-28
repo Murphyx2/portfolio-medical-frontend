@@ -7,6 +7,10 @@ import type { Resource } from "./utils/can";
 import { Appointments } from "./pages/Appointments";
 import { Ars } from "./pages/Ars";
 import { Centers } from "./pages/Centers";
+import { ComposeMessage } from "./pages/communications/ComposeMessage";
+import { Communications } from "./pages/communications/Communications";
+import { CommunicationsSettingsPage } from "./pages/communications/CommunicationsSettingsPage";
+import { CommunicationsTemplates } from "./pages/communications/CommunicationsTemplates";
 import { Dashboard } from "./pages/Dashboard";
 import { Doctors } from "./pages/Doctors";
 import { Encounters } from "./pages/Encounters";
@@ -40,6 +44,18 @@ const ROUTES: { path: string; element: ReactNode; resource?: Resource }[] = [
   { path: "/rooms/types", element: <RoomTypes />, resource: "roomTypes" },
   { path: "/ars", element: <Ars />, resource: "ars" },
   { path: "/appointments", element: <Appointments />, resource: "appointments" },
+  { path: "/comunicaciones", element: <Communications />, resource: "communications" },
+  { path: "/comunicaciones/nuevo", element: <ComposeMessage />, resource: "communications" },
+  {
+    path: "/comunicaciones/plantillas",
+    element: <CommunicationsTemplates />,
+    resource: "communicationsSettings",
+  },
+  {
+    path: "/comunicaciones/ajustes",
+    element: <CommunicationsSettingsPage />,
+    resource: "communicationsSettings",
+  },
   { path: "/encounters", element: <Encounters />, resource: "encounters" },
   { path: "/records", element: <Records />, resource: "records" },
   { path: "/records/types", element: <RecordApTypes />, resource: "recordApTypes" },

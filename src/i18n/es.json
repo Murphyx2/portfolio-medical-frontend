@@ -540,7 +540,16 @@
     "toastDraftSaved": "Borrador guardado",
     "toastEntrySaved": "Entrada guardada",
     "historyEmpty": "Aún no hay entradas en el historial",
-    "editLastEntry": "Editar última entrada"
+    "editLastEntry": "Editar última entrada",
+    "changed": "Cambió",
+    "sectionSignos": "Signos",
+    "sectionApPersonales": "AP personales",
+    "sectionApFamiliares": "AP familiares",
+    "viewDetail": "Ver detalle",
+    "hideDetail": "Ocultar detalle",
+    "habitsNotesLabel": "Notas hábitos",
+    "noRecordThisEntry": "Sin registro en esta entrada",
+    "historyMoreChips": "+{{count}}"
   },
   "recordApTypes": {
     "title": "Tipos de antecedentes patológicos",

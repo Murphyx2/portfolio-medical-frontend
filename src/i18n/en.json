@@ -540,7 +540,16 @@
     "toastDraftSaved": "Draft saved",
     "toastEntrySaved": "Entry saved",
     "historyEmpty": "No history entries yet",
-    "editLastEntry": "Edit last entry"
+    "editLastEntry": "Edit last entry",
+    "changed": "Changed",
+    "sectionSignos": "Vitals",
+    "sectionApPersonales": "Personal history",
+    "sectionApFamiliares": "Family history",
+    "viewDetail": "View detail",
+    "hideDetail": "Hide detail",
+    "habitsNotesLabel": "Habit notes",
+    "noRecordThisEntry": "No record on this entry",
+    "historyMoreChips": "+{{count}}"
   },
   "recordApTypes": {
     "title": "Pathological history types",

@@ -16,6 +16,7 @@
     "users": "Usuarios",
     "ars": "ARS",
     "settings": "Configuración",
+    "communications": "Comunicaciones",
     "logout": "Cerrar sesión"
   },
   "auth": {
@@ -621,6 +622,137 @@
         "label": "Tamaño de página predeterminado",
         "help": "Filas mostradas por página cuando una lista no especifica un tamaño de página (limitado a 200)."
       }
+    }
+  },
+  "communications": {
+    "title": "Comunicaciones",
+    "underConstruction": "Este módulo está en desarrollo activo. Algunas funciones (envío de WhatsApp, confirmaciones de entrega) pueden cambiar o fallar mientras se completan las pruebas.",
+    "new": "Nuevo aviso al personal",
+    "tabs": {
+      "staff": "Personal (correo)",
+      "patients": "Pacientes (WhatsApp)"
+    },
+    "columns": {
+      "date": "Fecha",
+      "type": "Tipo",
+      "subject": "Asunto",
+      "author": "Autor",
+      "recipients": "Destinatarios",
+      "status": "Estado",
+      "actions": "Acciones",
+      "sentDate": "Fecha envío",
+      "patient": "Paciente",
+      "appointment": "Cita",
+      "phone": "Teléfono",
+      "error": "Error"
+    },
+    "view": "Ver",
+    "system": "Sistema",
+    "empty": "No hay comunicaciones registradas.",
+    "filters": {
+      "type": "Tipo",
+      "status": "Estado",
+      "from": "Desde",
+      "to": "Hasta",
+      "all": "Todos"
+    },
+    "kind": {
+      "AVISO": "Aviso",
+      "INFORMACION": "Información",
+      "ALERTA": "Alerta",
+      "CITA_CREADA": "Cita creada",
+      "CITA_RECORDATORIO": "Recordatorio de cita",
+      "CITA_REAGENDADA": "Cita reagendada",
+      "CITA_CANCELADA": "Cita cancelada"
+    },
+    "status": {
+      "DRAFT": "Borrador",
+      "QUEUED": "En cola",
+      "SENDING": "Enviando",
+      "SENT": "Enviado",
+      "PARTIAL": "Parcial",
+      "FAILED": "Fallido",
+      "CANCELLED": "Cancelado",
+      "DELIVERED": "Entregado",
+      "READ": "Leído",
+      "UNDELIVERABLE": "No entregable",
+      "OPTED_OUT": "Optó por no recibir"
+    },
+    "detail": {
+      "title": "Detalle del aviso",
+      "recipientsTable": "Destinatarios"
+    },
+    "compose": {
+      "type": "Tipo",
+      "subject": "Asunto",
+      "subjectHelp": "Máximo 120 caracteres.",
+      "body": "Cuerpo",
+      "recipients": "Destinatarios",
+      "allStaff": "Todo el personal activo",
+      "byRole": "Por rol",
+      "byPerson": "Personas específicas",
+      "schedule": "Programar",
+      "now": "Ahora",
+      "later": "Programar fecha y hora",
+      "willSendTo": "Se enviará a {{n}} personas",
+      "testSend": "Enviarme una prueba",
+      "testSendDisabled": "Guarda el aviso como borrador antes de enviar una prueba.",
+      "testSent": "Prueba enviada a tu correo.",
+      "saveDraft": "Guardar borrador",
+      "send": "Enviar",
+      "confirmSend": "¿Enviar este aviso a {{n}} destinatarios?",
+      "noEmailSkipped": "{{n}} sin correo, no enviados",
+      "recipientsRequired": "Selecciona al menos un grupo o persona."
+    },
+    "templates": {
+      "title": "Plantillas",
+      "new": "Nueva plantilla",
+      "channel": "Canal",
+      "kind": "Tipo",
+      "providerName": "Nombre en Meta",
+      "language": "Idioma",
+      "active": "Activa",
+      "missing": "Falta plantilla activa para este tipo"
+    },
+    "settingsPage": {
+      "title": "Ajustes de Comunicaciones",
+      "sections": {
+        "email": "Correo",
+        "whatsapp": "WhatsApp",
+        "whatsappTemplates": "Plantillas WhatsApp"
+      },
+      "emailBackendNotice": "Se usa el correo ya configurado en el servidor",
+      "fromName": "Nombre del remitente",
+      "replyTo": "Responder a",
+      "testEmail": "Enviar correo de prueba",
+      "testEmailSent": "Correo de prueba enviado.",
+      "provider": "Proveedor",
+      "providerValue": "WhatsApp Cloud API (Meta)",
+      "phoneNumberId": "ID de número de teléfono",
+      "businessAccountId": "ID de cuenta comercial",
+      "accessToken": "Token de acceso",
+      "appSecret": "App secret",
+      "changeToken": "Cambiar token",
+      "webhookUrl": "URL del webhook",
+      "copy": "Copiar",
+      "copied": "Copiado",
+      "countryCode": "Código de país predeterminado",
+      "reminderHours": "Horas de anticipación del recordatorio",
+      "masterEnabled": "Activar WhatsApp a pacientes",
+      "testWhatsapp": "Enviar WhatsApp de prueba",
+      "testWhatsappSent": "WhatsApp de prueba enviado.",
+      "testPhone": "Tu número de celular",
+      "notConfigured": "WhatsApp no está configurado en Ajustes"
+    },
+    "patient": {
+      "optIn": "Notificaciones por WhatsApp",
+      "optInHelp": "Se usará para recordatorios de cita. No se envían resultados ni diagnósticos.",
+      "currentPhone": "Número que se usará"
+    },
+    "appointmentReminder": {
+      "send": "Enviar recordatorio WhatsApp",
+      "disabled": "El paciente no tiene WhatsApp habilitado",
+      "queued": "Recordatorio en cola."
     }
   },
   "pagination": {

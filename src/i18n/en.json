@@ -16,6 +16,7 @@
     "users": "Users",
     "ars": "ARS",
     "settings": "Settings",
+    "communications": "Communications",
     "logout": "Log out"
   },
   "auth": {
@@ -621,6 +622,137 @@
         "label": "Default page size",
         "help": "Rows shown per page when a list isn't given an explicit page size (still capped at 200)."
       }
+    }
+  },
+  "communications": {
+    "title": "Communications",
+    "underConstruction": "This module is under active development. Some features (WhatsApp sending, delivery confirmations) may change or fail while testing is completed.",
+    "new": "New staff notice",
+    "tabs": {
+      "staff": "Staff (email)",
+      "patients": "Patients (WhatsApp)"
+    },
+    "columns": {
+      "date": "Date",
+      "type": "Type",
+      "subject": "Subject",
+      "author": "Author",
+      "recipients": "Recipients",
+      "status": "Status",
+      "actions": "Actions",
+      "sentDate": "Sent date",
+      "patient": "Patient",
+      "appointment": "Appointment",
+      "phone": "Phone",
+      "error": "Error"
+    },
+    "view": "View",
+    "system": "System",
+    "empty": "No communications on record.",
+    "filters": {
+      "type": "Type",
+      "status": "Status",
+      "from": "From",
+      "to": "To",
+      "all": "All"
+    },
+    "kind": {
+      "AVISO": "Notice",
+      "INFORMACION": "Information",
+      "ALERTA": "Alert",
+      "CITA_CREADA": "Appointment created",
+      "CITA_RECORDATORIO": "Appointment reminder",
+      "CITA_REAGENDADA": "Appointment rescheduled",
+      "CITA_CANCELADA": "Appointment cancelled"
+    },
+    "status": {
+      "DRAFT": "Draft",
+      "QUEUED": "Queued",
+      "SENDING": "Sending",
+      "SENT": "Sent",
+      "PARTIAL": "Partial",
+      "FAILED": "Failed",
+      "CANCELLED": "Cancelled",
+      "DELIVERED": "Delivered",
+      "READ": "Read",
+      "UNDELIVERABLE": "Undeliverable",
+      "OPTED_OUT": "Opted out"
+    },
+    "detail": {
+      "title": "Notice detail",
+      "recipientsTable": "Recipients"
+    },
+    "compose": {
+      "type": "Type",
+      "subject": "Subject",
+      "subjectHelp": "Maximum 120 characters.",
+      "body": "Body",
+      "recipients": "Recipients",
+      "allStaff": "All active staff",
+      "byRole": "By role",
+      "byPerson": "Specific people",
+      "schedule": "Schedule",
+      "now": "Now",
+      "later": "Schedule date and time",
+      "willSendTo": "Will be sent to {{n}} people",
+      "testSend": "Send me a test",
+      "testSendDisabled": "Save the notice as a draft before sending a test.",
+      "testSent": "Test sent to your email.",
+      "saveDraft": "Save draft",
+      "send": "Send",
+      "confirmSend": "Send this notice to {{n}} recipients?",
+      "noEmailSkipped": "{{n}} without email, not sent",
+      "recipientsRequired": "Select at least one group or person."
+    },
+    "templates": {
+      "title": "Templates",
+      "new": "New template",
+      "channel": "Channel",
+      "kind": "Type",
+      "providerName": "Meta template name",
+      "language": "Language",
+      "active": "Active",
+      "missing": "Missing active template for this type"
+    },
+    "settingsPage": {
+      "title": "Communications settings",
+      "sections": {
+        "email": "Email",
+        "whatsapp": "WhatsApp",
+        "whatsappTemplates": "WhatsApp templates"
+      },
+      "emailBackendNotice": "Uses the mailbox already configured on the server",
+      "fromName": "From name",
+      "replyTo": "Reply-to",
+      "testEmail": "Send test email",
+      "testEmailSent": "Test email sent.",
+      "provider": "Provider",
+      "providerValue": "WhatsApp Cloud API (Meta)",
+      "phoneNumberId": "Phone number ID",
+      "businessAccountId": "Business account ID",
+      "accessToken": "Access token",
+      "appSecret": "App secret",
+      "changeToken": "Change token",
+      "webhookUrl": "Webhook URL",
+      "copy": "Copy",
+      "copied": "Copied",
+      "countryCode": "Default country code",
+      "reminderHours": "Reminder lead time (hours)",
+      "masterEnabled": "Enable WhatsApp for patients",
+      "testWhatsapp": "Send test WhatsApp",
+      "testWhatsappSent": "Test WhatsApp sent.",
+      "testPhone": "Your mobile number",
+      "notConfigured": "WhatsApp is not configured in Settings"
+    },
+    "patient": {
+      "optIn": "WhatsApp notifications",
+      "optInHelp": "Used for appointment reminders. No results or diagnoses are ever sent.",
+      "currentPhone": "Number that will be used"
+    },
+    "appointmentReminder": {
+      "send": "Send WhatsApp reminder",
+      "disabled": "This patient does not have WhatsApp enabled",
+      "queued": "Reminder queued."
     }
   },
   "pagination": {

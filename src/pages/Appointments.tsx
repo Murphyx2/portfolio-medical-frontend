@@ -53,6 +53,39 @@ const genderLabelKeys: Record<string, string> = {
   FEMALE: "patients.genderFemale",
 };
 
+/** "Enviar recordatorio WhatsApp" (Requirements/Communications §7.3 manual
+ * resend). Disabled with a tooltip when the patient has no phone/opt-in
+ * (`patient_info.whatsapp_opt_in` -- backend nested serializer field, may be
+ * absent on older cached responses, treated as false when missing). */
+function WhatsappReminderButton({ appointment }: { appointment: Appointment }) {
+  const { t } = useTranslation();
+  const [sending, setSending] = useState(false);
+  const [message, setMessage] = useState("");
+  const eligible = Boolean(appointment.patient_info.whatsapp_opt_in && appointment.patient_info.phone);
+
+  async function send() {
+    setSending(true);
+    setMessage("");
+    try {
+      await api.post(`/appointments/${appointment.id}/send_whatsapp_reminder/`, {});
+      setMessage(t("communications.appointmentReminder.queued"));
+    } catch (err) {
+      setMessage(err instanceof ApiError ? flattenError(err.message) : String(err));
+    } finally {
+      setSending(false);
+    }
+  }
+
+  return (
+    <span title={eligible ? undefined : t("communications.appointmentReminder.disabled")}>
+      <button className="btn small ghost" disabled={!eligible || sending} onClick={send}>
+        {t("communications.appointmentReminder.send")}
+      </button>
+      {message && <span className="muted"> {message}</span>}
+    </span>
+  );
+}
+
 /** Read-only "appointment details" dialog opened by clicking a row's
  * patient name or date/time cell — mirrors the click-to-detail pattern in
  * Patients.tsx / Encounters.tsx, giving a full view without forcing users
@@ -167,6 +200,10 @@ export function AppointmentDetailsDialog({
             {canCancel && (appointment.status === "SCHEDULED" || appointment.status === "CONFIRMED") && (
               <button className="btn small danger" onClick={() => onCancel?.(appointment)}>{t("appointments.cancel")}</button>
             )}
+            {can(role, "sendManualReminder", "communications") &&
+              (appointment.status === "SCHEDULED" || appointment.status === "CONFIRMED") && (
+                <WhatsappReminderButton appointment={appointment} />
+              )}
             {canDelete && appointment.active && (
               <button className="btn small danger" onClick={() => onDelete?.(appointment)}>{t("common.delete")}</button>
             )}

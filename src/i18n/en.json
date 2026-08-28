@@ -17,7 +17,15 @@
     "ars": "ARS",
     "settings": "Settings",
     "communications": "Communications",
-    "logout": "Log out"
+    "recordsShort": "Records",
+    "logout": "Log out",
+    "groups": {
+      "atencion": "Care",
+      "operacion": "Operations",
+      "red": "Network"
+    },
+    "collapse": "Collapse menu",
+    "expand": "Expand menu"
   },
   "auth": {
     "login": "Log in",

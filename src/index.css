@@ -18,6 +18,22 @@
      neutral grey "no signal") instead of near-duplicating the green. */
   --mc-status-scheduled: #1565c0;
   --mc-status-no-show: #757575;
+
+  /* Sidebar-only tokens (Requirements/Sidebar mockup's --green family),
+     kept separate from the --mc-* tokens above so this redesign can't leak
+     into buttons/pages elsewhere in the app. */
+  --sb-green: #1f7a3a;
+  --sb-green-deep: #176430;
+  --sb-green-hover: #248a44;
+  --sb-active-bg: #ffffff;
+  --sb-active-text: #176430;
+  --sb-text: #ecf8ef;
+  --sb-muted: #b7ddc0;
+  --sb-line: rgba(255, 255, 255, 0.12);
+  --sb-badge-bg: #e8f7ec;
+  --sb-badge-text: #176430;
+  --sb-width: 248px;
+  --sb-width-collapsed: 72px;
 }
 
 * {
@@ -47,19 +63,24 @@ body {
 }
 
 .sidebar {
-  width: 230px;
+  width: var(--sb-width);
   flex-shrink: 0;
-  background: var(--mc-primary-dark);
-  color: #fff;
-  padding: 1rem 0.75rem;
+  background: var(--sb-green);
+  color: var(--sb-text);
+  padding: 12px 10px 10px;
   display: flex;
   flex-direction: column;
-  gap: 1.25rem;
   position: sticky;
   top: 0;
   align-self: flex-start;
   height: 100vh;
   overflow-y: auto;
+  overflow-x: hidden;
+  transition: width 0.2s ease;
+}
+
+.sidebar.collapsed {
+  width: var(--sb-width-collapsed);
 }
 
 .brand {
@@ -69,25 +90,55 @@ body {
   font-weight: 700;
   font-size: 1.1rem;
   color: #fff;
-  padding: 0 0.5rem;
+  padding: 0 0.5rem 14px;
   text-decoration: none;
 }
 
-.nav {
+.brand-label {
+  font-size: 1.1rem;
+}
+
+.sidebar.collapsed .brand-label {
+  display: none;
+}
+
+.nav-groups {
+  flex: 1;
+  overflow-y: auto;
+  overflow-x: hidden;
+  padding: 0 2px;
+}
+
+.nav-group {
+  margin: 0 0 2px;
+}
+
+.nav-group-title {
   display: flex;
-  flex-direction: column;
-  gap: 0.25rem;
+  align-items: center;
+  justify-content: space-between;
+  font-size: 10px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--sb-muted);
+  padding: 10px 10px 4px;
+  font-weight: 700;
+}
+
+.sidebar.collapsed .nav-group-title {
+  display: none;
 }
 
 .nav-link {
-  color: var(--mc-light);
+  color: var(--sb-text);
   text-decoration: none;
-  padding: 0.45rem 0.75rem;
-  border-radius: 6px;
+  padding: 8px 10px;
+  margin: 2px 0;
+  border-radius: 8px;
   font-size: 0.9rem;
   display: flex;
   align-items: center;
-  gap: 0.6rem;
+  gap: 10px;
 }
 
 .nav-link svg {
@@ -95,13 +146,79 @@ body {
 }
 
 .nav-link:hover {
-  background: rgba(255, 255, 255, 0.1);
+  background: var(--sb-green-hover);
   color: #fff;
 }
 
 .nav-link.active {
-  background: var(--mc-primary);
+  background: var(--sb-active-bg);
+  color: var(--sb-active-text);
+  font-weight: 700;
+}
+
+.nav-label {
+  flex: 1;
+}
+
+.sidebar.collapsed .nav-label {
+  display: none;
+}
+
+.sidebar.collapsed .nav-link {
+  justify-content: center;
+  padding: 10px 0;
+}
+
+.nav-badge {
+  background: var(--sb-badge-bg);
+  color: var(--sb-badge-text);
+  border-radius: 999px;
+  font-size: 11px;
+  font-weight: 700;
+  padding: 1px 6px;
+  min-width: 18px;
+  text-align: center;
+}
+
+.nav-link.active .nav-badge {
+  background: var(--sb-green-deep);
   color: #fff;
+}
+
+.sidebar.collapsed .nav-badge {
+  display: none;
+}
+
+.nav-foot {
+  border-top: 1px solid var(--sb-line);
+  margin-top: 8px;
+  padding-top: 8px;
+}
+
+.sidebar-collapse-btn {
+  margin-top: 6px;
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  background: transparent;
+  border: 1px solid var(--sb-line);
+  color: var(--sb-muted);
+  border-radius: 8px;
+  padding: 6px;
+  cursor: pointer;
+  font: inherit;
+  font-size: 0.8rem;
+}
+
+.sidebar-collapse-btn:hover {
+  border-color: var(--sb-muted);
+  color: #fff;
+}
+
+.sidebar-collapse-btn svg.flip {
+  transform: rotate(180deg);
 }
 
 .main {
@@ -132,21 +249,40 @@ body {
   gap: 0.75rem;
 }
 
-.user-chip {
-  font-size: 0.85rem;
-  color: var(--mc-text);
-  display: inline-flex;
+.user-stack {
+  display: flex;
   align-items: center;
-  gap: 0.4rem;
+  gap: 8px;
 }
 
-.role-badge {
+.user-avatar {
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
   background: var(--mc-primary);
   color: #fff;
-  border-radius: 999px;
-  padding: 0.1rem 0.5rem;
-  font-size: 0.7rem;
-  letter-spacing: 0.04em;
+  display: grid;
+  place-items: center;
+  font-size: 11px;
+  font-weight: 800;
+  flex: 0 0 28px;
+}
+
+.user-text {
+  display: flex;
+  flex-direction: column;
+  line-height: 1.2;
+}
+
+.user-name {
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: var(--mc-text);
+}
+
+.user-role {
+  font-size: 0.72rem;
+  color: var(--mc-muted);
 }
 
 .lang-switch {
@@ -168,7 +304,8 @@ body {
   .app-shell {
     flex-direction: column;
   }
-  .sidebar {
+  .sidebar,
+  .sidebar.collapsed {
     width: 100%;
     height: auto;
     position: static;
@@ -176,8 +313,13 @@ body {
     flex-wrap: wrap;
     align-items: center;
   }
-  .nav {
+  .nav-groups {
     flex-direction: row;
+    flex-wrap: wrap;
+    overflow: visible;
+  }
+  .nav-group {
+    display: flex;
     flex-wrap: wrap;
   }
   .brand {
@@ -186,6 +328,16 @@ body {
   .brand img {
     height: 22px;
     width: 22px;
+  }
+  /* Icon-rail collapse is a desktop-only affordance -- the existing mobile
+     layout above already handles small screens, so force labels/groups
+     visible and hide the toggle regardless of stored collapsed state. */
+  .nav-group-title,
+  .sidebar-collapse-btn {
+    display: none;
+  }
+  .nav-label {
+    display: inline;
   }
 }
 

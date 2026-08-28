@@ -11,13 +11,21 @@
     "appointments": "Citas",
     "encounters": "Admisiones",
     "records": "Expedientes Médicos",
+    "recordsShort": "Expedientes",
     "services": "Servicios",
     "rooms": "Salas",
     "users": "Usuarios",
     "ars": "ARS",
     "settings": "Configuración",
     "communications": "Comunicaciones",
-    "logout": "Cerrar sesión"
+    "logout": "Cerrar sesión",
+    "groups": {
+      "atencion": "Atención",
+      "operacion": "Operación",
+      "red": "Red"
+    },
+    "collapse": "Contraer menú",
+    "expand": "Expandir menú"
   },
   "auth": {
     "login": "Iniciar sesión",

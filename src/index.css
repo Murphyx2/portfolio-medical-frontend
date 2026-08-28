@@ -1879,6 +1879,26 @@ input[type="radio"]:focus-visible {
 }
 
 /* ---------- Hábitos tab ---------- */
+/* Pilot restyle (Requirements/Habits/habitos_tab_mockup.html): scoped to
+   .habits-theme via --hb-* tokens so it never leaks into other tabs, which
+   still share .ap-chip/.btn/.field/.badge base rules untouched. */
+
+.habits-theme {
+  --hb-teal: #1f6b3a;
+  --hb-teal-dark: #1a5a31;
+  --hb-teal-soft: #e7f6ec;
+  --hb-line: #d7e3d9;
+  --hb-muted: #5c6b60;
+  --hb-text: #1c2a20;
+  --hb-warn: #8a4b12;
+  --hb-warn-bg: #fff4e5;
+  --hb-ok: #1f6b3a;
+  --hb-ok-bg: #e7f6ec;
+  --hb-pill: #f3f7f4;
+  --hb-header-bg: #f4f7fa;
+  --hb-panel-bg: #fbfcfe;
+  --hb-white: #ffffff;
+}
 
 .habits-toolbar {
   display: flex;
@@ -1894,9 +1914,9 @@ input[type="radio"]:focus-visible {
 }
 
 .habits-draft-chip {
-  background: var(--mc-lightest);
-  color: var(--mc-primary-dark);
-  border: 1px solid var(--mc-light);
+  background: var(--hb-teal-soft);
+  color: var(--hb-teal);
+  border: 1px solid var(--hb-line);
   border-radius: 999px;
   padding: 0.3rem 0.7rem;
   font-size: 0.8rem;
@@ -1921,10 +1941,35 @@ input[type="radio"]:focus-visible {
   align-content: start;
 }
 
+.habits-theme .habit-column-card {
+  border: 1px solid var(--hb-line);
+  border-radius: 10px;
+  background: var(--hb-white);
+  overflow: hidden;
+}
+
+.habits-theme .habit-column-header {
+  margin: 0;
+  padding: 10px 14px;
+  font-size: 12px;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--hb-teal);
+  background: var(--hb-header-bg);
+  border-bottom: 1px solid var(--hb-line);
+}
+
+.habits-theme .habit-column-body {
+  display: grid;
+  gap: 0.75rem;
+  padding: 0.75rem;
+}
+
 .habit-card {
-  border: 1px solid var(--mc-border);
+  border: 1px solid var(--hb-line);
   border-radius: 10px;
   padding: 0.9rem 1.1rem;
+  background: var(--hb-white);
 }
 
 .habit-card-header {
@@ -1935,6 +1980,16 @@ input[type="radio"]:focus-visible {
   flex-wrap: wrap;
 }
 
+.habits-theme .habit-card .name {
+  font-weight: 700;
+  color: var(--hb-teal);
+}
+
+.habits-theme .habit-card .date {
+  color: var(--hb-muted);
+  font-size: 11px;
+}
+
 .habit-status-group {
   display: inline-flex;
   gap: 0.35rem;
@@ -1943,9 +1998,10 @@ input[type="radio"]:focus-visible {
 
 .habit-status-pill {
   appearance: none;
-  border: 1px solid var(--mc-border);
-  background: var(--mc-white);
-  color: var(--mc-text);
+  border: 1px solid var(--hb-line);
+  background: var(--hb-pill);
+  color: var(--hb-muted);
+  font-weight: 600;
   border-radius: 999px;
   padding: 0.3rem 0.7rem;
   min-height: 32px;
@@ -1955,7 +2011,7 @@ input[type="radio"]:focus-visible {
 }
 
 .habit-status-pill:hover:not(:disabled) {
-  border-color: var(--mc-primary);
+  border-color: var(--hb-teal);
 }
 
 .habit-status-pill:disabled {
@@ -1964,28 +2020,31 @@ input[type="radio"]:focus-visible {
 }
 
 .habit-status-pill.selected {
-  background: var(--mc-primary);
-  border-color: var(--mc-primary);
+  background: var(--hb-teal);
+  border-color: var(--hb-teal);
   color: #fff;
 }
 
 .habit-status-pill.selected.warn {
-  background: var(--mc-warning);
-  border-color: var(--mc-warning);
+  background: var(--hb-warn);
+  border-color: var(--hb-warn);
   color: #fff;
 }
 
 .habit-status-pill:focus-visible {
-  outline: 2px solid var(--mc-primary-dark);
+  outline: 2px solid var(--hb-teal-dark);
   outline-offset: 1px;
 }
 
 .habit-detail-panel {
-  border-top: 1px dashed var(--mc-border);
+  border-top: 1px dashed var(--hb-line);
   margin-top: 0.75rem;
   padding-top: 0.75rem;
   display: grid;
   gap: 0.6rem;
+  background: var(--hb-panel-bg);
+  border-radius: 0 0 10px 10px;
+  padding: 0.75rem 0.9rem;
 }
 
 .habit-detail-grid {
@@ -1995,14 +2054,21 @@ input[type="radio"]:focus-visible {
 }
 
 .habit-badge-info {
-  background: var(--mc-muted);
+  background: var(--hb-muted);
   display: inline-block;
   justify-self: start;
 }
 
+.habits-theme .badge.habit-badge-info {
+  background: var(--hb-ok-bg);
+  color: var(--hb-ok);
+  border-radius: 6px;
+  font-weight: 700;
+}
+
 .habit-help-text {
   font-size: 0.8rem;
-  color: var(--mc-muted);
+  color: var(--hb-muted);
   margin: 0;
 }
 
@@ -2011,15 +2077,16 @@ input[type="radio"]:focus-visible {
   align-items: center;
   gap: 0.4rem;
   font-size: 0.85rem;
-  color: var(--mc-text);
+  color: var(--hb-text);
+  font-weight: 600;
 }
 
 .habit-switch input {
-  accent-color: var(--mc-primary);
+  accent-color: var(--hb-teal);
 }
 
 .habit-otro-row {
-  background: var(--mc-lightest);
+  background: var(--hb-teal-soft);
   border-radius: 8px;
   padding: 0.5rem 0.8rem;
   font-size: 0.85rem;
@@ -2028,6 +2095,78 @@ input[type="radio"]:focus-visible {
   align-items: center;
   gap: 0.75rem;
   margin-bottom: 0.6rem;
+}
+
+.habits-theme .habits-chip-summary .ap-chip.selected {
+  background: var(--hb-teal-soft);
+  color: var(--hb-teal);
+  border-color: var(--hb-teal-soft);
+  border-radius: 999px;
+  padding: 3px 10px;
+  font-size: 12px;
+  font-weight: 600;
+  min-height: 0;
+}
+
+.habits-theme .habits-chip-summary .ap-chip.selected.warn {
+  background: var(--hb-warn-bg);
+  color: var(--hb-warn);
+  border-color: var(--hb-warn-bg);
+}
+
+.habits-theme .habits-columns .ap-chip {
+  border: 1px dashed var(--hb-line);
+  background: var(--hb-white);
+  color: var(--hb-teal);
+  border-radius: 999px;
+  padding: 5px 10px;
+  font-size: 12px;
+  min-height: 0;
+  font-weight: 400;
+}
+
+.habits-theme .habits-columns .ap-chip.selected {
+  background: var(--hb-teal-soft);
+  border: 1px solid var(--hb-teal);
+  color: var(--hb-teal);
+  font-weight: 700;
+}
+
+.habits-theme .habits-columns .ap-chip:hover:not(:disabled) {
+  border-color: var(--hb-teal);
+}
+
+.habits-theme .btn.ghost {
+  border: 1px solid var(--hb-line);
+  background: var(--hb-white);
+  border-radius: 8px;
+  color: var(--hb-teal);
+  font-weight: 600;
+}
+
+.habits-theme .btn.primary {
+  background: var(--hb-teal);
+  border-radius: 8px;
+  font-weight: 700;
+  color: #fff;
+}
+
+.habits-theme .btn.primary:hover {
+  background: var(--hb-teal-dark);
+}
+
+.habits-theme .field span {
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--hb-muted);
+}
+
+.habits-theme .field input,
+.habits-theme .field select,
+.habits-theme .field textarea {
+  border: 1px solid var(--hb-line);
+  border-radius: 6px;
+  color: var(--hb-text);
 }
 
 /* ---------- Conclusiones / draft ---------- */

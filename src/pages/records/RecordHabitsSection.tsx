@@ -529,19 +529,24 @@ export function RecordHabitsSection({ workingEntry, updateField, record, canEdit
   const actividadStatusOptions = ACTIVIDAD_STATUSES.map((s) => ({ value: s, label: t(`records.habitStatus${cap(s)}`) }));
   const suenoStatusOptions = SUENO_STATUSES.map((s) => ({ value: s, label: t(`records.habitStatus${cap(s)}`) }));
 
-  const livingChips: { key: string; label: string }[] = [];
+  const CHIP_WARN_STATUSES: Record<string, string> = {
+    tabaco: "activo", alcohol: "activo", cafe: "activo", vapeo: "activo", psicoactivas: "activo",
+    actividad_fisica: "sedentario", sueno: "insomnio",
+  };
+
+  const livingChips: { key: string; label: string; warn: boolean }[] = [];
   const chipLine = (key: string, labelKey: string) => {
     const entry = snapshot[key as keyof HabitsSnapshot] as { status?: string; pack_years?: string } | undefined;
     if (!entry || entry.status === "no_registrado") return;
     let text = `${t(`records.${labelKey}`)} · ${t(`records.habitStatus${cap(entry.status ?? "")}`)}`;
     if (entry.pack_years) text += ` · ${t("records.packYearsBadge", { value: entry.pack_years })}`;
-    livingChips.push({ key, label: text });
+    livingChips.push({ key, label: text, warn: entry.status === CHIP_WARN_STATUSES[key] });
   };
   (["tabaco", "alcohol", "cafe", "vapeo", "psicoactivas", "actividad_fisica", "sueno"] as const).forEach((k) =>
     chipLine(k, `habit${cap(k === "actividad_fisica" ? "actividadFisica" : k === "vapeo" ? "vapeo" : k)}`)
   );
   if (snapshot.patron_alimentario?.tags?.length) {
-    livingChips.push({ key: "patron_alimentario", label: `${t("records.habitPatronAlimentario")} · ${snapshot.patron_alimentario.tags.length}` });
+    livingChips.push({ key: "patron_alimentario", label: `${t("records.habitPatronAlimentario")} · ${snapshot.patron_alimentario.tags.length}`, warn: false });
   }
 
   const [expandedKeys, setExpandedKeys] = useState<Set<string> | null>(null);
@@ -602,7 +607,7 @@ export function RecordHabitsSection({ workingEntry, updateField, record, canEdit
   }
 
   return (
-    <>
+    <div className="habits-theme">
       <div className="habits-toolbar">
         <div>
           <h4>{t("records.habitsSectionTitle")}</h4>
@@ -616,7 +621,7 @@ export function RecordHabitsSection({ workingEntry, updateField, record, canEdit
               <span className="ap-empty-note">{t("records.habitsEmptyState")}</span>
             ) : (
               livingChips.map((c) => (
-                <span key={c.key} className="ap-chip selected">
+                <span key={c.key} className={`ap-chip selected${c.warn ? " warn" : ""}`}>
                   {c.label}
                 </span>
               ))
@@ -631,26 +636,32 @@ export function RecordHabitsSection({ workingEntry, updateField, record, canEdit
 
       <div className="habits-columns">
         <section className="habit-column">
-          <h5 className="ap-category-name">{t("records.substanciasTitle")}</h5>
-          {substanceCard("tabaco", "habitTabaco", ["ex", "ocasional", "activo"], (v, onChange) => (
-            <TabacoDetails value={v} onChange={onChange} disabled={!canEdit} t={t} />
-          ))}
-          {substanceCard("alcohol", "habitAlcohol", ["ex", "ocasional", "activo"], (v, onChange) => (
-            <AlcoholDetails value={v} onChange={onChange} disabled={!canEdit} t={t} />
-          ))}
-          {substanceCard("cafe", "habitCafe", ["ocasional", "activo"], (v, onChange) => (
-            <CafeDetails value={v} onChange={onChange} disabled={!canEdit} t={t} />
-          ))}
-          {substanceCard("vapeo", "habitVapeo", ["ex", "ocasional", "activo"], (v, onChange) => (
-            <VapeoDetails value={v} onChange={onChange} disabled={!canEdit} t={t} />
-          ))}
-          {substanceCard("psicoactivas", "habitPsicoactivas", ["ex", "ocasional", "activo"], (v, onChange) => (
-            <PsicoactivasDetails value={v} onChange={onChange} disabled={!canEdit} t={t} />
-          ))}
+          <div className="habit-column-card">
+            <h5 className="habit-column-header">{t("records.substanciasTitle")}</h5>
+            <div className="habit-column-body">
+              {substanceCard("tabaco", "habitTabaco", ["ex", "ocasional", "activo"], (v, onChange) => (
+                <TabacoDetails value={v} onChange={onChange} disabled={!canEdit} t={t} />
+              ))}
+              {substanceCard("alcohol", "habitAlcohol", ["ex", "ocasional", "activo"], (v, onChange) => (
+                <AlcoholDetails value={v} onChange={onChange} disabled={!canEdit} t={t} />
+              ))}
+              {substanceCard("cafe", "habitCafe", ["ocasional", "activo"], (v, onChange) => (
+                <CafeDetails value={v} onChange={onChange} disabled={!canEdit} t={t} />
+              ))}
+              {substanceCard("vapeo", "habitVapeo", ["ex", "ocasional", "activo"], (v, onChange) => (
+                <VapeoDetails value={v} onChange={onChange} disabled={!canEdit} t={t} />
+              ))}
+              {substanceCard("psicoactivas", "habitPsicoactivas", ["ex", "ocasional", "activo"], (v, onChange) => (
+                <PsicoactivasDetails value={v} onChange={onChange} disabled={!canEdit} t={t} />
+              ))}
+            </div>
+          </div>
         </section>
 
         <section className="habit-column">
-          <h5 className="ap-category-name">{t("records.estiloVidaTitle")}</h5>
+          <div className="habit-column-card">
+            <h5 className="habit-column-header">{t("records.estiloVidaTitle")}</h5>
+            <div className="habit-column-body">
 
           {(() => {
             const key = "actividad_fisica" as const;
@@ -745,6 +756,8 @@ export function RecordHabitsSection({ workingEntry, updateField, record, canEdit
             onChange={(otros) => setHabit("otros", otros)}
             disabled={!canEdit}
           />
+            </div>
+          </div>
         </section>
       </div>
 
@@ -758,7 +771,7 @@ export function RecordHabitsSection({ workingEntry, updateField, record, canEdit
           />
         </Field>
       </div>
-    </>
+    </div>
   );
 }
 

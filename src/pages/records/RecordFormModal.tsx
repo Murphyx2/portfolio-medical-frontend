@@ -11,7 +11,7 @@ import {
   useDraftSave,
   type WorkingEntryFields,
 } from "../../hooks/useDraftSave";
-import { api, ApiError, showToast, upload } from "../../services/api";
+import { api, ApiError, showToast } from "../../services/api";
 import { searchPatients } from "../../services/patients";
 import type { APCategory, APType, MedicalRecord, Paginated, Patient, RecordEntry, RecordPersonalCondition } from "../../services/types";
 import { useAuth } from "../../store/auth";
@@ -21,7 +21,9 @@ import { flattenError } from "../../utils/errors";
 import { RecordFamilyApSection } from "./RecordFamilyApSection";
 import { RecordHabitsSection } from "./RecordHabitsSection";
 import { RecordHistoryList } from "./RecordHistoryList";
+import { RecordImageGallery } from "./RecordImageGallery";
 import { RecordSnapshotHeader } from "./RecordSnapshotHeader";
+import { RecordVitalsSection } from "./RecordVitalsSection";
 
 type TabKey = "clinical" | "habits" | "antecedentes" | "conclusions" | "historial";
 type EntryTargetKind = "draft" | "completed";
@@ -174,11 +176,6 @@ function LoadedRecordPhase({ record: initialRecord, focusNewEntry, canEdit, apCa
   const [confirmingExit, setConfirmingExit] = useState(false);
   const [confirmingDiscardDraft, setConfirmingDiscardDraft] = useState(false);
 
-  const [imageFile, setImageFile] = useState<File | null>(null);
-  const [caption, setCaption] = useState("");
-  const [imageError, setImageError] = useState("");
-  const [uploading, setUploading] = useState(false);
-
   useEffect(() => {
     let cancelled = false;
     api.get<Paginated<RecordEntry>>(`/record-entries/?record=${record.id}&page_size=100`).then((r) => {
@@ -323,31 +320,6 @@ function LoadedRecordPhase({ record: initialRecord, focusNewEntry, canEdit, apCa
     else onClose();
   }
 
-  async function handleUpload() {
-    if (!imageFile || uploading) return;
-    setImageError("");
-    if (maxUploadMb && imageFile.size > maxUploadMb * 1024 * 1024) {
-      setImageError(t("records.imageTooLarge", { max: maxUploadMb }));
-      return;
-    }
-    setUploading(true);
-    try {
-      const fd = new FormData();
-      fd.append("record", String(record.id));
-      fd.append("image", imageFile);
-      fd.append("caption", caption);
-      await upload("/images/", fd);
-      const fresh = await api.get<MedicalRecord>(`/medical-records/${record.id}/`);
-      setRecord(fresh);
-      setImageFile(null);
-      setCaption("");
-    } catch (err) {
-      setImageError(err instanceof ApiError ? flattenError(err.message) : String(err));
-    } finally {
-      setUploading(false);
-    }
-  }
-
   function updateRecord(updater: (r: MedicalRecord) => MedicalRecord) {
     setRecord((r) => updater(r));
   }
@@ -394,15 +366,6 @@ function LoadedRecordPhase({ record: initialRecord, focusNewEntry, canEdit, apCa
           canEdit={canEdit}
         />
 
-        {saveError && <p className="form-error" role="alert">{saveError}</p>}
-
-        {canEdit && (
-          <div className="modal-actions">
-            <button type="button" className="btn ghost" onClick={handleGuardarBorrador} disabled={saving || !hasAnyEntryContent(workingEntry)}>
-              {t("records.saveDraft")}
-            </button>
-          </div>
-        )}
       </TabPanel>
 
       <TabPanel tabKey="antecedentes" active={activeTab} idPrefix="record">
@@ -457,108 +420,27 @@ function LoadedRecordPhase({ record: initialRecord, focusNewEntry, canEdit, apCa
           canEdit={canEdit}
           onChange={updateRecord}
         />
-
-        {saveError && <p className="form-error" role="alert">{saveError}</p>}
-
-        {canEdit && (
-          <div className="modal-actions">
-            <button type="button" className="btn ghost" onClick={handleGuardarBorrador} disabled={saving || !hasAnyEntryContent(workingEntry)}>
-              {t("records.saveDraft")}
-            </button>
-          </div>
-        )}
       </TabPanel>
 
       <TabPanel tabKey="clinical" active={activeTab} idPrefix="record">
-        <h4>{t("records.vitalsTitle")}</h4>
-        <div className="vitals-card">
-          <div className="vitals-summary">
-            <button type="button" className="btn ghost small" onClick={() => setVitalsExpanded((v) => !v)}>
-              {vitalsExpanded ? t("records.hideVitalsFields") : t("records.registerVitals")}
-            </button>
-          </div>
-          {vitalsExpanded && (
-            <>
-              <div className="vitals-grid">
-                <Field label={`${t("records.ta")} (mmHg)`}>
-                  <div className="vitals-ta-inputs">
-                    <input
-                      type="number"
-                      min={1}
-                      max={300}
-                      value={workingEntry.ta_systolic}
-                      onChange={(e) => updateField({ ta_systolic: e.target.value })}
-                      disabled={!canEdit}
-                    />
-                    <span>/</span>
-                    <input
-                      type="number"
-                      min={1}
-                      max={300}
-                      value={workingEntry.ta_diastolic}
-                      onChange={(e) => updateField({ ta_diastolic: e.target.value })}
-                      disabled={!canEdit}
-                    />
-                  </div>
-                </Field>
-                <Field label={`${t("records.fc")} (lpm)`}>
-                  <input type="number" min={1} max={300} value={workingEntry.fc} onChange={(e) => updateField({ fc: e.target.value })} disabled={!canEdit} />
-                </Field>
-                <Field label={`${t("records.fr")} (rpm)`}>
-                  <input type="number" min={1} max={120} value={workingEntry.fr} onChange={(e) => updateField({ fr: e.target.value })} disabled={!canEdit} />
-                </Field>
-                <Field label={`${t("records.weight")} (lb)`}>
-                  <input type="number" min={0.1} max={1000} step={0.1} value={workingEntry.weight_lb} onChange={(e) => updateField({ weight_lb: e.target.value })} disabled={!canEdit} />
-                </Field>
-                <Field label={`${t("records.height")} (cm)`}>
-                  <input type="number" min={20} max={250} step={0.1} value={workingEntry.height_cm} onChange={(e) => updateField({ height_cm: e.target.value })} disabled={!canEdit} />
-                </Field>
-                <Field label={`${t("records.talla")} (cm)`}>
-                  <input type="number" min={20} max={250} step={0.1} value={workingEntry.talla_cm} onChange={(e) => updateField({ talla_cm: e.target.value })} disabled={!canEdit} />
-                </Field>
-                <Field label={`${t("records.temperature")} (°C)`}>
-                  <input type="number" min={30} max={45} step={0.1} value={workingEntry.temperature_c} onChange={(e) => updateField({ temperature_c: e.target.value })} disabled={!canEdit} />
-                </Field>
-                <Field label={`${t("records.glucose")} (mg/dL)`}>
-                  <input type="number" min={20} max={1000} value={workingEntry.glucose} onChange={(e) => updateField({ glucose: e.target.value })} disabled={!canEdit} />
-                </Field>
-              </div>
-              <Field label={t("records.vitalsNotes")}>
-                <textarea maxLength={500} value={workingEntry.vitals_notes} onChange={(e) => updateField({ vitals_notes: e.target.value })} disabled={!canEdit} />
-              </Field>
-            </>
-          )}
-          {imcPreview != null && <p className="vitals-imc-preview">{t("records.imcPreview", { value: imcPreview })}</p>}
+        <div className="clinical-theme">
+          <RecordVitalsSection
+            workingEntry={workingEntry}
+            updateField={updateField}
+            latestCompleted={latestCompleted}
+            imcPreview={imcPreview}
+            vitalsExpanded={vitalsExpanded}
+            onToggleExpanded={() => setVitalsExpanded((v) => !v)}
+            canEdit={canEdit}
+          />
+          <RecordImageGallery
+            images={record.images}
+            recordId={record.id}
+            maxUploadMb={maxUploadMb}
+            canEdit={canEdit}
+            onChanged={setRecord}
+          />
         </div>
-
-        <h4>{t("records.images")}</h4>
-        {record.images.length === 0 && <p className="muted">{t("common.noData")}</p>}
-        <div className="image-grid">
-          {record.images.map((img) => (
-            <a key={img.id} href={img.image_url ?? "#"} target="_blank" rel="noreferrer">
-              <img src={img.image_url ?? ""} alt={img.caption} loading="lazy" />
-            </a>
-          ))}
-        </div>
-        {canEdit && (
-          <div className="upload-row">
-            <input type="file" accept="image/*" onChange={(e) => setImageFile(e.target.files?.[0] ?? null)} disabled={uploading} />
-            <input placeholder={t("records.caption")} value={caption} onChange={(e) => setCaption(e.target.value)} disabled={uploading} />
-            <button type="button" className="btn primary" onClick={handleUpload} disabled={!imageFile || uploading}>
-              {uploading ? t("common.saving") : t("records.uploadImage")}
-            </button>
-          </div>
-        )}
-        {imageError && <p className="form-error" role="alert">{imageError}</p>}
-        {saveError && <p className="form-error" role="alert">{saveError}</p>}
-
-        {canEdit && (
-          <div className="modal-actions">
-            <button type="button" className="btn ghost" onClick={handleGuardarBorrador} disabled={saving || !hasAnyEntryContent(workingEntry)}>
-              {t("records.saveDraft")}
-            </button>
-          </div>
-        )}
       </TabPanel>
 
       <TabPanel tabKey="conclusions" active={activeTab} idPrefix="record">
@@ -576,35 +458,41 @@ function LoadedRecordPhase({ record: initialRecord, focusNewEntry, canEdit, apCa
           </div>
         )}
 
-        <Field label={t("records.dx")}>
-          <textarea value={workingEntry.dx} onChange={(e) => updateField({ dx: e.target.value })} disabled={!canEdit} />
-        </Field>
-        <Field label={t("records.tx")}>
-          <textarea value={workingEntry.tx} onChange={(e) => updateField({ tx: e.target.value })} disabled={!canEdit} />
-        </Field>
-        <Field label={t("records.observaciones")}>
-          <textarea rows={6} value={workingEntry.observaciones} onChange={(e) => updateField({ observaciones: e.target.value })} disabled={!canEdit} />
-        </Field>
-
-        {saveError && <p className="form-error" role="alert">{saveError}</p>}
-
-        {canEdit && (
-          <div className="modal-actions">
-            <button type="button" className="btn ghost" onClick={handleGuardarBorrador} disabled={saving || !hasAnyEntryContent(workingEntry)}>
-              {t("records.saveDraft")}
-            </button>
-            <button type="button" className="btn primary" onClick={handleGuardar} disabled={saving}>
-              {saving ? t("common.saving") : t("common.save")}
-            </button>
+        <div className="clinical-theme">
+          <div className="dc-concl-grid">
+            <Field label={t("records.dxLabel")}>
+              <textarea placeholder={t("records.dxPlaceholder")} value={workingEntry.dx} onChange={(e) => updateField({ dx: e.target.value })} disabled={!canEdit} />
+            </Field>
+            <Field label={t("records.txLabel")}>
+              <textarea placeholder={t("records.txPlaceholder")} value={workingEntry.tx} onChange={(e) => updateField({ tx: e.target.value })} disabled={!canEdit} />
+            </Field>
           </div>
-        )}
+          <div className="dc-observaciones">
+            <Field label={t("records.observaciones")}>
+              <textarea rows={6} placeholder={t("records.observacionesPlaceholder")} value={workingEntry.observaciones} onChange={(e) => updateField({ observaciones: e.target.value })} disabled={!canEdit} />
+            </Field>
+            <p className="dc-help">{t("records.observacionesHelp")}</p>
+          </div>
+        </div>
       </TabPanel>
 
       <TabPanel tabKey="historial" active={activeTab} idPrefix="record">
         <RecordHistoryList entries={historyEntries} canEditLast={canEditEntries} onEditLast={startEditLast} />
       </TabPanel>
 
+      {saveError && <p className="form-error" role="alert">{saveError}</p>}
+
       <div className="modal-actions">
+        {canEdit && (
+          <>
+            <button type="button" className="btn ghost" onClick={handleGuardarBorrador} disabled={saving || !hasAnyEntryContent(workingEntry)}>
+              {t("records.saveDraft")}
+            </button>
+            <button type="button" className="btn primary" onClick={handleGuardar} disabled={saving}>
+              {saving ? t("common.saving") : t("common.save")}
+            </button>
+          </>
+        )}
         <button type="button" className="btn ghost" onClick={requestClose}>
           {t("common.close")}
         </button>

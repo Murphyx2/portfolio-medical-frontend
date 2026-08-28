@@ -1272,31 +1272,6 @@ input[type="radio"]:focus-visible {
   margin-bottom: 0.5rem;
 }
 
-.image-grid {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 0.75rem;
-}
-
-.image-grid img {
-  width: 140px;
-  height: 100px;
-  object-fit: cover;
-  border-radius: 8px;
-  border: 1px solid var(--mc-border);
-}
-
-.upload-row {
-  display: flex;
-  gap: 0.5rem;
-  margin-top: 0.5rem;
-  align-items: center;
-}
-
-.upload-row input[type="file"] {
-  flex: 1;
-}
-
 .encounter-summary-card {
   background: var(--mc-surface-alt, #f4f7f5);
   border: 1px solid var(--mc-border);
@@ -1832,50 +1807,319 @@ input[type="radio"]:focus-visible {
   margin-bottom: 0.75rem;
 }
 
-/* ---------- Vitals card ---------- */
+/* ---------- Datos clínicos + Conclusiones (pilot restyle) ---------- */
+/* Requirements/Datos_Conclusiones/datos_conclusiones_mockup.html -- scoped
+   to .clinical-theme via --dc-* tokens, same pattern as .habits-theme /
+   .history-theme. Values happen to match --hist-* exactly; do not alias. */
 
-.vitals-card {
-  border: 1px solid var(--mc-border);
-  border-radius: 10px;
-  padding: 0.9rem 1.1rem;
+.clinical-theme {
+  --dc-green: #1f7a3a;
+  --dc-soft: #e7f6ec;
+  --dc-wash: #f3faf5;
+  --dc-line: #d7e3d9;
+  --dc-muted: #5c6b60;
+  --dc-text: #1c2a20;
 }
 
-.vitals-summary {
+/* ---- Signos vitales ---- */
+
+.clinical-theme .dc-section-row {
   display: flex;
-  align-items: center;
   justify-content: space-between;
-  gap: 0.75rem;
-  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  margin: 10px 0 4px;
 }
 
-.vitals-summary-grid {
+.clinical-theme .dc-section-row h4 {
+  margin: 0;
+  color: var(--dc-green);
+  font-size: 16px;
+}
+
+.clinical-theme .dc-ghost-btn {
+  background: #fff;
+  border: 1px solid var(--dc-green);
+  color: var(--dc-green);
+  border-radius: 8px;
+  padding: 7px 12px;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.clinical-theme .dc-card {
+  border: 1px solid var(--dc-line);
+  border-radius: 10px;
+  padding: 14px 16px;
+  margin: 0 0 16px;
+  background: #fff;
+  color: var(--dc-text);
+}
+
+.clinical-theme .dc-mini-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
-  gap: 0.4rem 1.25rem;
-  flex: 1;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 8px;
 }
 
-.vitals-grid {
+@media (max-width: 900px) {
+  .clinical-theme .dc-mini-grid { grid-template-columns: repeat(2, 1fr); }
+}
+@media (max-width: 560px) {
+  .clinical-theme .dc-mini-grid { grid-template-columns: 1fr; }
+}
+
+.clinical-theme .dc-mini-cell {
+  background: #fff;
+  border: 1px solid var(--dc-line);
+  border-radius: 8px;
+  padding: 6px 8px;
+}
+
+.clinical-theme .dc-mini-cell em {
+  display: block;
+  font-style: normal;
+  font-size: 11px;
+  color: var(--dc-muted);
+}
+
+.clinical-theme .dc-mini-cell b {
+  font-size: 14px;
+  color: var(--dc-text);
+}
+
+.clinical-theme .dc-vitals-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
-  gap: 0.75rem 1.25rem;
-  margin-top: 0.9rem;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 10px;
 }
 
-.vitals-ta-inputs {
+@media (max-width: 900px) {
+  .clinical-theme .dc-vitals-grid { grid-template-columns: repeat(2, 1fr); }
+}
+@media (max-width: 560px) {
+  .clinical-theme .dc-vitals-grid { grid-template-columns: 1fr; }
+}
+
+.clinical-theme .dc-vitals-grid label.field span {
+  font-size: 12px;
+  color: var(--dc-muted);
+  font-weight: 700;
+}
+
+.clinical-theme .dc-vitals-grid input {
+  border: 1px solid var(--dc-line);
+  border-radius: 8px;
+  padding: 8px 10px;
+  color: var(--dc-text);
+}
+
+.clinical-theme .dc-ta-inputs {
   display: flex;
   align-items: center;
-  gap: 0.35rem;
+  gap: 6px;
 }
 
-.vitals-ta-inputs input {
-  width: 4.5rem;
+.clinical-theme .dc-ta-inputs input {
+  width: 72px;
 }
 
-.vitals-imc-preview {
-  margin-top: 0.6rem;
-  font-size: 0.85rem;
-  color: var(--mc-muted);
+.clinical-theme .dc-vitals-notes {
+  margin-top: 10px;
+}
+
+.clinical-theme .dc-vitals-notes textarea {
+  width: 100%;
+  resize: vertical;
+  min-height: 72px;
+  border: 1px solid var(--dc-line);
+  border-radius: 8px;
+  padding: 8px 10px;
+  color: var(--dc-text);
+}
+
+.clinical-theme .dc-badge {
+  display: inline-block;
+  margin-top: 10px;
+  background: var(--dc-soft);
+  color: var(--dc-green);
+  font-weight: 800;
+  padding: 4px 8px;
+  border-radius: 6px;
+}
+
+/* ---- Imágenes ---- */
+
+.clinical-theme .dc-gallery {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+  margin-top: 4px;
+}
+
+.clinical-theme .dc-thumb {
+  width: 128px;
+  position: relative;
+}
+
+.clinical-theme .dc-thumb img {
+  width: 128px;
+  height: 128px;
+  object-fit: cover;
+  border-radius: 8px;
+  border: 1px solid var(--dc-line);
+  background: #ddd;
+  display: block;
+}
+
+.clinical-theme .dc-thumb .dc-cap {
+  font-size: 12px;
+  font-weight: 700;
+  margin-top: 4px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  color: var(--dc-text);
+}
+
+.clinical-theme .dc-thumb .dc-when {
+  font-size: 11px;
+  color: var(--dc-muted);
+}
+
+.clinical-theme .dc-thumb-actions {
+  position: absolute;
+  inset: 0;
+  bottom: 40px;
+  display: none;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  background: rgba(28, 42, 32, 0.55);
+  border-radius: 8px;
+}
+
+.clinical-theme .dc-thumb:hover .dc-thumb-actions {
+  display: flex;
+}
+
+.clinical-theme .dc-thumb-actions button {
+  border: 0;
+  border-radius: 6px;
+  padding: 4px 8px;
+  font-size: 12px;
+  font-weight: 700;
+  cursor: pointer;
+  background: #fff;
+  color: var(--dc-text);
+}
+
+.clinical-theme .dc-add-tile {
+  width: 128px;
+  height: 128px;
+  border: 1.5px dashed var(--dc-green);
+  border-radius: 8px;
+  display: grid;
+  place-items: center;
+  color: var(--dc-green);
+  font-weight: 800;
+  cursor: pointer;
+  background: var(--dc-wash);
+  font-size: 24px;
+}
+
+.clinical-theme .dc-empty-gallery {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.clinical-theme .dc-empty-gallery p {
+  color: var(--dc-muted);
+  font-size: 13px;
+  margin: 0;
+}
+
+/* ---- Upload sheet ---- */
+
+.clinical-theme .dc-upload-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 0;
+}
+
+.clinical-theme .dc-upload-row img {
+  width: 56px;
+  height: 56px;
+  object-fit: cover;
+  border-radius: 6px;
+  border: 1px solid var(--dc-line);
+}
+
+.clinical-theme .dc-upload-row input[type="text"] {
+  flex: 1;
+  border: 1px solid var(--dc-line);
+  border-radius: 8px;
+  padding: 6px 8px;
+}
+
+.clinical-theme .dc-upload-status {
+  font-size: 12px;
+  color: var(--dc-muted);
+}
+
+.clinical-theme .dc-upload-status.error {
+  color: #b3261e;
+}
+
+/* ---- Conclusiones ---- */
+
+.clinical-theme .dc-concl-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 16px;
+}
+
+@media (max-width: 900px) {
+  .clinical-theme .dc-concl-grid { grid-template-columns: 1fr; }
+}
+
+.clinical-theme .dc-concl-grid label.field span,
+.clinical-theme .dc-observaciones label.field span {
+  font-size: 13px;
+  font-weight: 700;
+  color: #175a2c;
+}
+
+.clinical-theme .dc-concl-grid textarea {
+  min-height: 120px;
+  width: 100%;
+  resize: vertical;
+  border: 1px solid var(--dc-line);
+  border-radius: 8px;
+  padding: 8px 10px;
+  color: var(--dc-text);
+}
+
+.clinical-theme .dc-observaciones {
+  margin-top: 12px;
+}
+
+.clinical-theme .dc-observaciones textarea {
+  min-height: 140px;
+  width: 100%;
+  resize: vertical;
+  border: 1px solid var(--dc-line);
+  border-radius: 8px;
+  padding: 8px 10px;
+  color: var(--dc-text);
+}
+
+.clinical-theme .dc-help {
+  color: var(--dc-muted);
+  font-size: 12px;
+  margin-top: 4px;
 }
 
 /* ---------- Hábitos tab ---------- */

@@ -60,6 +60,7 @@
     "minChars": "Escribe al menos 3 caracteres",
     "searchResultsLimited": "Mostrando {{shown}} de {{count}} resultados. Refina tu búsqueda para ver más.",
     "actions": "Acciones",
+    "more": "Más",
     "loading": "Cargando...",
     "noData": "No se encontraron datos",
     "back": "Volver",
@@ -304,7 +305,10 @@
       "time": "Hora",
       "event": "Cita",
       "noEventsInRange": "No hay citas en este rango.",
-      "showMore": "+{{count}} más"
+      "showMore": "+{{count}} más",
+      "legendScheduled": "Programada",
+      "legendConfirmed": "Confirmada",
+      "legendCancelled": "Cancelada"
     }
   },
   "encounters": {
@@ -344,6 +348,7 @@
     "sectionAdmission": "Datos de admisión",
     "sectionDiagnoses": "Diagnósticos",
     "sectionServices": "Servicios",
+    "moreServices": "+{{count}} más",
     "sectionCoverage": "Cobertura",
     "referringDoctor": "Médico que refiere",
     "chiefComplaint": "Motivo de consulta",

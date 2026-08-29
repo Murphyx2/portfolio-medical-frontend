@@ -86,17 +86,18 @@ export function RoomTypes() {
 
   return (
     <Page
+      card
       title={t("roomTypes.title")}
       actions={
-        <div className="page-actions-stack">
+        <div className="page-actions-row">
+          <button className="btn ghost" onClick={() => navigate("/rooms")}>
+            {t("roomTypes.back")}
+          </button>
           {canCreate && (
             <button className="btn primary" onClick={openNew}>
               + {t("roomTypes.new")}
             </button>
           )}
-          <button className="btn ghost" onClick={() => navigate("/rooms")}>
-            {t("roomTypes.back")}
-          </button>
         </div>
       }
     >

@@ -1,7 +1,7 @@
 import type { ReactNode } from "react";
 import { useTranslation } from "react-i18next";
 
-import { Pagination, SearchBar, Spinner, Table, type Column, type SortDir } from "./ui";
+import { PAGE_SIZE_OPTIONS, Pagination, SearchBar, Spinner, Table, type Column, type SortDir } from "./ui";
 
 export interface ListPageProps<T extends { id: number }> {
   initialLoading: boolean;
@@ -48,9 +48,10 @@ export interface ListPageProps<T extends { id: number }> {
 
 /**
  * Shared shell for the paginated list pages: full-page spinner gate
- * (`initialLoading`), toolbar (optional extra controls + search + admin-only
- * "show inactive" toggle), doubled `Pagination` (top and bottom, identical
- * props both times), and `Table` -- absorbs the wiring that used to be
+ * (`initialLoading`), toolbar (search, then extra filter controls, then
+ * admin-only "show inactive" toggle, then result count + page-size select),
+ * a single bottom `Pagination` (nav only -- count/page-size already live in
+ * the toolbar), and `Table` -- absorbs the wiring that used to be
  * copy-pasted byte-identically across all 13 list pages. Each page still
  * owns its own columns, row actions, form modals, and detail dialogs; only
  * the list/toolbar/pagination shell lives here.
@@ -118,7 +119,6 @@ export function ListPage<T extends { id: number }>({
   return (
     <>
       <div className="list-toolbar">
-        {toolbarBefore}
         <SearchBar
           value={search}
           onChange={setSearch}
@@ -126,6 +126,7 @@ export function ListPage<T extends { id: number }>({
           placeholder={t("common.searchPlaceholder")}
           label={t("common.search")}
         />
+        {toolbarBefore}
         {toolbarAfter}
         {isAdmin && (
           <label className="show-inactive-toggle">
@@ -137,8 +138,21 @@ export function ListPage<T extends { id: number }>({
             {t("common.showInactive")}
           </label>
         )}
+        <span className="list-toolbar-spacer" />
+        <span className="list-toolbar-count">{t("pagination.records", { count })}</span>
+        <select
+          className="pagination-size"
+          aria-label={t("pagination.perPageLabel")}
+          value={pageSize}
+          onChange={(e) => onPageSizeChange(Number(e.target.value))}
+        >
+          {PAGE_SIZE_OPTIONS.map((n) => (
+            <option key={n} value={n}>
+              {t("pagination.perPage", { size: n })}
+            </option>
+          ))}
+        </select>
       </div>
-      <Pagination page={page} count={count} pageSize={pageSize} onChange={onPageChange} onPageSizeChange={onPageSizeChange} />
       <Table
         columns={fullColumns}
         rows={rows}
@@ -153,7 +167,14 @@ export function ListPage<T extends { id: number }>({
         sortDir={sortDir}
         onSort={onSort}
       />
-      <Pagination page={page} count={count} pageSize={pageSize} onChange={onPageChange} onPageSizeChange={onPageSizeChange} />
+      <Pagination
+        page={page}
+        count={count}
+        pageSize={pageSize}
+        onChange={onPageChange}
+        onPageSizeChange={onPageSizeChange}
+        layout="nav-only"
+      />
     </>
   );
 }

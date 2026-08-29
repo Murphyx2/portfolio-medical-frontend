@@ -60,6 +60,7 @@
     "minChars": "Type at least 3 characters",
     "searchResultsLimited": "Showing {{shown}} of {{count}} results. Refine your search to see more.",
     "actions": "Actions",
+    "more": "More",
     "loading": "Loading...",
     "noData": "No data found",
     "back": "Back",
@@ -304,7 +305,10 @@
       "time": "Time",
       "event": "Appointment",
       "noEventsInRange": "No appointments in this range.",
-      "showMore": "+{{count}} more"
+      "showMore": "+{{count}} more",
+      "legendScheduled": "Scheduled",
+      "legendConfirmed": "Confirmed",
+      "legendCancelled": "Cancelled"
     }
   },
   "encounters": {
@@ -344,6 +348,7 @@
     "sectionAdmission": "Admission details",
     "sectionDiagnoses": "Diagnoses",
     "sectionServices": "Services",
+    "moreServices": "+{{count}} more",
     "sectionCoverage": "Coverage",
     "referringDoctor": "Referring doctor",
     "chiefComplaint": "Chief complaint",

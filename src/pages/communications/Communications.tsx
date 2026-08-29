@@ -30,6 +30,7 @@ export function Communications() {
 
   return (
     <Page
+      card
       title={t("communications.title")}
       actions={
         canCompose && (

@@ -105,6 +105,20 @@ export function AppointmentCalendar({
 
   return (
     <div className="appointment-calendar">
+      <div className="calendar-legend">
+        <span className="calendar-legend-item">
+          <i className="legend-dot" style={{ background: "var(--mc-status-scheduled)" }} aria-hidden="true" />
+          {t("appointments.calendar.legendScheduled")}
+        </span>
+        <span className="calendar-legend-item">
+          <i className="legend-dot" style={{ background: "#00897b" }} aria-hidden="true" />
+          {t("appointments.calendar.legendConfirmed")}
+        </span>
+        <span className="calendar-legend-item">
+          <i className="legend-dot" style={{ background: "var(--mc-danger)" }} aria-hidden="true" />
+          {t("appointments.calendar.legendCancelled")}
+        </span>
+      </div>
       <Calendar<AppointmentCalendarEvent>
         localizer={localizer}
         culture={culture}

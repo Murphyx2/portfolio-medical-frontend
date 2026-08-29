@@ -144,6 +144,54 @@ export const api = {
     request<T>(path, { ...options, method: "DELETE" }),
 };
 
+function filenameFromContentDisposition(value: string | null): string | null {
+  if (!value) return null;
+  const match = /filename="?([^";]+)"?/i.exec(value);
+  return match ? match[1] : null;
+}
+
+/** POSTs a JSON body and expects a binary (xlsx/zip) response instead of
+ * JSON -- used by Reportes' Generar/Generar paquete actions. No existing
+ * download path in this codebase to mirror; kept as a thin, single-purpose
+ * addition alongside `upload()` rather than reworking `request()` to branch
+ * on response type. */
+export async function downloadBlob(
+  path: string,
+  body: unknown,
+  retry = true,
+): Promise<{ blob: Blob; filename: string | null }> {
+  const headers = new Headers({ "Content-Type": "application/json" });
+  const token = getAccessToken();
+  if (token) headers.set("Authorization", `Bearer ${token}`);
+
+  const res = await fetch(`${apiBase}${path}`, {
+    method: "POST",
+    headers,
+    body: JSON.stringify(body),
+    credentials: "include",
+  });
+
+  if (res.status === 401 && retry) {
+    const refreshed = await tryRefresh();
+    if (refreshed) return downloadBlob(path, body, false);
+  }
+
+  if (!res.ok) {
+    let message = res.statusText;
+    try {
+      const errBody = await res.json();
+      message = errBody.detail ?? JSON.stringify(errBody);
+    } catch {
+      /* keep statusText */
+    }
+    throw new ApiError(message, res.status);
+  }
+
+  const blob = await res.blob();
+  const filename = filenameFromContentDisposition(res.headers.get("Content-Disposition"));
+  return { blob, filename };
+}
+
 export async function upload<T>(path: string, formData: FormData): Promise<T> {
   const headers = new Headers();
   const token = getAccessToken();

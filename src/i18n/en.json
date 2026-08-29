@@ -16,6 +16,7 @@
     "users": "Users",
     "ars": "ARS",
     "settings": "Settings",
+    "reportes": "Reports",
     "communications": "Communications",
     "recordsShort": "Records",
     "logout": "Log out",
@@ -223,6 +224,7 @@
     "new": "New user",
     "username": "Username",
     "role": "Role",
+    "center": "Center",
     "firstName": "First name",
     "lastName": "Last name",
     "password": "Password",
@@ -658,6 +660,34 @@
         "help": "Rows shown per page when a list isn't given an explicit page size (still capped at 200)."
       }
     }
+  },
+  "reportes": {
+    "title": "Reports",
+    "tabs": {
+      "individuales": "Individual",
+      "paquetes": "Packs"
+    },
+    "newDefinition": "New report",
+    "newPack": "New pack",
+    "generate": "Generate",
+    "generatePack": "Generate pack",
+    "download": "Download",
+    "month": "Month",
+    "ars": "ARS",
+    "programa": "Program",
+    "centro": "Center",
+    "allArs": "All",
+    "allProgramas": "All",
+    "allCenters": "All",
+    "name": "Name",
+    "category": "Category",
+    "description": "Description",
+    "periodicity": "Periodicity",
+    "engine": "Engine",
+    "active": "Active",
+    "deactivate": "Deactivate",
+    "activate": "Activate",
+    "empty": "No reports."
   },
   "communications": {
     "title": "Communications",

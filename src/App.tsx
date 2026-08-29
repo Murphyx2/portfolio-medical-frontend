@@ -19,6 +19,7 @@ import { Medicines } from "./pages/Medicines";
 import { Patients } from "./pages/Patients";
 import { Records } from "./pages/Records";
 import { RecordApTypes } from "./pages/RecordApTypes";
+import { Reportes } from "./pages/Reportes";
 import { Rooms } from "./pages/Rooms";
 import { RoomTypes } from "./pages/RoomTypes";
 import { Settings } from "./pages/Settings";
@@ -44,6 +45,7 @@ const ROUTES: { path: string; element: ReactNode; resource?: Resource }[] = [
   { path: "/rooms/types", element: <RoomTypes />, resource: "roomTypes" },
   { path: "/ars", element: <Ars />, resource: "ars" },
   { path: "/appointments", element: <Appointments />, resource: "appointments" },
+  { path: "/reportes", element: <Reportes />, resource: "reportes" },
   { path: "/comunicaciones", element: <Communications />, resource: "communications" },
   { path: "/comunicaciones/nuevo", element: <ComposeMessage />, resource: "communications" },
   {

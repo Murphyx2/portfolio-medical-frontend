@@ -36,7 +36,8 @@ export type Resource =
   | "settings"
   | "language"
   | "communications"
-  | "communicationsSettings";
+  | "communicationsSettings"
+  | "reportes";
 
 export type Action =
   | "view"
@@ -225,6 +226,15 @@ const POLICY: Partial<Record<Resource, Partial<Record<Action, Role[]>>>> = {
     view: ["ADMIN"],
     manageTemplates: ["ADMIN"],
     manageWhatsappSettings: ["ADMIN"],
+  },
+  reportes: {
+    // Requirements/ReportPage/REPORTES_REQUIREMENTS.md §2: unlike this
+    // table's usual CENTER_MANAGER-is-admin-equivalent convention, a Gerente
+    // may view + Generar (own center only, enforced server-side) but may
+    // NOT author report/pack definitions -- that stays ADMIN/IT only, same
+    // deliberate carve-out shape as `settings.edit`.
+    view: ["ADMIN", "IT", "CENTER_MANAGER"],
+    edit: ["ADMIN", "IT"],
   },
 };
 

@@ -16,14 +16,14 @@ import {
 } from "../components/ui";
 import { useListPage } from "../hooks/useListPage";
 import { api, ApiError } from "../services/api";
-import type { AuditLogEntry, Paginated, User } from "../services/types";
+import type { AuditLogEntry, MedicalCenter, Paginated, User } from "../services/types";
 import { useAuth } from "../store/auth";
 import { can } from "../utils/can";
 import { formatDateTime } from "../utils/date";
 import { flattenError } from "../utils/errors";
 import { roleLabel } from "../utils/roleLabel";
 
-const EMPTY = { username: "", email: "", first_name: "", last_name: "", password: "", role: "RECEPTIONIST" };
+const EMPTY = { username: "", email: "", first_name: "", last_name: "", password: "", role: "RECEPTIONIST", center: "" };
 const ACTIVITY_PAGE_SIZE = 20;
 
 type ConfirmType = "deactivate" | "activate" | "unlock";
@@ -42,6 +42,7 @@ export function Users() {
   const [form, setForm] = useState(EMPTY);
   const [editId, setEditId] = useState<number | null>(null);
   const [roles, setRoles] = useState<{ value: string; label: string }[]>([]);
+  const [centers, setCenters] = useState<MedicalCenter[]>([]);
   const [formError, setFormError] = useState("");
 
   const [passwordTarget, setPasswordTarget] = useState<User | null>(null);
@@ -85,6 +86,10 @@ export function Users() {
     // Role choices for the "new user" form: fetched once, not on every
     // page/sort/search change (unlike `load`, which re-runs then).
     api.get<{ value: string; label: string }[]>("/auth/users/roles/").then(setRoles).catch(() => {});
+    api
+      .get<Paginated<MedicalCenter>>("/centers/?page_size=100")
+      .then((r) => setCenters(r.results))
+      .catch(() => {});
   }, []);
 
   useEffect(() => {
@@ -115,7 +120,15 @@ export function Users() {
   }
 
   function openEdit(u: User) {
-    setForm({ username: u.username, email: u.email, first_name: u.first_name, last_name: u.last_name, password: "", role: u.role });
+    setForm({
+      username: u.username,
+      email: u.email,
+      first_name: u.first_name,
+      last_name: u.last_name,
+      password: "",
+      role: u.role,
+      center: u.center ? String(u.center) : "",
+    });
     setEditId(u.id);
     setFormError("");
     setModal(true);
@@ -125,10 +138,20 @@ export function Users() {
     setFormError("");
     try {
       if (editId) {
-        const { username, email, first_name, last_name, role } = form;
-        await api.patch(`/auth/users/${editId}/`, { username, email, first_name, last_name, role });
+        const { username, email, first_name, last_name, role, center } = form;
+        await api.patch(`/auth/users/${editId}/`, {
+          username,
+          email,
+          first_name,
+          last_name,
+          role,
+          center: role === "CENTER_MANAGER" && center ? Number(center) : null,
+        });
       } else {
-        await api.post("/auth/users/", form);
+        await api.post("/auth/users/", {
+          ...form,
+          center: form.role === "CENTER_MANAGER" && form.center ? Number(form.center) : null,
+        });
       }
       setModal(false);
       load();
@@ -312,6 +335,18 @@ export function Users() {
                 ))}
               </select>
             </Field>
+            {form.role === "CENTER_MANAGER" && (
+              <Field label={t("users.center")}>
+                <select value={form.center} onChange={(e) => setForm({ ...form, center: e.target.value })}>
+                  <option value="">—</option>
+                  {centers.map((c) => (
+                    <option key={c.id} value={c.id}>
+                      {c.name}
+                    </option>
+                  ))}
+                </select>
+              </Field>
+            )}
           </FormModal>
         )}
 

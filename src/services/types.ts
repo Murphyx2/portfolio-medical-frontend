@@ -14,6 +14,8 @@ export interface User {
   last_name: string;
   full_name: string;
   role: Role;
+  center: number | null;
+  center_name: string | null;
   is_active: boolean;
   is_locked: boolean;
   locked_until: string | null;
@@ -78,6 +80,28 @@ export interface MedicalCenter {
   is_default: boolean;
   doctor_count: number;
   active: boolean;
+}
+
+export type ReportEngineKey = "servicios_prestados";
+export type ReportPackEngineKey = "paquete_ars";
+
+export interface ReportDefinition {
+  id: number;
+  name: string;
+  category: string;
+  description: string;
+  engine_key: ReportEngineKey;
+  active: boolean;
+  last_generated_at: string | null;
+}
+
+export interface ReportPack {
+  id: number;
+  name: string;
+  periodicity: string;
+  engine_key: ReportPackEngineKey;
+  active: boolean;
+  last_generated_at: string | null;
 }
 
 export interface ServiceLite {

@@ -17,6 +17,7 @@
     "users": "Usuarios",
     "ars": "ARS",
     "settings": "Configuración",
+    "reportes": "Reportes",
     "communications": "Comunicaciones",
     "logout": "Cerrar sesión",
     "groups": {
@@ -223,6 +224,7 @@
     "new": "Nuevo usuario",
     "username": "Usuario",
     "role": "Rol",
+    "center": "Centro",
     "firstName": "Nombre",
     "lastName": "Apellido",
     "password": "Contraseña",
@@ -658,6 +660,34 @@
         "help": "Filas mostradas por página cuando una lista no especifica un tamaño de página (limitado a 200)."
       }
     }
+  },
+  "reportes": {
+    "title": "Reportes",
+    "tabs": {
+      "individuales": "Individuales",
+      "paquetes": "Paquetes"
+    },
+    "newDefinition": "Nuevo reporte",
+    "newPack": "Nuevo paquete",
+    "generate": "Generar",
+    "generatePack": "Generar paquete",
+    "download": "Descargar",
+    "month": "Mes",
+    "ars": "ARS",
+    "programa": "Programa",
+    "centro": "Centro",
+    "allArs": "Todas",
+    "allProgramas": "Todos",
+    "allCenters": "Todos",
+    "name": "Nombre",
+    "category": "Categoría",
+    "description": "Descripción",
+    "periodicity": "Periodicidad",
+    "engine": "Motor",
+    "active": "Activo",
+    "deactivate": "Desactivar",
+    "activate": "Activar",
+    "empty": "No hay reportes."
   },
   "communications": {
     "title": "Comunicaciones",

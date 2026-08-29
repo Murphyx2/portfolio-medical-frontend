@@ -1,5 +1,6 @@
 import { useEffect, useState, type ComponentType, type ReactNode } from "react";
 import {
+  BarChart3,
   BriefcaseMedical,
   Bed,
   Calendar,
@@ -66,6 +67,7 @@ export const NAV_GROUPS: { titleKey: string; items: NavItem[] }[] = [
 // Pie: no group title, divider above, pinned at the bottom -- Configuración
 // always lives here, never adjacent to Dashboard.
 export const NAV_FOOT: NavItem[] = [
+  { to: "/reportes", key: "nav.reportes", resource: "reportes", icon: BarChart3 },
   { to: "/comunicaciones", key: "nav.communications", resource: "communications", icon: Mail },
   { to: "/users", key: "nav.users", resource: "users", icon: Users },
   { to: "/settings", key: "nav.settings", resource: "settings", icon: Settings },

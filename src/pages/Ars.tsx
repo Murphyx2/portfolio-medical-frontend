@@ -106,6 +106,7 @@ export function Ars() {
 
   return (
       <Page
+        card
         title={t("ars.title")}
         actions={
           canWrite && (

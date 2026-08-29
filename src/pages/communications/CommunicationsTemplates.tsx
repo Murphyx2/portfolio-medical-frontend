@@ -111,6 +111,7 @@ export function CommunicationsTemplates() {
 
   return (
     <Page
+      card
       title={t("communications.templates.title")}
       actions={
         <button className="btn primary" onClick={openNew}>

@@ -85,6 +85,7 @@ export function Medicines() {
 
   return (
     <Page
+      card
       title={t("medicines.title")}
       actions={
         canWrite && (

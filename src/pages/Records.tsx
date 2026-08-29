@@ -127,17 +127,18 @@ export function Records() {
 
   return (
     <Page
+      card
       title={t("records.title")}
       actions={
-        <div className="page-actions-stack">
-          {canCreate && (
-            <button className="btn primary" onClick={openNew}>
-              + {t("records.newRecord")}
-            </button>
-          )}
+        <div className="page-actions-row">
           {canManageApTypes && (
             <button className="btn ghost" onClick={() => navigate("/records/types")}>
               {t("records.manageApTypes")}
+            </button>
+          )}
+          {canCreate && (
+            <button className="btn primary" onClick={openNew}>
+              + {t("records.newRecord")}
             </button>
           )}
         </div>

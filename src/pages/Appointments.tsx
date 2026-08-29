@@ -6,7 +6,20 @@ import { DateNavigator } from "../components/DateNavigator";
 import { DateTimeField } from "../components/DateTimeField";
 import { ListPage } from "../components/ListPage";
 import { PatientFormModal } from "../components/PatientFormModal";
-import { ConfirmDialog, Dialog, Field, FormModal, MaskedValue, SearchableSelect, SearchBar, useRowConfirm, Page, type Column } from "../components/ui";
+import {
+  ConfirmDialog,
+  Dialog,
+  Field,
+  FormModal,
+  MaskedValue,
+  RowActionsMenu,
+  SearchableSelect,
+  SearchBar,
+  useRowConfirm,
+  Page,
+  type Column,
+  type RowActionsMenuItem,
+} from "../components/ui";
 import { useCalendarAppointments } from "../hooks/useCalendarAppointments";
 import { useDoctorServiceFilter } from "../hooks/useDoctorServiceFilter";
 import { useListPage } from "../hooks/useListPage";
@@ -509,38 +522,45 @@ export function Appointments() {
       key: "actions",
       header: t("common.actions"),
       align: "center",
-      render: (r) => (
-        <div className="row-actions">
-          {canEditAppointment(user?.role, r.status) && r.active && (
-            <button className="btn small ghost" onClick={() => openEdit(r)}>{t("common.edit")}</button>
-          )}
-          {canEdit && (r.status === "SCHEDULED" || r.status === "CONFIRMED") && (
-            <button className="btn small ghost" onClick={() => openReschedule(r)}>{t("appointments.reschedule")}</button>
-          )}
-          {canConfirm && r.status === "SCHEDULED" && (
-            <button className="btn small" onClick={() => confirm.open("confirm", r)}>{t("appointments.confirm")}</button>
-          )}
-          {canComplete && r.status === "CONFIRMED" && (
-            <button className="btn small" onClick={() => confirm.open("complete", r)}>{t("appointments.complete")}</button>
-          )}
-          {canCancel && (r.status === "SCHEDULED" || r.status === "CONFIRMED") && (
-            <button className="btn small danger" onClick={() => openCancel(r)}>{t("appointments.cancel")}</button>
-          )}
-          {canDelete && r.active && (
-            <button className="btn small danger" onClick={() => confirm.open("delete", r)}>{t("common.delete")}</button>
-          )}
-          {isAdmin && !r.active && (
-            <button className="btn small" onClick={() => confirm.open("restore", r)}>
-              {t("common.restore")}
-            </button>
-          )}
-        </div>
-      ),
+      render: (r) => {
+        const items: RowActionsMenuItem[] = [
+          ...(canEdit && (r.status === "SCHEDULED" || r.status === "CONFIRMED")
+            ? [{ key: "reschedule", label: t("appointments.reschedule"), onClick: () => openReschedule(r) }]
+            : []),
+          ...(canConfirm && r.status === "SCHEDULED"
+            ? [{ key: "confirm", label: t("appointments.confirm"), onClick: () => confirm.open("confirm", r) }]
+            : []),
+          ...(canComplete && r.status === "CONFIRMED"
+            ? [{ key: "complete", label: t("appointments.complete"), onClick: () => confirm.open("complete", r) }]
+            : []),
+          ...(canCancel && (r.status === "SCHEDULED" || r.status === "CONFIRMED")
+            ? [{ key: "cancel", label: t("appointments.cancel"), danger: true, onClick: () => openCancel(r) }]
+            : []),
+          ...(canDelete && r.active
+            ? [{ key: "delete", label: t("common.delete"), danger: true, onClick: () => confirm.open("delete", r) }]
+            : []),
+          ...(isAdmin && !r.active
+            ? [{ key: "restore", label: t("common.restore"), onClick: () => confirm.open("restore", r) }]
+            : []),
+        ];
+        return (
+          <RowActionsMenu
+            ariaLabel={r.patient_info.full_name}
+            primary={
+              canEditAppointment(user?.role, r.status) && r.active && (
+                <button className="btn small ghost" onClick={() => openEdit(r)}>{t("common.edit")}</button>
+              )
+            }
+            items={items}
+          />
+        );
+      },
     },
   ];
 
   return (
     <Page
+      card
       title={t("appointments.title")}
       actions={
         canCreate && (

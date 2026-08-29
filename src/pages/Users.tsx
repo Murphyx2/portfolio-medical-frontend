@@ -3,7 +3,17 @@ import { History, KeyRound, Unlock, UserCheck, UserX } from "lucide-react";
 import { useTranslation } from "react-i18next";
 
 import { ListPage } from "../components/ListPage";
-import { ConfirmDialog, Dialog, Field, FormModal, Page, useRowConfirm, type Column } from "../components/ui";
+import {
+  ConfirmDialog,
+  Dialog,
+  Field,
+  FormModal,
+  Page,
+  RowActionsMenu,
+  useRowConfirm,
+  type Column,
+  type RowActionsMenuItem,
+} from "../components/ui";
 import { useListPage } from "../hooks/useListPage";
 import { api, ApiError } from "../services/api";
 import type { AuditLogEntry, Paginated, User } from "../services/types";
@@ -199,45 +209,45 @@ export function Users() {
       key: "actions",
       header: t("common.actions"),
       align: "center",
-      render: (r) => (
-        <div className="row-actions">
-          {canEdit && r.is_active && (
-            <button className="btn small ghost" onClick={() => openEdit(r)} aria-label={`${t("common.edit")} ${r.full_name || r.username}`}>
-              {t("common.edit")}
-            </button>
-          )}
-          {canUnlock && r.is_active && r.is_locked && (
-            <button className="btn small" onClick={() => confirm.open("unlock", r)} aria-label={`${t("users.unlock")} ${r.full_name || r.username}`}>
-              <Unlock size={14} aria-hidden="true" /> {t("users.unlock")}
-            </button>
-          )}
-          {canChangePassword && r.is_active && (
-            <button className="btn small ghost" onClick={() => openPasswordReset(r)} aria-label={`${t("users.changePassword")} ${r.full_name || r.username}`}>
-              <KeyRound size={14} aria-hidden="true" /> {t("users.changePassword")}
-            </button>
-          )}
-          {canViewActivity && (
-            <button className="btn small ghost" onClick={() => openActivity(r)} aria-label={`${t("users.activity")} ${r.full_name || r.username}`}>
-              <History size={14} aria-hidden="true" /> {t("users.activity")}
-            </button>
-          )}
-          {canDeactivate && r.is_active && (
-            <button className="btn small danger" onClick={() => confirm.open("deactivate", r)} aria-label={`${t("users.deactivate")} ${r.full_name || r.username}`}>
-              <UserX size={14} aria-hidden="true" /> {t("users.deactivate")}
-            </button>
-          )}
-          {isAdmin && !r.is_active && (
-            <button className="btn small" onClick={() => confirm.open("activate", r)} aria-label={`${t("users.activate")} ${r.full_name || r.username}`}>
-              <UserCheck size={14} aria-hidden="true" /> {t("users.activate")}
-            </button>
-          )}
-        </div>
-      ),
+      render: (r) => {
+        const name = r.full_name || r.username;
+        const items: RowActionsMenuItem[] = [
+          ...(canUnlock && r.is_active && r.is_locked
+            ? [{ key: "unlock", label: t("users.unlock"), icon: <Unlock size={14} aria-hidden="true" />, onClick: () => confirm.open("unlock", r) }]
+            : []),
+          ...(canChangePassword && r.is_active
+            ? [{ key: "changePassword", label: t("users.changePassword"), icon: <KeyRound size={14} aria-hidden="true" />, onClick: () => openPasswordReset(r) }]
+            : []),
+          ...(canViewActivity
+            ? [{ key: "activity", label: t("users.activity"), icon: <History size={14} aria-hidden="true" />, onClick: () => openActivity(r) }]
+            : []),
+          ...(canDeactivate && r.is_active
+            ? [{ key: "deactivate", label: t("users.deactivate"), danger: true, icon: <UserX size={14} aria-hidden="true" />, onClick: () => confirm.open("deactivate", r) }]
+            : []),
+          ...(isAdmin && !r.is_active
+            ? [{ key: "activate", label: t("users.activate"), icon: <UserCheck size={14} aria-hidden="true" />, onClick: () => confirm.open("activate", r) }]
+            : []),
+        ];
+        return (
+          <RowActionsMenu
+            ariaLabel={name}
+            primary={
+              canEdit && r.is_active && (
+                <button className="btn small ghost" onClick={() => openEdit(r)} aria-label={`${t("common.edit")} ${name}`}>
+                  {t("common.edit")}
+                </button>
+              )
+            }
+            items={items}
+          />
+        );
+      },
     },
   ];
 
   return (
       <Page
+        card
         title={t("users.title")}
         actions={
           can(user?.role, "create", "users") && (

@@ -285,6 +285,19 @@ body {
   color: var(--mc-muted);
 }
 
+.topbar-right .btn.ghost {
+  border: 1px solid var(--mc-border);
+  background: var(--mc-white);
+  border-radius: 8px;
+  padding: 0.4rem 0.7rem;
+  font-weight: 700;
+  color: var(--mc-primary);
+}
+
+.topbar-right .btn.ghost:hover {
+  background: #f4faf4;
+}
+
 .lang-switch {
   border-radius: 6px;
   border: 1px solid var(--mc-border);
@@ -342,6 +355,13 @@ body {
 }
 
 /* ---------- page ---------- */
+.list-page-card {
+  background: var(--mc-white);
+  border: 1px solid var(--mc-border);
+  border-radius: 12px;
+  padding: 1rem 1.15rem 1.15rem;
+}
+
 .page-head {
   display: flex;
   align-items: center;
@@ -358,6 +378,15 @@ body {
   display: flex;
   flex-direction: column;
   align-items: flex-end;
+  gap: 0.5rem;
+}
+
+/* Secondary (outline) action sits left of the primary "+ Nuevo" button,
+   not stacked above/below it -- list pages redesign. Render the secondary
+   button first in markup. */
+.page-actions-row {
+  display: flex;
+  align-items: center;
   gap: 0.5rem;
 }
 
@@ -605,19 +634,96 @@ body {
 }
 
 .row-actions {
-  display: grid;
-  grid-template-columns: repeat(2, auto);
+  display: flex;
+  align-items: center;
   justify-content: center;
   gap: 0.4rem;
-}
-
-.row-actions > *:last-child:nth-child(odd) {
-  grid-column: 1 / -1;
-  justify-self: center;
+  position: relative;
 }
 
 .col-center {
   text-align: center;
+}
+
+.col-align-right {
+  text-align: right;
+}
+
+/* ---------- row actions overflow menu ("⋯ Más") ---------- */
+.row-actions-menu {
+  position: relative;
+}
+
+.row-actions-menu-trigger {
+  border: 1px solid var(--mc-border);
+  background: var(--mc-white);
+  border-radius: 8px;
+  padding: 0.3rem 0.55rem;
+  font-weight: 700;
+  font-size: 0.85rem;
+  color: var(--mc-text);
+  cursor: pointer;
+  line-height: 1;
+}
+
+.row-actions-menu-trigger:hover {
+  background: #f4faf4;
+}
+
+.row-actions-menu-panel {
+  /* Portaled into document.body (RowActionsMenu in ui.tsx) so it escapes
+     .table-scroll's overflow clipping and the sticky Acciones column's
+     stacking context -- top/right are set inline per-instance from the
+     trigger's getBoundingClientRect(). */
+  position: fixed;
+  background: var(--mc-white);
+  border: 1px solid var(--mc-border);
+  border-radius: 8px;
+  min-width: 180px;
+  box-shadow: 0 8px 20px rgba(28, 42, 32, 0.15);
+  z-index: 1000;
+  overflow: hidden;
+}
+
+.row-actions-menu-item {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  width: 100%;
+  text-align: left;
+  border: 0;
+  background: none;
+  padding: 0.5rem 0.75rem;
+  font: inherit;
+  font-size: 0.85rem;
+  color: var(--mc-text);
+  cursor: pointer;
+}
+
+.row-actions-menu-item:hover {
+  background: #f4faf4;
+}
+
+.row-actions-menu-item.danger {
+  color: var(--mc-danger);
+  font-weight: 700;
+}
+
+/* Sticky Acciones column so it never scrolls off the right edge of a wide
+   table (Admisiones/Citas/Usuarios). Acciones is always the last column
+   (Table's own built-in actions cell, or a page's custom "actions" Column
+   defined last), so targeting :last-child covers every module without a
+   dedicated per-page flag. Harmless on narrower tables. */
+.data-table th:last-child,
+.data-table td:last-child {
+  position: sticky;
+  right: 0;
+  background: var(--mc-white);
+  box-shadow: -6px 0 6px -6px rgba(0, 0, 0, 0.15);
+}
+
+.data-table tr:hover td:last-child {
+  background: #f4faf4;
 }
 
 .row-link {
@@ -687,6 +793,16 @@ body {
   align-items: center;
   gap: 0.75rem;
   margin-bottom: 0.75rem;
+}
+
+.list-toolbar-spacer {
+  flex: 1 1 auto;
+}
+
+.list-toolbar-count {
+  color: var(--mc-muted);
+  font-size: 0.85rem;
+  white-space: nowrap;
 }
 
 .date-filter {

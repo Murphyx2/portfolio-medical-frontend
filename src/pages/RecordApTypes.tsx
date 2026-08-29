@@ -114,22 +114,23 @@ export function RecordApTypes() {
 
   return (
     <Page
+      card
       title={t("recordApTypes.title")}
       actions={
-        <div className="page-actions-stack">
-          {canEdit && (
-            <button className="btn primary" onClick={openNew}>
-              + {t("recordApTypes.new")}
-            </button>
-          )}
+        <div className="page-actions-row">
+          <button className="btn ghost" onClick={() => navigate("/records")}>
+            {t("recordApTypes.back")}
+          </button>
           {canEdit && (
             <button className="btn ghost" onClick={() => setCategoriesModal(true)}>
               {t("recordApTypes.manageCategories")}
             </button>
           )}
-          <button className="btn ghost" onClick={() => navigate("/records")}>
-            {t("recordApTypes.back")}
-          </button>
+          {canEdit && (
+            <button className="btn primary" onClick={openNew}>
+              + {t("recordApTypes.new")}
+            </button>
+          )}
         </div>
       }
     >

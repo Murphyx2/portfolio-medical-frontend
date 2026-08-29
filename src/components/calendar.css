@@ -197,6 +197,29 @@
   opacity: 0.9;
 }
 
+/* ---------- legend (same status colors as the events above) ---------- */
+.calendar-legend {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.9rem;
+  font-size: 0.78rem;
+  color: var(--mc-muted);
+  margin: 0.5rem 0 0;
+}
+
+.calendar-legend-item {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+}
+
+.legend-dot {
+  display: inline-block;
+  width: 10px;
+  height: 10px;
+  border-radius: 2px;
+}
+
 /* ---------- time grid (week/day) ---------- */
 
 .appointment-calendar .rbc-current-time-indicator {

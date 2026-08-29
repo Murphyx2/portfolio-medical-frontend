@@ -113,6 +113,7 @@ export function Centers() {
 
   return (
     <Page
+      card
       title={t("centers.title")}
       actions={
         canEdit && (

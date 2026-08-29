@@ -25,6 +25,7 @@ const EMPTY = {
   ars: "",
   ars_program: "",
   has_guardian: true,
+  whatsapp_opt_in: false,
 };
 
 /** Reusable patient create/edit form, shared by Patients.tsx and Encounters.tsx
@@ -56,6 +57,7 @@ export function PatientFormModal({
           ars: patient.ars ? String(patient.ars) : "",
           ars_program: patient.ars_program ? String(patient.ars_program) : "",
           has_guardian: patient.has_guardian,
+          whatsapp_opt_in: patient.whatsapp_opt_in,
         }
       : EMPTY,
   );
@@ -285,6 +287,23 @@ export function PatientFormModal({
           value={form.address}
           onChange={(e) => setForm({ ...form, address: e.target.value })}
         />
+      </Field>
+
+      <Field label={t("communications.patient.optIn")}>
+        <label>
+          <input
+            type="checkbox"
+            checked={form.whatsapp_opt_in}
+            onChange={(e) => setForm({ ...form, whatsapp_opt_in: e.target.checked })}
+          />{" "}
+          {t("communications.patient.optIn")}
+        </label>
+        <p className="settings-field-help">{t("communications.patient.optInHelp")}</p>
+        {form.phone && (
+          <p className="muted">
+            {t("communications.patient.currentPhone")}: {formatPhone(form.phone)}
+          </p>
+        )}
       </Field>
     </FormModal>
   );

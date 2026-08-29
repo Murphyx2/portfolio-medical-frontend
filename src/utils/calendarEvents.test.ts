@@ -1,3 +1,4 @@
+import { format } from "date-fns";
 import { describe, expect, it } from "vitest";
 
 import { appointmentToEvent, appointmentsToEvents } from "./calendarEvents";
@@ -47,10 +48,22 @@ describe("appointmentToEvent", () => {
     expect(event.end.toISOString()).toBe(new Date("2026-08-23T00:15:00Z").toISOString());
   });
 
-  it("uses the patient's full name as the title", () => {
-    const appointment = makeAppointment({ patient_info: { id: 10, full_name: "María Pérez", gender: "FEMALE", phone: "" } });
+  it("uses the appointment time plus the patient's last name as the title", () => {
+    const appointment = makeAppointment({
+      date_time: "2026-08-22T14:30:00Z",
+      patient_info: { id: 10, full_name: "María Pérez", gender: "FEMALE", phone: "" },
+    });
     const event = appointmentToEvent(appointment);
-    expect(event.title).toBe("María Pérez");
+    expect(event.title).toBe(`${format(new Date("2026-08-22T14:30:00Z"), "H:mm")} Pérez`);
+  });
+
+  it("uses the last two tokens as the surname when the patient has two last names", () => {
+    const appointment = makeAppointment({
+      date_time: "2026-08-22T09:10:00Z",
+      patient_info: { id: 10, full_name: "Altagracia Castillo Castillo", gender: "FEMALE", phone: "" },
+    });
+    const event = appointmentToEvent(appointment);
+    expect(event.title).toBe(`${format(new Date("2026-08-22T09:10:00Z"), "H:mm")} Castillo Castillo`);
   });
 
   it("carries the source appointment through as resource", () => {

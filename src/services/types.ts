@@ -149,6 +149,9 @@ export interface Patient {
   guardians: PatientGuardian[];
   allergies: string;
   critical_conditions: string;
+  whatsapp_opt_in: boolean;
+  whatsapp_opt_in_at: string | null;
+  whatsapp_opt_in_by: number | null;
   created_at: string;
   updated_at: string;
   active: boolean;
@@ -184,6 +187,7 @@ export interface RecordImage {
   caption: string;
   uploaded_by: number | null;
   active: boolean;
+  created_at: string;
 }
 
 export interface PatientLite {
@@ -465,7 +469,13 @@ export interface Room {
 export interface Appointment {
   id: number;
   patient: number;
-  patient_info: { id: number; full_name: string; gender: string; phone: string };
+  patient_info: {
+    id: number;
+    full_name: string;
+    gender: string;
+    phone: string;
+    whatsapp_opt_in?: boolean;
+  };
   doctor: number;
   doctor_info: { id: number; full_name: string };
   center: number | null;
@@ -551,4 +561,119 @@ export interface Encounter {
   created_at: string;
   updated_at: string;
   active: boolean;
+}
+
+// --- Communications (Comunicaciones) ---
+
+export type CommunicationsChannel = "EMAIL" | "WHATSAPP";
+export type CommunicationsAudience = "STAFF" | "PATIENT";
+export type CommunicationsKind =
+  | "AVISO"
+  | "INFORMACION"
+  | "ALERTA"
+  | "CITA_CREADA"
+  | "CITA_RECORDATORIO"
+  | "CITA_REAGENDADA"
+  | "CITA_CANCELADA";
+export type CommunicationsPriority = "NORMAL" | "ALERTA";
+export type CommunicationsMessageStatus =
+  | "DRAFT"
+  | "QUEUED"
+  | "SENDING"
+  | "SENT"
+  | "PARTIAL"
+  | "FAILED"
+  | "CANCELLED";
+export type CommunicationsDeliveryStatus =
+  | "QUEUED"
+  | "SENT"
+  | "DELIVERED"
+  | "READ"
+  | "FAILED"
+  | "UNDELIVERABLE"
+  | "OPTED_OUT";
+
+export interface CommunicationsRecipientsInput {
+  all_staff: boolean;
+  roles: Role[];
+  user_ids: number[];
+}
+
+export interface CommunicationsMessage {
+  id: number;
+  channel: CommunicationsChannel;
+  audience: CommunicationsAudience;
+  kind: CommunicationsKind;
+  priority: CommunicationsPriority;
+  subject: string;
+  body: string;
+  template: number | null;
+  created_by: number | null;
+  created_by_name: string;
+  scheduled_for: string | null;
+  status: CommunicationsMessageStatus;
+  recipient_count: number;
+  appointment: number | null;
+  created_at: string;
+  skipped_no_email?: number;
+}
+
+export interface CommunicationsMessageCreate {
+  channel: CommunicationsChannel;
+  audience: "STAFF";
+  kind: CommunicationsKind;
+  priority: CommunicationsPriority;
+  subject: string;
+  body: string;
+  scheduled_for?: string | null;
+  status: "DRAFT" | "QUEUED";
+  recipients: CommunicationsRecipientsInput;
+}
+
+export interface CommunicationsDelivery {
+  id: number;
+  message: number;
+  user: number | null;
+  user_name: string | null;
+  patient: number | null;
+  patient_name: string | null;
+  appointment: number | null;
+  appointment_date: string | null;
+  address_masked: string;
+  status: CommunicationsDeliveryStatus;
+  error: string;
+  sent_at: string | null;
+  delivered_at: string | null;
+  read_at: string | null;
+  created_at: string;
+}
+
+export interface CommunicationsTemplate {
+  id: number;
+  channel: CommunicationsChannel;
+  kind: CommunicationsKind;
+  provider_name: string;
+  language: string;
+  body_email: string;
+  variables_json: string[];
+  is_active: boolean;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface CommunicationsSettings {
+  from_name: string;
+  reply_to: string;
+  whatsapp_phone_number_id: string;
+  whatsapp_business_account_id: string;
+  whatsapp_access_token?: string;
+  whatsapp_access_token_last4: string;
+  whatsapp_app_secret?: string;
+  whatsapp_app_secret_last4: string;
+  whatsapp_default_country_code: string;
+  whatsapp_reminder_hours: number;
+  whatsapp_master_enabled: boolean;
+  whatsapp_configured: boolean;
+  webhook_url: string;
+  updated_at: string;
 }

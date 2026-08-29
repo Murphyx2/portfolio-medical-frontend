@@ -34,7 +34,9 @@ export type Resource =
   | "services"
   | "serviceTypes"
   | "settings"
-  | "language";
+  | "language"
+  | "communications"
+  | "communicationsSettings";
 
 export type Action =
   | "view"
@@ -52,7 +54,13 @@ export type Action =
   | "assignAdminRole"
   | "unlock"
   | "changePassword"
-  | "viewActivity";
+  | "viewActivity"
+  | "sendStaffEmail"
+  | "sendAlerta"
+  | "manageTemplates"
+  | "manageWhatsappSettings"
+  | "sendManualReminder"
+  | "toggleWhatsappOptIn";
 
 const ALL_ROLES: Role[] = ["ADMIN", "DOCTOR", "RECEPTIONIST", "IT", "NURSE", "CENTER_MANAGER"];
 
@@ -197,6 +205,26 @@ const POLICY: Partial<Record<Resource, Partial<Record<Action, Role[]>>>> = {
     // Narrower carve-out within the Settings page: CENTER_MANAGER may edit
     // only the language picker, not the rest of settings.
     edit: ["ADMIN", "CENTER_MANAGER"],
+  },
+  communications: {
+    // Requirements/Communications/COMMUNICATIONS_MODULE_REQUIREMENTS.md §4:
+    // IT never opens Comunicaciones at all (unlike its usual masked-PII
+    // read access elsewhere); CENTER_MANAGER is admitted as admin-equivalent
+    // per this table's usual convention even though §4's literal role
+    // columns don't list it explicitly.
+    view: ["ADMIN", "DOCTOR", "NURSE", "RECEPTIONIST", "CENTER_MANAGER"],
+    sendStaffEmail: ["ADMIN", "DOCTOR"],
+    sendAlerta: ["ADMIN"],
+    sendManualReminder: ["ADMIN", "DOCTOR", "NURSE", "RECEPTIONIST", "CENTER_MANAGER"],
+    toggleWhatsappOptIn: ["ADMIN", "DOCTOR", "NURSE", "RECEPTIONIST", "CENTER_MANAGER"],
+  },
+  communicationsSettings: {
+    // Ajustes and Plantillas are Admin-only per §4 ("Configure SMTP /
+    // WhatsApp credentials" / "Edit email / WhatsApp templates" -- neither
+    // row includes IT, unlike the general Settings page).
+    view: ["ADMIN"],
+    manageTemplates: ["ADMIN"],
+    manageWhatsappSettings: ["ADMIN"],
   },
 };
 

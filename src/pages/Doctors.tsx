@@ -238,6 +238,7 @@ export function Doctors() {
 
   return (
     <Page
+      card
       title={t("doctors.title")}
       actions={
         canEdit && (

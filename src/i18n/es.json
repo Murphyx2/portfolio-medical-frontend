@@ -11,12 +11,21 @@
     "appointments": "Citas",
     "encounters": "Admisiones",
     "records": "Expedientes Médicos",
+    "recordsShort": "Expedientes",
     "services": "Servicios",
     "rooms": "Salas",
     "users": "Usuarios",
     "ars": "ARS",
     "settings": "Configuración",
-    "logout": "Cerrar sesión"
+    "communications": "Comunicaciones",
+    "logout": "Cerrar sesión",
+    "groups": {
+      "atencion": "Atención",
+      "operacion": "Operación",
+      "red": "Red"
+    },
+    "collapse": "Contraer menú",
+    "expand": "Expandir menú"
   },
   "auth": {
     "login": "Iniciar sesión",
@@ -51,6 +60,7 @@
     "minChars": "Escribe al menos 3 caracteres",
     "searchResultsLimited": "Mostrando {{shown}} de {{count}} resultados. Refina tu búsqueda para ver más.",
     "actions": "Acciones",
+    "more": "Más",
     "loading": "Cargando...",
     "noData": "No se encontraron datos",
     "back": "Volver",
@@ -295,7 +305,10 @@
       "time": "Hora",
       "event": "Cita",
       "noEventsInRange": "No hay citas en este rango.",
-      "showMore": "+{{count}} más"
+      "showMore": "+{{count}} más",
+      "legendScheduled": "Programada",
+      "legendConfirmed": "Confirmada",
+      "legendCancelled": "Cancelada"
     }
   },
   "encounters": {
@@ -335,6 +348,7 @@
     "sectionAdmission": "Datos de admisión",
     "sectionDiagnoses": "Diagnósticos",
     "sectionServices": "Servicios",
+    "moreServices": "+{{count}} más",
     "sectionCoverage": "Cobertura",
     "referringDoctor": "Médico que refiere",
     "chiefComplaint": "Motivo de consulta",
@@ -358,8 +372,14 @@
     "newEntry": "Nueva entrada",
     "patient": "Paciente",
     "images": "Imágenes",
-    "uploadImage": "Subir imagen",
+    "uploadImage": "+ Subir imagen",
     "caption": "Título de la imagen",
+    "imageTitle": "Título",
+    "uploadAction": "Subir",
+    "noImages": "Aún no hay imágenes",
+    "confirmRemoveImage": "¿Quitar esta imagen del expediente?",
+    "viewImage": "Ver",
+    "removeImage": "Quitar",
     "patientPickerPlaceholder": "Buscar paciente por nombre, cédula o NSS…",
     "imageTooLarge": "La imagen debe ser menor de {{max}} MB.",
     "manageApTypes": "Administrar tipos de AP",
@@ -527,10 +547,17 @@
     "temperature": "Temperatura",
     "glucose": "Glucosa",
     "vitalsNotes": "Resultados",
-    "imcPreview": "IMC: {{value}}",
+    "vitalsNotesPlaceholder": "Nota breve sobre estos signos",
+    "imcPreview": "IMC {{value}}",
     "dx": "Dx",
     "tx": "Tx",
+    "dxLabel": "Dx (Diagnóstico)",
+    "txLabel": "Tx (Tratamiento)",
+    "dxPlaceholder": "Diagnóstico principal y diferenciales",
+    "txPlaceholder": "Indicaciones, dosis si aplica, plan",
     "observaciones": "Observaciones",
+    "observacionesPlaceholder": "Notas de esta visita",
+    "observacionesHelp": "Se guardará con fecha y autor en el historial.",
     "saveDraft": "Guardar borrador",
     "draftBanner": "Tiene un borrador sin finalizar.",
     "continueDraft": "Continuar borrador",
@@ -539,7 +566,16 @@
     "toastDraftSaved": "Borrador guardado",
     "toastEntrySaved": "Entrada guardada",
     "historyEmpty": "Aún no hay entradas en el historial",
-    "editLastEntry": "Editar última entrada"
+    "editLastEntry": "Editar última entrada",
+    "changed": "Cambió",
+    "sectionSignos": "Signos",
+    "sectionApPersonales": "AP personales",
+    "sectionApFamiliares": "AP familiares",
+    "viewDetail": "Ver detalle",
+    "hideDetail": "Ocultar detalle",
+    "habitsNotesLabel": "Notas hábitos",
+    "noRecordThisEntry": "Sin registro en esta entrada",
+    "historyMoreChips": "+{{count}}"
   },
   "recordApTypes": {
     "title": "Tipos de antecedentes patológicos",
@@ -621,6 +657,137 @@
         "label": "Tamaño de página predeterminado",
         "help": "Filas mostradas por página cuando una lista no especifica un tamaño de página (limitado a 200)."
       }
+    }
+  },
+  "communications": {
+    "title": "Comunicaciones",
+    "underConstruction": "Este módulo está en desarrollo activo. Algunas funciones (envío de WhatsApp, confirmaciones de entrega) pueden cambiar o fallar mientras se completan las pruebas.",
+    "new": "Nuevo aviso al personal",
+    "tabs": {
+      "staff": "Personal (correo)",
+      "patients": "Pacientes (WhatsApp)"
+    },
+    "columns": {
+      "date": "Fecha",
+      "type": "Tipo",
+      "subject": "Asunto",
+      "author": "Autor",
+      "recipients": "Destinatarios",
+      "status": "Estado",
+      "actions": "Acciones",
+      "sentDate": "Fecha envío",
+      "patient": "Paciente",
+      "appointment": "Cita",
+      "phone": "Teléfono",
+      "error": "Error"
+    },
+    "view": "Ver",
+    "system": "Sistema",
+    "empty": "No hay comunicaciones registradas.",
+    "filters": {
+      "type": "Tipo",
+      "status": "Estado",
+      "from": "Desde",
+      "to": "Hasta",
+      "all": "Todos"
+    },
+    "kind": {
+      "AVISO": "Aviso",
+      "INFORMACION": "Información",
+      "ALERTA": "Alerta",
+      "CITA_CREADA": "Cita creada",
+      "CITA_RECORDATORIO": "Recordatorio de cita",
+      "CITA_REAGENDADA": "Cita reagendada",
+      "CITA_CANCELADA": "Cita cancelada"
+    },
+    "status": {
+      "DRAFT": "Borrador",
+      "QUEUED": "En cola",
+      "SENDING": "Enviando",
+      "SENT": "Enviado",
+      "PARTIAL": "Parcial",
+      "FAILED": "Fallido",
+      "CANCELLED": "Cancelado",
+      "DELIVERED": "Entregado",
+      "READ": "Leído",
+      "UNDELIVERABLE": "No entregable",
+      "OPTED_OUT": "Optó por no recibir"
+    },
+    "detail": {
+      "title": "Detalle del aviso",
+      "recipientsTable": "Destinatarios"
+    },
+    "compose": {
+      "type": "Tipo",
+      "subject": "Asunto",
+      "subjectHelp": "Máximo 120 caracteres.",
+      "body": "Cuerpo",
+      "recipients": "Destinatarios",
+      "allStaff": "Todo el personal activo",
+      "byRole": "Por rol",
+      "byPerson": "Personas específicas",
+      "schedule": "Programar",
+      "now": "Ahora",
+      "later": "Programar fecha y hora",
+      "willSendTo": "Se enviará a {{n}} personas",
+      "testSend": "Enviarme una prueba",
+      "testSendDisabled": "Guarda el aviso como borrador antes de enviar una prueba.",
+      "testSent": "Prueba enviada a tu correo.",
+      "saveDraft": "Guardar borrador",
+      "send": "Enviar",
+      "confirmSend": "¿Enviar este aviso a {{n}} destinatarios?",
+      "noEmailSkipped": "{{n}} sin correo, no enviados",
+      "recipientsRequired": "Selecciona al menos un grupo o persona."
+    },
+    "templates": {
+      "title": "Plantillas",
+      "new": "Nueva plantilla",
+      "channel": "Canal",
+      "kind": "Tipo",
+      "providerName": "Nombre en Meta",
+      "language": "Idioma",
+      "active": "Activa",
+      "missing": "Falta plantilla activa para este tipo"
+    },
+    "settingsPage": {
+      "title": "Ajustes de Comunicaciones",
+      "sections": {
+        "email": "Correo",
+        "whatsapp": "WhatsApp",
+        "whatsappTemplates": "Plantillas WhatsApp"
+      },
+      "emailBackendNotice": "Se usa el correo ya configurado en el servidor",
+      "fromName": "Nombre del remitente",
+      "replyTo": "Responder a",
+      "testEmail": "Enviar correo de prueba",
+      "testEmailSent": "Correo de prueba enviado.",
+      "provider": "Proveedor",
+      "providerValue": "WhatsApp Cloud API (Meta)",
+      "phoneNumberId": "ID de número de teléfono",
+      "businessAccountId": "ID de cuenta comercial",
+      "accessToken": "Token de acceso",
+      "appSecret": "App secret",
+      "changeToken": "Cambiar token",
+      "webhookUrl": "URL del webhook",
+      "copy": "Copiar",
+      "copied": "Copiado",
+      "countryCode": "Código de país predeterminado",
+      "reminderHours": "Horas de anticipación del recordatorio",
+      "masterEnabled": "Activar WhatsApp a pacientes",
+      "testWhatsapp": "Enviar WhatsApp de prueba",
+      "testWhatsappSent": "WhatsApp de prueba enviado.",
+      "testPhone": "Tu número de celular",
+      "notConfigured": "WhatsApp no está configurado en Ajustes"
+    },
+    "patient": {
+      "optIn": "Notificaciones por WhatsApp",
+      "optInHelp": "Se usará para recordatorios de cita. No se envían resultados ni diagnósticos.",
+      "currentPhone": "Número que se usará"
+    },
+    "appointmentReminder": {
+      "send": "Enviar recordatorio WhatsApp",
+      "disabled": "El paciente no tiene WhatsApp habilitado",
+      "queued": "Recordatorio en cola."
     }
   },
   "pagination": {

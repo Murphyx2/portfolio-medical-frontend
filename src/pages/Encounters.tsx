@@ -2,6 +2,7 @@ import { useEffect, useState, type ReactNode } from "react";
 import { useTranslation } from "react-i18next";
 import { useNavigate } from "react-router-dom";
 
+import { ChipList } from "../components/ChipList";
 import { DateNavigator } from "../components/DateNavigator";
 import { ListPage } from "../components/ListPage";
 import { PatientFormModal } from "../components/PatientFormModal";
@@ -134,7 +135,13 @@ export function Encounters() {
     {
       key: "services",
       header: t("encounters.sectionServices"),
-      render: (r) => (r.services.length ? r.services.map((s) => toSentenceCase(s.service_name ?? "")).join(", ") : "—"),
+      render: (r) => (
+        <ChipList
+          items={r.services.map((s, i) => ({ ...s, id: s.id ?? i }))}
+          getLabel={(s) => toSentenceCase(s.service_name ?? "")}
+          moreLabelKey="encounters.moreServices"
+        />
+      ),
     },
     { key: "room_name", header: t("encounters.room"), render: (r) => r.room_name ?? "—" },
     { key: "priority", header: t("encounters.priority"), sortKey: "priority", render: (r) => <span className={`badge status-${r.priority.toLowerCase()}`}>{priorityLabel(r.priority)}</span> },
@@ -161,6 +168,7 @@ export function Encounters() {
 
   return (
     <Page
+      card
       title={t("encounters.title")}
       actions={
         canManage && (

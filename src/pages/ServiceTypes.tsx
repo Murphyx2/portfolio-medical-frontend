@@ -93,17 +93,18 @@ export function ServiceTypes() {
 
   return (
     <Page
+      card
       title={t("serviceTypes.title")}
       actions={
-        <div className="page-actions-stack">
+        <div className="page-actions-row">
+          <button className="btn ghost" onClick={() => navigate("/services")}>
+            {t("serviceTypes.back")}
+          </button>
           {canEdit && (
             <button className="btn primary" onClick={openNew}>
               + {t("serviceTypes.new")}
             </button>
           )}
-          <button className="btn ghost" onClick={() => navigate("/services")}>
-            {t("serviceTypes.back")}
-          </button>
         </div>
       }
     >

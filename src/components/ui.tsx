@@ -1,4 +1,5 @@
 import { useEffect, useId, useRef, useState } from "react";
+import { createPortal } from "react-dom";
 import type { FormEvent, KeyboardEvent as ReactKeyboardEvent, ReactNode } from "react";
 import { useTranslation } from "react-i18next";
 
@@ -50,17 +51,34 @@ export function useRowConfirm<K extends string, T>() {
   return { confirming, error, pending, open, close, run };
 }
 
-export function Page({ title, actions, children }: {
+export function Page({ title, actions, children, card }: {
   title: ReactNode;
   actions?: ReactNode;
   children: ReactNode;
+  /** Wraps the head + children in the shared list-page card surface
+   * (white, bordered, radius) used by every list module. Dashboard and
+   * other non-list pages omit this and keep the plain bare layout. */
+  card?: boolean;
 }) {
+  const head = (
+    <div className="page-head">
+      <h2>{title}</h2>
+      {actions}
+    </div>
+  );
+  if (card) {
+    return (
+      <section>
+        <div className="list-page-card">
+          {head}
+          {children}
+        </div>
+      </section>
+    );
+  }
   return (
     <section>
-      <div className="page-head">
-        <h2>{title}</h2>
-        {actions}
-      </div>
+      {head}
       {children}
     </section>
   );
@@ -386,7 +404,7 @@ export interface Column<T> {
   header: ReactNode;
   render?: (row: T) => ReactNode;
   sortKey?: string;
-  align?: "center";
+  align?: "center" | "right";
 }
 
 export function Table<T extends { id: number }>({
@@ -459,7 +477,7 @@ export function Table<T extends { id: number }>({
                 <th
                   key={c.key}
                   scope="col"
-                  className={c.align === "center" ? "col-center" : undefined}
+                  className={c.align === "center" ? "col-center" : c.align === "right" ? "col-align-right" : undefined}
                   aria-sort={
                     sortable
                       ? active
@@ -487,7 +505,7 @@ export function Table<T extends { id: number }>({
                 </th>
               );
             })}
-            {hasActions && <th scope="col" className="col-center">{t("common.actions")}</th>}
+            {hasActions && <th scope="col" className="col-center col-actions">{t("common.actions")}</th>}
           </tr>
         </thead>
         <tbody>
@@ -506,37 +524,45 @@ export function Table<T extends { id: number }>({
                 </td>
               ))}
               {hasActions && (
-                <td className="col-center">
-                  <div className="row-actions">
-                    {extraActions?.(row)}
-                    {onEdit && (
-                      <button
-                        className="btn small"
-                        onClick={() => onEdit(row)}
-                        aria-label={`${t("common.edit")} ${getRowLabel?.(row) ?? row.id}`}
-                      >
-                        {t("common.edit")}
-                      </button>
-                    )}
-                    {onDelete && (
-                      <button
-                        className="btn small danger"
-                        onClick={() => setConfirming({ type: "delete", row })}
-                        aria-label={`${t("common.delete")} ${getRowLabel?.(row) ?? row.id}`}
-                      >
-                        {t("common.delete")}
-                      </button>
-                    )}
-                    {onRestore && isInactive?.(row) && (
-                      <button
-                        className="btn small"
-                        onClick={() => setConfirming({ type: "restore", row })}
-                        aria-label={`${t("common.restore")} ${getRowLabel?.(row) ?? row.id}`}
-                      >
-                        {t("common.restore")}
-                      </button>
-                    )}
-                  </div>
+                <td className="col-center col-actions">
+                  <RowActionsMenu
+                    ariaLabel={getRowLabel?.(row) ?? String(row.id)}
+                    primary={
+                      <>
+                        {extraActions?.(row)}
+                        {onEdit && (
+                          <button
+                            className="btn small"
+                            onClick={() => onEdit(row)}
+                            aria-label={`${t("common.edit")} ${getRowLabel?.(row) ?? row.id}`}
+                          >
+                            {t("common.edit")}
+                          </button>
+                        )}
+                      </>
+                    }
+                    items={[
+                      ...(onDelete
+                        ? [
+                            {
+                              key: "delete",
+                              label: t("common.delete"),
+                              danger: true,
+                              onClick: () => setConfirming({ type: "delete", row }),
+                            },
+                          ]
+                        : []),
+                      ...(onRestore && isInactive?.(row)
+                        ? [
+                            {
+                              key: "restore",
+                              label: t("common.restore"),
+                              onClick: () => setConfirming({ type: "restore", row }),
+                            },
+                          ]
+                        : []),
+                    ]}
+                  />
                 </td>
               )}
             </tr>
@@ -834,7 +860,126 @@ export function SearchableSelect<T extends { id: number }>({
   );
 }
 
-const PAGE_SIZE_OPTIONS = [50, 75, 100];
+export interface RowActionsMenuItem {
+  key: string;
+  label: string;
+  onClick: () => void;
+  /** Renders in red -- for Eliminar/Desactivar/Cancelar/etc. */
+  danger?: boolean;
+  icon?: ReactNode;
+}
+
+/**
+ * Shared "Editar + ⋯ Más" row-actions pattern: up to two always-visible
+ * `primary` buttons, everything else collapsed into an overflow menu so a
+ * row never grows past two buttons wide (list-pages redesign). Callers own
+ * all permission logic -- this renders exactly the items it's given, it
+ * never itself decides what's allowed. Outside-click/Escape-close mirrors
+ * `SearchableSelect`'s existing pattern above.
+ */
+export function RowActionsMenu({ primary, items, ariaLabel }: {
+  primary?: ReactNode;
+  items: RowActionsMenuItem[];
+  ariaLabel: string;
+}) {
+  const { t } = useTranslation();
+  const wrapRef = useRef<HTMLDivElement>(null);
+  const triggerRef = useRef<HTMLButtonElement>(null);
+  const panelRef = useRef<HTMLDivElement>(null);
+  const [open, setOpen] = useState(false);
+  const [panelPos, setPanelPos] = useState<{ top: number; right: number } | null>(null);
+
+  function openMenu() {
+    const rect = triggerRef.current?.getBoundingClientRect();
+    if (rect) {
+      setPanelPos({ top: rect.bottom + 4, right: window.innerWidth - rect.right });
+    }
+    setOpen(true);
+  }
+
+  useEffect(() => {
+    if (!open) return;
+    function onDoc(e: MouseEvent) {
+      const target = e.target as Node;
+      if (
+        wrapRef.current &&
+        !wrapRef.current.contains(target) &&
+        !(panelRef.current && panelRef.current.contains(target))
+      ) {
+        setOpen(false);
+      }
+    }
+    function onKey(e: KeyboardEvent) {
+      if (e.key === "Escape") setOpen(false);
+    }
+    function onScroll() {
+      // A scroll anywhere (the table's own horizontal/vertical scroll
+      // included) can leave the portaled panel's fixed position stale --
+      // simplest correct behavior is to just close it, matching common
+      // dropdown UX elsewhere. `capture: true` so this fires for scroll on
+      // any scrollable ancestor, not just window itself.
+      setOpen(false);
+    }
+    document.addEventListener("mousedown", onDoc);
+    document.addEventListener("keydown", onKey);
+    window.addEventListener("scroll", onScroll, true);
+    return () => {
+      document.removeEventListener("mousedown", onDoc);
+      document.removeEventListener("keydown", onKey);
+      window.removeEventListener("scroll", onScroll, true);
+    };
+  }, [open]);
+
+  return (
+    <div className="row-actions">
+      {primary}
+      {items.length > 0 && (
+        <div className="row-actions-menu" ref={wrapRef}>
+          <button
+            ref={triggerRef}
+            type="button"
+            className="row-actions-menu-trigger"
+            aria-haspopup="menu"
+            aria-expanded={open}
+            aria-label={t("common.more") + " " + ariaLabel}
+            onClick={() => (open ? setOpen(false) : openMenu())}
+          >
+            ⋯
+          </button>
+          {open &&
+            panelPos &&
+            createPortal(
+              <div
+                ref={panelRef}
+                className="row-actions-menu-panel"
+                role="menu"
+                style={{ top: panelPos.top, right: panelPos.right }}
+              >
+                {items.map((item) => (
+                  <button
+                    key={item.key}
+                    type="button"
+                    role="menuitem"
+                    className={`row-actions-menu-item${item.danger ? " danger" : ""}`}
+                    onClick={() => {
+                      setOpen(false);
+                      item.onClick();
+                    }}
+                  >
+                    {item.icon}
+                    {item.label}
+                  </button>
+                ))}
+              </div>,
+              document.body,
+            )}
+        </div>
+      )}
+    </div>
+  );
+}
+
+export const PAGE_SIZE_OPTIONS = [50, 75, 100];
 
 function pageItems(current: number, total: number): (number | "...")[] {
   if (total <= 7) {
@@ -854,12 +999,18 @@ function pageItems(current: number, total: number): (number | "...")[] {
   return items;
 }
 
-export function Pagination({ page, count, pageSize, onChange, onPageSizeChange }: {
+export function Pagination({ page, count, pageSize, onChange, onPageSizeChange, layout = "full" }: {
   page: number;
   count: number;
   pageSize: number;
   onChange: (page: number) => void;
   onPageSizeChange?: (pageSize: number) => void;
+  /** "full" (default) renders nav + page-size select + info text, used
+   * anywhere Pagination is the only pagination UI on the page. "nav-only"
+   * renders just the prev/next/page-number nav -- used at the bottom of
+   * ListPage, where the page-size select and result count already live in
+   * the toolbar row so they aren't duplicated. */
+  layout?: "full" | "nav-only";
 }) {
   const { t } = useTranslation();
   const total = Math.ceil(count / pageSize);
@@ -903,21 +1054,25 @@ export function Pagination({ page, count, pageSize, onChange, onPageSizeChange }
           </button>
         </nav>
       )}
-      <select
-        className="pagination-size"
-        aria-label={t("pagination.perPageLabel")}
-        value={pageSize}
-        onChange={(e) => onPageSizeChange?.(Number(e.target.value))}
-      >
-        {PAGE_SIZE_OPTIONS.map((n) => (
-          <option key={n} value={n}>
-            {t("pagination.perPage", { size: n })}
-          </option>
-        ))}
-      </select>
+      {layout === "full" && (
+        <select
+          className="pagination-size"
+          aria-label={t("pagination.perPageLabel")}
+          value={pageSize}
+          onChange={(e) => onPageSizeChange?.(Number(e.target.value))}
+        >
+          {PAGE_SIZE_OPTIONS.map((n) => (
+            <option key={n} value={n}>
+              {t("pagination.perPage", { size: n })}
+            </option>
+          ))}
+        </select>
+      )}
       {multi && (
         <span className="pagination-info">
-          {t("pagination.pageOf", { page, total })} · {t("pagination.records", { count })}
+          {layout === "full"
+            ? `${t("pagination.pageOf", { page, total })} · ${t("pagination.records", { count })}`
+            : t("pagination.pageOf", { page, total })}
         </span>
       )}
     </div>

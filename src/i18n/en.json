@@ -16,7 +16,16 @@
     "users": "Users",
     "ars": "ARS",
     "settings": "Settings",
-    "logout": "Log out"
+    "communications": "Communications",
+    "recordsShort": "Records",
+    "logout": "Log out",
+    "groups": {
+      "atencion": "Care",
+      "operacion": "Operations",
+      "red": "Network"
+    },
+    "collapse": "Collapse menu",
+    "expand": "Expand menu"
   },
   "auth": {
     "login": "Log in",
@@ -51,6 +60,7 @@
     "minChars": "Type at least 3 characters",
     "searchResultsLimited": "Showing {{shown}} of {{count}} results. Refine your search to see more.",
     "actions": "Actions",
+    "more": "More",
     "loading": "Loading...",
     "noData": "No data found",
     "back": "Back",
@@ -295,7 +305,10 @@
       "time": "Time",
       "event": "Appointment",
       "noEventsInRange": "No appointments in this range.",
-      "showMore": "+{{count}} more"
+      "showMore": "+{{count}} more",
+      "legendScheduled": "Scheduled",
+      "legendConfirmed": "Confirmed",
+      "legendCancelled": "Cancelled"
     }
   },
   "encounters": {
@@ -335,6 +348,7 @@
     "sectionAdmission": "Admission details",
     "sectionDiagnoses": "Diagnoses",
     "sectionServices": "Services",
+    "moreServices": "+{{count}} more",
     "sectionCoverage": "Coverage",
     "referringDoctor": "Referring doctor",
     "chiefComplaint": "Chief complaint",
@@ -358,8 +372,14 @@
     "newEntry": "New entry",
     "patient": "Patient",
     "images": "Images",
-    "uploadImage": "Upload image",
+    "uploadImage": "+ Upload image",
     "caption": "Caption",
+    "imageTitle": "Title",
+    "uploadAction": "Upload",
+    "noImages": "No images yet",
+    "confirmRemoveImage": "Remove this image from the chart?",
+    "viewImage": "View",
+    "removeImage": "Remove",
     "patientPickerPlaceholder": "Search patient by name, cedula or NSS…",
     "imageTooLarge": "Image must be smaller than {{max}} MB.",
     "manageApTypes": "Manage AP types",
@@ -527,10 +547,17 @@
     "temperature": "Temperature",
     "glucose": "Glucose",
     "vitalsNotes": "Results",
-    "imcPreview": "BMI: {{value}}",
+    "vitalsNotesPlaceholder": "Short note about these vitals",
+    "imcPreview": "BMI {{value}}",
     "dx": "Dx",
     "tx": "Tx",
+    "dxLabel": "Dx (Diagnosis)",
+    "txLabel": "Tx (Treatment)",
+    "dxPlaceholder": "Primary diagnosis and differentials",
+    "txPlaceholder": "Instructions, dosage if applicable, plan",
     "observaciones": "Observations",
+    "observacionesPlaceholder": "Notes for this visit",
+    "observacionesHelp": "Will be saved with date and author in the history.",
     "saveDraft": "Save draft",
     "draftBanner": "You have an unfinished draft.",
     "continueDraft": "Continue draft",
@@ -539,7 +566,16 @@
     "toastDraftSaved": "Draft saved",
     "toastEntrySaved": "Entry saved",
     "historyEmpty": "No history entries yet",
-    "editLastEntry": "Edit last entry"
+    "editLastEntry": "Edit last entry",
+    "changed": "Changed",
+    "sectionSignos": "Vitals",
+    "sectionApPersonales": "Personal history",
+    "sectionApFamiliares": "Family history",
+    "viewDetail": "View detail",
+    "hideDetail": "Hide detail",
+    "habitsNotesLabel": "Habit notes",
+    "noRecordThisEntry": "No record on this entry",
+    "historyMoreChips": "+{{count}}"
   },
   "recordApTypes": {
     "title": "Pathological history types",
@@ -621,6 +657,137 @@
         "label": "Default page size",
         "help": "Rows shown per page when a list isn't given an explicit page size (still capped at 200)."
       }
+    }
+  },
+  "communications": {
+    "title": "Communications",
+    "underConstruction": "This module is under active development. Some features (WhatsApp sending, delivery confirmations) may change or fail while testing is completed.",
+    "new": "New staff notice",
+    "tabs": {
+      "staff": "Staff (email)",
+      "patients": "Patients (WhatsApp)"
+    },
+    "columns": {
+      "date": "Date",
+      "type": "Type",
+      "subject": "Subject",
+      "author": "Author",
+      "recipients": "Recipients",
+      "status": "Status",
+      "actions": "Actions",
+      "sentDate": "Sent date",
+      "patient": "Patient",
+      "appointment": "Appointment",
+      "phone": "Phone",
+      "error": "Error"
+    },
+    "view": "View",
+    "system": "System",
+    "empty": "No communications on record.",
+    "filters": {
+      "type": "Type",
+      "status": "Status",
+      "from": "From",
+      "to": "To",
+      "all": "All"
+    },
+    "kind": {
+      "AVISO": "Notice",
+      "INFORMACION": "Information",
+      "ALERTA": "Alert",
+      "CITA_CREADA": "Appointment created",
+      "CITA_RECORDATORIO": "Appointment reminder",
+      "CITA_REAGENDADA": "Appointment rescheduled",
+      "CITA_CANCELADA": "Appointment cancelled"
+    },
+    "status": {
+      "DRAFT": "Draft",
+      "QUEUED": "Queued",
+      "SENDING": "Sending",
+      "SENT": "Sent",
+      "PARTIAL": "Partial",
+      "FAILED": "Failed",
+      "CANCELLED": "Cancelled",
+      "DELIVERED": "Delivered",
+      "READ": "Read",
+      "UNDELIVERABLE": "Undeliverable",
+      "OPTED_OUT": "Opted out"
+    },
+    "detail": {
+      "title": "Notice detail",
+      "recipientsTable": "Recipients"
+    },
+    "compose": {
+      "type": "Type",
+      "subject": "Subject",
+      "subjectHelp": "Maximum 120 characters.",
+      "body": "Body",
+      "recipients": "Recipients",
+      "allStaff": "All active staff",
+      "byRole": "By role",
+      "byPerson": "Specific people",
+      "schedule": "Schedule",
+      "now": "Now",
+      "later": "Schedule date and time",
+      "willSendTo": "Will be sent to {{n}} people",
+      "testSend": "Send me a test",
+      "testSendDisabled": "Save the notice as a draft before sending a test.",
+      "testSent": "Test sent to your email.",
+      "saveDraft": "Save draft",
+      "send": "Send",
+      "confirmSend": "Send this notice to {{n}} recipients?",
+      "noEmailSkipped": "{{n}} without email, not sent",
+      "recipientsRequired": "Select at least one group or person."
+    },
+    "templates": {
+      "title": "Templates",
+      "new": "New template",
+      "channel": "Channel",
+      "kind": "Type",
+      "providerName": "Meta template name",
+      "language": "Language",
+      "active": "Active",
+      "missing": "Missing active template for this type"
+    },
+    "settingsPage": {
+      "title": "Communications settings",
+      "sections": {
+        "email": "Email",
+        "whatsapp": "WhatsApp",
+        "whatsappTemplates": "WhatsApp templates"
+      },
+      "emailBackendNotice": "Uses the mailbox already configured on the server",
+      "fromName": "From name",
+      "replyTo": "Reply-to",
+      "testEmail": "Send test email",
+      "testEmailSent": "Test email sent.",
+      "provider": "Provider",
+      "providerValue": "WhatsApp Cloud API (Meta)",
+      "phoneNumberId": "Phone number ID",
+      "businessAccountId": "Business account ID",
+      "accessToken": "Access token",
+      "appSecret": "App secret",
+      "changeToken": "Change token",
+      "webhookUrl": "Webhook URL",
+      "copy": "Copy",
+      "copied": "Copied",
+      "countryCode": "Default country code",
+      "reminderHours": "Reminder lead time (hours)",
+      "masterEnabled": "Enable WhatsApp for patients",
+      "testWhatsapp": "Send test WhatsApp",
+      "testWhatsappSent": "Test WhatsApp sent.",
+      "testPhone": "Your mobile number",
+      "notConfigured": "WhatsApp is not configured in Settings"
+    },
+    "patient": {
+      "optIn": "WhatsApp notifications",
+      "optInHelp": "Used for appointment reminders. No results or diagnoses are ever sent.",
+      "currentPhone": "Number that will be used"
+    },
+    "appointmentReminder": {
+      "send": "Send WhatsApp reminder",
+      "disabled": "This patient does not have WhatsApp enabled",
+      "queued": "Reminder queued."
     }
   },
   "pagination": {

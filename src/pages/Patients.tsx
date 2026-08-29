@@ -186,6 +186,7 @@ export function Patients() {
 
   return (
     <Page
+      card
       title={t("patients.title")}
       actions={
         canCreate && (

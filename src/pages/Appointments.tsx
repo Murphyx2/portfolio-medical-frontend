@@ -6,7 +6,20 @@ import { DateNavigator } from "../components/DateNavigator";
 import { DateTimeField } from "../components/DateTimeField";
 import { ListPage } from "../components/ListPage";
 import { PatientFormModal } from "../components/PatientFormModal";
-import { ConfirmDialog, Dialog, Field, FormModal, MaskedValue, SearchableSelect, SearchBar, useRowConfirm, Page, type Column } from "../components/ui";
+import {
+  ConfirmDialog,
+  Dialog,
+  Field,
+  FormModal,
+  MaskedValue,
+  RowActionsMenu,
+  SearchableSelect,
+  SearchBar,
+  useRowConfirm,
+  Page,
+  type Column,
+  type RowActionsMenuItem,
+} from "../components/ui";
 import { useCalendarAppointments } from "../hooks/useCalendarAppointments";
 import { useDoctorServiceFilter } from "../hooks/useDoctorServiceFilter";
 import { useListPage } from "../hooks/useListPage";
@@ -52,6 +65,39 @@ const genderLabelKeys: Record<string, string> = {
   MALE: "patients.genderMale",
   FEMALE: "patients.genderFemale",
 };
+
+/** "Enviar recordatorio WhatsApp" (Requirements/Communications §7.3 manual
+ * resend). Disabled with a tooltip when the patient has no phone/opt-in
+ * (`patient_info.whatsapp_opt_in` -- backend nested serializer field, may be
+ * absent on older cached responses, treated as false when missing). */
+function WhatsappReminderButton({ appointment }: { appointment: Appointment }) {
+  const { t } = useTranslation();
+  const [sending, setSending] = useState(false);
+  const [message, setMessage] = useState("");
+  const eligible = Boolean(appointment.patient_info.whatsapp_opt_in && appointment.patient_info.phone);
+
+  async function send() {
+    setSending(true);
+    setMessage("");
+    try {
+      await api.post(`/appointments/${appointment.id}/send_whatsapp_reminder/`, {});
+      setMessage(t("communications.appointmentReminder.queued"));
+    } catch (err) {
+      setMessage(err instanceof ApiError ? flattenError(err.message) : String(err));
+    } finally {
+      setSending(false);
+    }
+  }
+
+  return (
+    <span title={eligible ? undefined : t("communications.appointmentReminder.disabled")}>
+      <button className="btn small ghost" disabled={!eligible || sending} onClick={send}>
+        {t("communications.appointmentReminder.send")}
+      </button>
+      {message && <span className="muted"> {message}</span>}
+    </span>
+  );
+}
 
 /** Read-only "appointment details" dialog opened by clicking a row's
  * patient name or date/time cell — mirrors the click-to-detail pattern in
@@ -167,6 +213,10 @@ export function AppointmentDetailsDialog({
             {canCancel && (appointment.status === "SCHEDULED" || appointment.status === "CONFIRMED") && (
               <button className="btn small danger" onClick={() => onCancel?.(appointment)}>{t("appointments.cancel")}</button>
             )}
+            {can(role, "sendManualReminder", "communications") &&
+              (appointment.status === "SCHEDULED" || appointment.status === "CONFIRMED") && (
+                <WhatsappReminderButton appointment={appointment} />
+              )}
             {canDelete && appointment.active && (
               <button className="btn small danger" onClick={() => onDelete?.(appointment)}>{t("common.delete")}</button>
             )}
@@ -472,38 +522,45 @@ export function Appointments() {
       key: "actions",
       header: t("common.actions"),
       align: "center",
-      render: (r) => (
-        <div className="row-actions">
-          {canEditAppointment(user?.role, r.status) && r.active && (
-            <button className="btn small ghost" onClick={() => openEdit(r)}>{t("common.edit")}</button>
-          )}
-          {canEdit && (r.status === "SCHEDULED" || r.status === "CONFIRMED") && (
-            <button className="btn small ghost" onClick={() => openReschedule(r)}>{t("appointments.reschedule")}</button>
-          )}
-          {canConfirm && r.status === "SCHEDULED" && (
-            <button className="btn small" onClick={() => confirm.open("confirm", r)}>{t("appointments.confirm")}</button>
-          )}
-          {canComplete && r.status === "CONFIRMED" && (
-            <button className="btn small" onClick={() => confirm.open("complete", r)}>{t("appointments.complete")}</button>
-          )}
-          {canCancel && (r.status === "SCHEDULED" || r.status === "CONFIRMED") && (
-            <button className="btn small danger" onClick={() => openCancel(r)}>{t("appointments.cancel")}</button>
-          )}
-          {canDelete && r.active && (
-            <button className="btn small danger" onClick={() => confirm.open("delete", r)}>{t("common.delete")}</button>
-          )}
-          {isAdmin && !r.active && (
-            <button className="btn small" onClick={() => confirm.open("restore", r)}>
-              {t("common.restore")}
-            </button>
-          )}
-        </div>
-      ),
+      render: (r) => {
+        const items: RowActionsMenuItem[] = [
+          ...(canEdit && (r.status === "SCHEDULED" || r.status === "CONFIRMED")
+            ? [{ key: "reschedule", label: t("appointments.reschedule"), onClick: () => openReschedule(r) }]
+            : []),
+          ...(canConfirm && r.status === "SCHEDULED"
+            ? [{ key: "confirm", label: t("appointments.confirm"), onClick: () => confirm.open("confirm", r) }]
+            : []),
+          ...(canComplete && r.status === "CONFIRMED"
+            ? [{ key: "complete", label: t("appointments.complete"), onClick: () => confirm.open("complete", r) }]
+            : []),
+          ...(canCancel && (r.status === "SCHEDULED" || r.status === "CONFIRMED")
+            ? [{ key: "cancel", label: t("appointments.cancel"), danger: true, onClick: () => openCancel(r) }]
+            : []),
+          ...(canDelete && r.active
+            ? [{ key: "delete", label: t("common.delete"), danger: true, onClick: () => confirm.open("delete", r) }]
+            : []),
+          ...(isAdmin && !r.active
+            ? [{ key: "restore", label: t("common.restore"), onClick: () => confirm.open("restore", r) }]
+            : []),
+        ];
+        return (
+          <RowActionsMenu
+            ariaLabel={r.patient_info.full_name}
+            primary={
+              canEditAppointment(user?.role, r.status) && r.active && (
+                <button className="btn small ghost" onClick={() => openEdit(r)}>{t("common.edit")}</button>
+              )
+            }
+            items={items}
+          />
+        );
+      },
     },
   ];
 
   return (
     <Page
+      card
       title={t("appointments.title")}
       actions={
         canCreate && (

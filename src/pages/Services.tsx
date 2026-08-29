@@ -102,21 +102,22 @@ export function Services() {
     { key: "simon", header: t("services.simon"), sortKey: "simon" },
     { key: "name", header: t("services.name"), sortKey: "name" },
     { key: "type_name", header: t("services.type") },
-    { key: "co_pago", header: t("services.coPago"), sortKey: "co_pago", render: (s) => formatCurrencyDOP(s.co_pago) },
-    { key: "privado", header: t("services.privado"), sortKey: "privado", render: (s) => formatCurrencyDOP(s.privado) },
+    { key: "co_pago", header: t("services.coPago"), sortKey: "co_pago", align: "right", render: (s) => formatCurrencyDOP(s.co_pago) },
+    { key: "privado", header: t("services.privado"), sortKey: "privado", align: "right", render: (s) => formatCurrencyDOP(s.privado) },
   ];
 
   return (
     <Page
+      card
       title={t("services.title")}
       actions={
         canEdit && (
-          <div className="page-actions-stack">
-            <button className="btn primary" onClick={openNew}>
-              + {t("services.new")}
-            </button>
+          <div className="page-actions-row">
             <button className="btn ghost" onClick={() => navigate("/services/types")}>
               {t("services.manageTypes")}
+            </button>
+            <button className="btn primary" onClick={openNew}>
+              + {t("services.new")}
             </button>
           </div>
         )

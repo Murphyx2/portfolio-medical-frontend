@@ -27,7 +27,7 @@ import type {
 } from "../services/types";
 import { useAuth } from "../store/auth";
 import { can } from "../utils/can";
-import { formatDate, formatDateTime, nextLocalISO, todayLocalISO } from "../utils/date";
+import { formatDate, nextLocalISO, todayLocalISO } from "../utils/date";
 import { toSentenceCase } from "../utils/text";
 
 export function Encounters() {
@@ -131,7 +131,19 @@ export function Encounters() {
       header: t("encounters.cedula"),
       render: (r) => openDetailLink(r, <GuardianAwareCedula info={r.patient_info} />),
     },
-    { key: "doctor", header: t("encounters.doctor"), sortKey: "doctor__code", render: (r) => r.doctor_info?.full_name ?? "—" },
+    {
+      key: "doctor",
+      header: t("encounters.doctor"),
+      render: (r) => {
+        const doctors = new Map<number, { id: number; label: string }>();
+        r.services.forEach((s) => {
+          if (s.doctor && s.doctor_name) doctors.set(s.doctor, { id: s.doctor, label: s.doctor_name });
+        });
+        return (
+          <ChipList items={[...doctors.values()]} getLabel={(d) => d.label} moreLabelKey="encounters.moreServices" />
+        );
+      },
+    },
     {
       key: "services",
       header: t("encounters.sectionServices"),
@@ -143,10 +155,21 @@ export function Encounters() {
         />
       ),
     },
-    { key: "room_name", header: t("encounters.room"), render: (r) => r.room_name ?? "—" },
+    {
+      key: "room_name",
+      header: t("encounters.room"),
+      render: (r) => {
+        const roomsMap = new Map<number, { id: number; label: string }>();
+        r.services.forEach((s) => {
+          if (s.room && s.room_name) roomsMap.set(s.room, { id: s.room, label: s.room_name });
+        });
+        return (
+          <ChipList items={[...roomsMap.values()]} getLabel={(rm) => rm.label} moreLabelKey="encounters.moreServices" />
+        );
+      },
+    },
     { key: "priority", header: t("encounters.priority"), sortKey: "priority", render: (r) => <span className={`badge status-${r.priority.toLowerCase()}`}>{priorityLabel(r.priority)}</span> },
     { key: "status", header: t("common.status"), sortKey: "status", render: (r) => <span className={`badge status-${r.status.toLowerCase()}`}>{statusLabel(r.status)}</span> },
-    { key: "created_at", header: t("encounters.createdAt"), sortKey: "created_at", render: (r) => formatDateTime(r.created_at) },
     {
       key: "actions",
       header: t("common.actions"),

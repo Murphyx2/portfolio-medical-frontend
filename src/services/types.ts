@@ -548,9 +548,13 @@ export interface EncounterService {
   service_name?: string;
   doctor: number | null;
   doctor_name?: string | null;
+  room: number | null;
+  room_name?: string | null;
   quantity: number;
   notes: string;
   status: EncounterServiceStatus;
+  ars_covered: boolean;
+  authorization_number: number | null;
 }
 
 export interface Encounter {
@@ -560,11 +564,7 @@ export interface Encounter {
   service_type_name: string;
   patient: number;
   patient_info: EncounterPatientSummary;
-  doctor: number | null;
-  doctor_info: { id: number; code: string; full_name: string } | null;
   referring_doctor_name: string;
-  room: number | null;
-  room_name: string | null;
   center: number | null;
   center_name: string | null;
   status: EncounterStatus;
@@ -577,7 +577,6 @@ export interface Encounter {
   ars_name: string | null;
   ars_program: number | null;
   ars_program_name: string | null;
-  authorization_number: string;
   diagnoses: EncounterDiagnosis[];
   services: EncounterService[];
   created_by: number;

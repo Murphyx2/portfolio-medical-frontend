@@ -20,14 +20,22 @@ import { formatCedula } from "../../utils/cedula";
 import { flattenError } from "../../utils/errors";
 import { toSentenceCase } from "../../utils/text";
 
+const EMPTY_LINE: EncounterService = {
+  service: 0,
+  doctor: null,
+  room: null,
+  quantity: 1,
+  notes: "",
+  status: "PENDING",
+  ars_covered: true,
+  authorization_number: null,
+};
+
 const EMPTY_FORM = {
-  doctor: 0,
-  room: 0,
   chief_complaint: "",
   priority: "ROUTINE" as Encounter["priority"],
   ars: "",
   ars_program: "",
-  authorization_number: "",
   services: [] as EncounterService[],
 };
 
@@ -37,23 +45,42 @@ function initialFormFor(editingEncounter: Encounter | null) {
   if (!editingEncounter) return EMPTY_FORM;
   const r = editingEncounter;
   return {
-    doctor: r.doctor ?? 0,
-    room: r.room ?? 0,
     chief_complaint: r.chief_complaint,
     priority: r.priority,
     ars: r.ars ? String(r.ars) : "",
     ars_program: r.ars_program ? String(r.ars_program) : "",
-    authorization_number: r.authorization_number,
     services: r.services,
   };
 }
 
+/** A service's doctor requirement + the doctor room a doctor pre-fills,
+ * shared by both auto-fill directions below. */
+function requiresDoctorFor(services: Service[], serviceTypes: ServiceType[], serviceId: number): boolean {
+  const svc = services.find((sv) => sv.id === serviceId);
+  const st = serviceTypes.find((t) => t.id === svc?.type);
+  return st?.requires_doctor ?? true;
+}
+
+function roomForDoctor(doctor: DoctorProfile): number | null {
+  if (doctor.default_room) return doctor.default_room;
+  return doctor.rooms_detail.length === 1 ? doctor.rooms_detail[0].id : null;
+}
+
 /** Create/edit encounter form: patient picker (new encounters only) or a
- * read-only patient name (editing), admission fields, diagnoses/services
- * line-item editors, and coverage (ARS/program) fields that lock to the
- * patient's own values once one is on file. Owns all of its own form state
- * -- the page only supplies the lists it's fed from (doctors/rooms/service
- * types/ARS/services) and the patient it's creating/editing for. */
+ * read-only patient name (editing), diagnoses/services line-item editors,
+ * per-line doctor+room admission rows (each service line is its own
+ * (service, doctor, room) unit -- a visit can mix several doctors/rooms),
+ * and coverage (ARS/program) fields that lock to the patient's own values
+ * once one is on file. Owns all of its own form state -- the page only
+ * supplies the lists it's fed from (doctors/rooms/service types/ARS/
+ * services) and the patient it's creating/editing for.
+ *
+ * Entry works either direction on the same line: picking a service first
+ * auto-fills its doctor+room when exactly one doctor offers it; picking a
+ * doctor first auto-fills the service (when the doctor offers exactly one)
+ * and room the same way. Each direction only ever touches its own line --
+ * previously a single shared doctor/room pair meant picking a doctor
+ * silently dropped every other line's already-chosen service. */
 export function EncounterFormModal({
   editingEncounter,
   selectedPatient,
@@ -116,93 +143,60 @@ export function EncounterFormModal({
   // requires_doctor flag below (still required by the backend on submit).
   const firstSelectedService = services.find((sv) => sv.id === form.services.find((s) => s.service)?.service);
   const derivedServiceType = serviceTypes.find((st) => st.id === firstSelectedService?.type);
-  // Not every service needs a doctor present (e.g. a lab-only visit) --
-  // required unless the derived type explicitly says otherwise. Fails safe
-  // toward "required" before any service is picked yet.
-  const doctorRequired = !derivedServiceType || derivedServiceType.requires_doctor;
 
-  const { isDoctorBoundService, eligibleForDoctor, availableDoctors, availableServices, currentDoctor } =
-    useDoctorServiceFilter({
-      doctors,
-      services,
-      serviceTypes,
-      selectedServiceIds: form.services.map((s) => s.service),
-      currentDoctorId: form.doctor,
-    });
-
-  // Room dropdown: mirrors the hook's service narrowing above, using the
-  // doctor's assigned rooms instead -- Encounter-specific, not part of the
-  // shared hook.
-  const availableRooms =
-    currentDoctor && currentDoctor.rooms.length > 0
-      ? rooms.filter((rm) => currentDoctor.rooms.includes(rm.id))
-      : rooms;
-
-  function pickDoctor(doctorId: number) {
-    const doctor = doctors.find((d) => d.id === doctorId);
-    setForm((f) => {
-      const restrictedToServices = doctor && doctor.services.length > 0;
-      const nextServices = restrictedToServices
-        ? f.services.filter((s) => !s.service || !isDoctorBoundService(s.service) || doctor!.services.includes(s.service))
-        : f.services;
-      const hasServicePicked = nextServices.some((s) => s.service);
-
-      // Drop an already-picked room the new doctor isn't assigned to,
-      // then auto-fill if the doctor has exactly one room and none is set.
-      let nextRoom = f.room;
-      if (doctor && doctor.rooms.length > 0 && nextRoom && !doctor.rooms.includes(nextRoom)) {
-        nextRoom = 0;
-      }
-      if (!nextRoom && doctor?.rooms_detail.length === 1) {
-        nextRoom = doctor.rooms_detail[0].id;
-      }
-
-      return {
-        ...f,
-        doctor: doctorId,
-        room: nextRoom,
-        // Auto-fill a single service line only if the doctor offers
-        // exactly one service and nothing has been picked yet.
-        services:
-          !hasServicePicked && doctor?.services_detail.length === 1
-            ? [{ service: doctor.services_detail[0].id, doctor: null, quantity: 1, notes: "", status: "PENDING" }]
-            : nextServices,
-      };
-    });
-  }
+  // Any line whose own service requires a doctor but has none assigned yet
+  // -- mirrors the backend's per-line EncounterServiceSerializer check.
+  const missingDoctorLine = form.services.find(
+    (s) => s.service && requiresDoctorFor(services, serviceTypes, s.service) && !s.doctor,
+  );
 
   function addServiceLine() {
-    setForm((f) => ({
-      ...f,
-      services: [
-        ...f.services,
-        { service: 0, doctor: null, quantity: 1, notes: "", status: "PENDING" },
-      ],
-    }));
+    setForm((f) => ({ ...f, services: [...f.services, { ...EMPTY_LINE }] }));
   }
 
   function updateServiceLine(index: number, patch: Partial<EncounterService>) {
-    setForm((f) => {
-      const nextServices = f.services.map((s, i) => (i === index ? { ...s, ...patch } : s));
-      const doctor = doctors.find((d) => d.id === f.doctor);
-      return {
-        ...f,
-        services: nextServices,
-        doctor: eligibleForDoctor(doctor, nextServices.map((s) => s.service)) ? f.doctor : 0,
-      };
-    });
+    setForm((f) => ({
+      ...f,
+      services: f.services.map((s, i) => (i === index ? { ...s, ...patch } : s)),
+    }));
+  }
+
+  /** Service-first: picking a service auto-fills this line's doctor (and
+   * that doctor's room) only when exactly one doctor offers it -- an
+   * open-to-anyone service (or one two+ doctors both offer) leaves the
+   * doctor field for the user to choose. */
+  function updateServiceLineService(index: number, serviceId: number) {
+    const patch: Partial<EncounterService> = { service: serviceId };
+    if (requiresDoctorFor(services, serviceTypes, serviceId)) {
+      const eligible = doctors.filter((d) => d.services.length === 0 || d.services.includes(serviceId));
+      const restricted = doctors.filter((d) => d.services.includes(serviceId));
+      const onlyDoctor = restricted.length === 1 && eligible.length === 1 ? restricted[0] : null;
+      if (onlyDoctor) {
+        patch.doctor = onlyDoctor.id;
+        patch.room = roomForDoctor(onlyDoctor);
+      }
+    }
+    updateServiceLine(index, patch);
+  }
+
+  /** Doctor-first: picking a doctor auto-fills this line's service when the
+   * doctor offers exactly one (and the line has none yet), and the room the
+   * same way as the service-first direction. */
+  function updateServiceLineDoctor(index: number, doctorId: number, currentService: number) {
+    const doctor = doctors.find((d) => d.id === doctorId);
+    const patch: Partial<EncounterService> = { doctor: doctorId || null };
+    if (doctor) {
+      if (!currentService && doctor.services_detail.length === 1) {
+        patch.service = doctor.services_detail[0].id;
+      }
+      const room = roomForDoctor(doctor);
+      if (room) patch.room = room;
+    }
+    updateServiceLine(index, patch);
   }
 
   function removeServiceLine(index: number) {
-    setForm((f) => {
-      const nextServices = f.services.filter((_, i) => i !== index);
-      const doctor = doctors.find((d) => d.id === f.doctor);
-      return {
-        ...f,
-        services: nextServices,
-        doctor: eligibleForDoctor(doctor, nextServices.map((s) => s.service)) ? f.doctor : 0,
-      };
-    });
+    setForm((f) => ({ ...f, services: f.services.filter((_, i) => i !== index) }));
   }
 
   async function submit() {
@@ -215,20 +209,17 @@ export function EncounterFormModal({
       setFormError(t("encounters.servicesRequired"));
       return;
     }
-    if (!derivedServiceType || (doctorRequired && !form.doctor)) {
+    if (!derivedServiceType || missingDoctorLine) {
       setFormError(t("encounters.typeAndDoctorRequired"));
       return;
     }
     const body = {
       patient: patientId,
       service_type: derivedServiceType.id,
-      doctor: form.doctor ? Number(form.doctor) : null,
-      room: form.room || null,
       chief_complaint: form.chief_complaint,
       priority: form.priority,
       ars: effectiveArs ? Number(effectiveArs) : null,
       ars_program: effectiveArsProgram ? Number(effectiveArsProgram) : null,
-      authorization_number: form.authorization_number,
       services: form.services.filter((s) => s.service),
     };
     try {
@@ -248,7 +239,7 @@ export function EncounterFormModal({
       onSubmit={submit}
       submitLabel={t("common.save")}
       error={formError}
-      wide
+      xwide
     >
       <h4>{t("encounters.sectionPatient")}</h4>
       {editingEncounter ? (
@@ -272,61 +263,133 @@ export function EncounterFormModal({
       )}
 
       <h4>{t("encounters.sectionServices")}</h4>
-      {form.services.map((s, i) => (
-        <div key={i} className="form-columns encounter-line-row">
-          <Field label={t("encounters.service")}>
-            <SearchableSelect<Service>
-              value={availableServices.find((sv) => sv.id === s.service) ?? null}
-              onSelect={(sv) => updateServiceLine(i, { service: sv.id })}
-              search={async (query) => {
-                const q = query.trim().toLowerCase();
-                const results = q ? availableServices.filter((sv) => sv.name.toLowerCase().includes(q)) : availableServices;
-                return { results, count: results.length };
-              }}
-              minChars={1}
-              placeholder={t("encounters.service")}
-              getLabel={(sv) => toSentenceCase(sv.name)}
-              getSublabel={(sv) => toSentenceCase(sv.type_name)}
-            />
-          </Field>
-          <Field label={t("encounters.serviceNotes")}>
-            <input value={s.notes} onChange={(e) => updateServiceLine(i, { notes: e.target.value })} />
-          </Field>
-          <button type="button" className="btn ghost small" onClick={() => removeServiceLine(i)}>
-            {t("common.delete")}
-          </button>
-        </div>
-      ))}
+      {form.services.map((s, i) => {
+        const { availableServices } = useDoctorServiceFilter({
+          doctors,
+          services,
+          serviceTypes,
+          selectedServiceIds: [s.service],
+          currentDoctorId: s.doctor ?? 0,
+        });
+        return (
+          <div key={i} className="encounter-line-row">
+            <span className="line-order-badge">#{i + 1}</span>
+            <Field label={t("encounters.service")}>
+              <SearchableSelect<Service>
+                value={availableServices.find((sv) => sv.id === s.service) ?? null}
+                onSelect={(sv) => updateServiceLineService(i, sv.id)}
+                search={async (query) => {
+                  const q = query.trim().toLowerCase();
+                  const results = q ? availableServices.filter((sv) => sv.name.toLowerCase().includes(q)) : availableServices;
+                  return { results, count: results.length };
+                }}
+                minChars={1}
+                placeholder={t("encounters.service")}
+                getLabel={(sv) => toSentenceCase(sv.name)}
+                getSublabel={(sv) => toSentenceCase(sv.type_name)}
+              />
+            </Field>
+            <Field label={t("encounters.serviceNotes")}>
+              <input value={s.notes} onChange={(e) => updateServiceLine(i, { notes: e.target.value })} />
+            </Field>
+            {s.ars_covered && (
+              <Field label={t("encounters.authorizationNumber")}>
+                <input
+                  type="number"
+                  min={1}
+                  step={1}
+                  inputMode="numeric"
+                  value={s.authorization_number ?? ""}
+                  onChange={(e) => {
+                    const raw = e.target.value;
+                    if (raw === "") {
+                      updateServiceLine(i, { authorization_number: null });
+                      return;
+                    }
+                    const n = Number(raw);
+                    if (Number.isInteger(n) && n > 0) updateServiceLine(i, { authorization_number: n });
+                  }}
+                />
+              </Field>
+            )}
+            <label className="line-coverage-toggle">
+              <input
+                type="checkbox"
+                checked={s.ars_covered}
+                onChange={(e) =>
+                  updateServiceLine(i, {
+                    ars_covered: e.target.checked,
+                    authorization_number: e.target.checked ? s.authorization_number : null,
+                  })
+                }
+              />
+              {t("encounters.arsCovered")}
+            </label>
+            <button
+              type="button"
+              className="btn small danger"
+              aria-label={t("common.delete")}
+              onClick={() => removeServiceLine(i)}
+            >
+              ×
+            </button>
+          </div>
+        );
+      })}
       <button type="button" className="btn ghost small" onClick={addServiceLine}>
         + {t("encounters.addService")}
       </button>
 
       <h4>{t("encounters.sectionAdmission")}</h4>
-      <div className="form-columns">
-        <Field label={t("encounters.doctor")}>
-          <select value={form.doctor} onChange={(e) => pickDoctor(Number(e.target.value))} required={doctorRequired}>
-            <option value={0} disabled={doctorRequired}>—</option>
-            {availableDoctors.map((d) => (
-              <option key={d.id} value={d.id}>{d.full_name}</option>
-            ))}
-          </select>
-        </Field>
-        <Field label={t("encounters.room")}>
-          <select value={form.room} onChange={(e) => setForm({ ...form, room: Number(e.target.value) })}>
-            <option value={0}>—</option>
-            {availableRooms.map((r) => (
-              <option key={r.id} value={r.id}>{r.name}</option>
-            ))}
-          </select>
-        </Field>
-        <Field label={t("encounters.priority")}>
-          <select value={form.priority} onChange={(e) => setForm({ ...form, priority: e.target.value as Encounter["priority"] })}>
-            <option value="ROUTINE">{t(priorityLabel("ROUTINE"))}</option>
-            <option value="URGENT">{t(priorityLabel("URGENT"))}</option>
-            <option value="EMERGENCY">{t(priorityLabel("EMERGENCY"))}</option>
-          </select>
-        </Field>
-      </div>
+      {form.services.map((s, i) => {
+        const { availableDoctors, currentDoctor } = useDoctorServiceFilter({
+          doctors,
+          services,
+          serviceTypes,
+          selectedServiceIds: [s.service],
+          currentDoctorId: s.doctor ?? 0,
+        });
+        const doctorRequired = s.service ? requiresDoctorFor(services, serviceTypes, s.service) : false;
+        const availableRooms =
+          currentDoctor && currentDoctor.rooms.length > 0
+            ? rooms.filter((rm) => currentDoctor.rooms.includes(rm.id))
+            : rooms;
+        return (
+          <div key={i} className="encounter-admission-row">
+            <span className="line-order-badge">#{i + 1}</span>
+            <Field label={t("encounters.doctor")}>
+              <select
+                value={s.doctor ?? 0}
+                onChange={(e) => updateServiceLineDoctor(i, Number(e.target.value), s.service)}
+                required={doctorRequired}
+              >
+                <option value={0} disabled={doctorRequired}>—</option>
+                {availableDoctors.map((d) => (
+                  <option key={d.id} value={d.id}>{d.full_name}</option>
+                ))}
+              </select>
+            </Field>
+            <Field label={t("encounters.room")}>
+              <select value={s.room ?? 0} onChange={(e) => updateServiceLine(i, { room: Number(e.target.value) || null })}>
+                <option value={0}>—</option>
+                {availableRooms.map((r) => (
+                  <option key={r.id} value={r.id}>{r.name}</option>
+                ))}
+              </select>
+            </Field>
+          </div>
+        );
+      })}
+      <button type="button" className="btn ghost small" onClick={addServiceLine}>
+        + {t("encounters.addDoctor")}
+      </button>
+      <Field label={t("encounters.priority")}>
+        <select value={form.priority} onChange={(e) => setForm({ ...form, priority: e.target.value as Encounter["priority"] })}>
+          <option value="ROUTINE">{t(priorityLabel("ROUTINE"))}</option>
+          <option value="URGENT">{t(priorityLabel("URGENT"))}</option>
+          <option value="EMERGENCY">{t(priorityLabel("EMERGENCY"))}</option>
+        </select>
+      </Field>
       <Field label={t("encounters.chiefComplaint")}>
         <textarea value={form.chief_complaint} onChange={(e) => setForm({ ...form, chief_complaint: e.target.value })} />
       </Field>
@@ -359,9 +422,6 @@ export function EncounterFormModal({
               <option key={p.id} value={p.id}>{p.name}</option>
             ))}
           </select>
-        </Field>
-        <Field label={t("encounters.authorizationNumber")}>
-          <input value={form.authorization_number} onChange={(e) => setForm({ ...form, authorization_number: e.target.value })} />
         </Field>
       </div>
     </FormModal>

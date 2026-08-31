@@ -1594,8 +1594,55 @@ input[type="radio"]:focus-visible {
 }
 
 .encounter-line-row {
+  display: grid;
+  grid-template-columns: auto 2fr 1.5fr auto auto auto;
   align-items: end;
+  gap: 0 1rem;
   margin-bottom: 0.5rem;
+}
+
+.encounter-admission-row {
+  display: grid;
+  grid-template-columns: auto 1fr 1fr;
+  align-items: end;
+  gap: 0 1rem;
+  margin-bottom: 0.5rem;
+}
+
+@media (max-width: 640px) {
+  .encounter-line-row,
+  .encounter-admission-row {
+    grid-template-columns: 1fr;
+  }
+}
+
+.line-order-badge {
+  min-width: 1.6rem;
+  height: 1.6rem;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 999px;
+  background: var(--mc-primary-soft, #eaf5ea);
+  color: var(--mc-primary-dark);
+  font-size: 0.75rem;
+  font-weight: 700;
+  margin-bottom: 0.6rem;
+}
+
+.line-coverage-toggle {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  font-size: 0.85rem;
+  color: var(--mc-text);
+  font-weight: 600;
+  white-space: nowrap;
+  padding-bottom: 0.6rem;
+}
+
+.line-coverage-toggle input {
+  accent-color: var(--mc-primary);
 }
 
 .encounter-detail-badges {

@@ -63,9 +63,7 @@ export function EncounterDetailDialog({ detail, onClose, canViewRecords, onOpenR
         <div>
           <h4>{t("encounters.sectionAdmission")}</h4>
           <div className="kv-grid">
-            <div><b>{t("encounters.doctor")}:</b> {detail.doctor_info?.full_name ?? "—"}</div>
             <div><b>{t("encounters.type")}:</b> {toSentenceCase(detail.service_type_name)}</div>
-            <div><b>{t("encounters.room")}:</b> {detail.room_name ?? "—"}</div>
             <div><b>{t("encounters.referringDoctor")}:</b> {detail.referring_doctor_name || "—"}</div>
             <div><b>{t("encounters.createdAt")}:</b> {formatDateTime(detail.created_at)}</div>
             {detail.admitted_at && <div><b>{t("encounters.admit")}:</b> {formatDateTime(detail.admitted_at)}</div>}
@@ -101,8 +99,16 @@ export function EncounterDetailDialog({ detail, onClose, canViewRecords, onOpenR
             <div key={s.id ?? i} className="log-entry">
               <b>{s.service_name}</b> × {s.quantity}{" "}
               <span className={`badge status-${s.status.toLowerCase()} encounter-inline-badge`}>{statusLabel(s.status)}</span>
-              {s.doctor_name && <div className="muted">{s.doctor_name}</div>}
+              {!s.ars_covered && (
+                <span className="badge status-inactive encounter-inline-badge">{t("encounters.particular")}</span>
+              )}
+              {(s.doctor_name || s.room_name) && (
+                <div className="muted">{[s.doctor_name, s.room_name].filter(Boolean).join(" · ")}</div>
+              )}
               {s.notes && <div className="muted">{s.notes}</div>}
+              {s.ars_covered && s.authorization_number && (
+                <div className="muted">{t("encounters.authorizationNumber")}: {s.authorization_number}</div>
+              )}
             </div>
           ))}
         </div>
@@ -112,7 +118,6 @@ export function EncounterDetailDialog({ detail, onClose, canViewRecords, onOpenR
       <div className="kv-grid">
         <div><b>{t("patients.ars")}:</b> {detail.ars_name ?? "—"}</div>
         <div><b>{t("patients.arsProgram")}:</b> {detail.ars_program_name ?? "—"}</div>
-        <div><b>{t("encounters.authorizationNumber")}:</b> {detail.authorization_number || "—"}</div>
       </div>
 
       <div className="modal-actions">

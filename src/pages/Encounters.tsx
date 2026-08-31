@@ -131,7 +131,11 @@ export function Encounters() {
       header: t("encounters.cedula"),
       render: (r) => openDetailLink(r, <GuardianAwareCedula info={r.patient_info} />),
     },
-    { key: "doctor", header: t("encounters.doctor"), sortKey: "doctor__code", render: (r) => r.doctor_info?.full_name ?? "—" },
+    {
+      key: "doctor",
+      header: t("encounters.doctor"),
+      render: (r) => [...new Set(r.services.map((s) => s.doctor_name).filter(Boolean))].join(", ") || "—",
+    },
     {
       key: "services",
       header: t("encounters.sectionServices"),
@@ -143,7 +147,11 @@ export function Encounters() {
         />
       ),
     },
-    { key: "room_name", header: t("encounters.room"), render: (r) => r.room_name ?? "—" },
+    {
+      key: "room_name",
+      header: t("encounters.room"),
+      render: (r) => [...new Set(r.services.map((s) => s.room_name).filter(Boolean))].join(", ") || "—",
+    },
     { key: "priority", header: t("encounters.priority"), sortKey: "priority", render: (r) => <span className={`badge status-${r.priority.toLowerCase()}`}>{priorityLabel(r.priority)}</span> },
     { key: "status", header: t("common.status"), sortKey: "status", render: (r) => <span className={`badge status-${r.status.toLowerCase()}`}>{statusLabel(r.status)}</span> },
     { key: "created_at", header: t("encounters.createdAt"), sortKey: "created_at", render: (r) => formatDateTime(r.created_at) },

@@ -964,6 +964,13 @@ body {
   margin-bottom: 1rem;
 }
 
+/* Nested inside .list-toolbar (Appointments): the toolbar row already
+   supplies its own gap/margin-bottom, so the standalone-row margin above
+   would just add unwanted extra space inside the row. */
+.list-toolbar .view-toggle {
+  margin-bottom: 0;
+}
+
 .view-toggle-btn {
   border: none;
   background: transparent;
@@ -1593,9 +1600,123 @@ input[type="radio"]:focus-visible {
   color: var(--mc-warning);
 }
 
-.encounter-line-row {
-  align-items: end;
-  margin-bottom: 0.5rem;
+.patient-confirm-card {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+  border: 1px solid var(--mc-border);
+  border-radius: 10px;
+  padding: 0.75rem 0.9rem;
+  margin: 0.6rem 0 0.9rem;
+  background: var(--mc-lightest);
+}
+
+.patient-confirm-name {
+  font-weight: 700;
+  color: var(--mc-primary-dark);
+}
+
+.patient-confirm-meta {
+  font-size: 0.85rem;
+  color: var(--mc-muted);
+}
+
+.patient-confirm-badges {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+}
+
+.patient-confirm-badge {
+  font-size: 0.75rem;
+  font-weight: 700;
+  padding: 0.15rem 0.55rem;
+  border-radius: 999px;
+  background: var(--mc-white);
+  color: var(--mc-primary-dark);
+  border: 1px solid var(--mc-border);
+}
+
+.patient-confirm-badge-alert {
+  font-size: 0.75rem;
+  font-weight: 700;
+  padding: 0.15rem 0.55rem;
+  border-radius: 999px;
+  background: var(--mc-warning-bg);
+  color: var(--mc-warning-text);
+  border: 1px solid var(--mc-warning);
+}
+
+.encounter-line-card {
+  border: 1px solid var(--mc-border);
+  border-radius: 10px;
+  padding: 0.9rem 1rem 0.6rem;
+  margin-bottom: 0.75rem;
+  background: var(--mc-white);
+}
+
+.encounter-line-card-header {
+  display: flex;
+  align-items: flex-end;
+  gap: 0.65rem;
+  margin-bottom: 0.6rem;
+}
+
+.encounter-line-card-header .field {
+  flex: 1;
+  min-width: 0;
+  margin-bottom: 0;
+}
+
+.encounter-line-card-header .btn {
+  flex-shrink: 0;
+}
+
+.encounter-line-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr 1fr;
+  gap: 0 1rem;
+}
+
+.encounter-line-grid .field {
+  margin-bottom: 0.6rem;
+}
+
+.encounter-line-footer {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 0.75rem 1.25rem;
+  padding-top: 0.15rem;
+  border-top: 1px dashed var(--mc-border);
+  margin-top: 0.15rem;
+}
+
+.encounter-line-footer .field {
+  flex: 1;
+  min-width: 160px;
+  margin-bottom: 0.6rem;
+}
+
+@media (max-width: 640px) {
+  .encounter-line-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+.line-coverage-toggle {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  font-size: 0.85rem;
+  color: var(--mc-text);
+  font-weight: 600;
+  white-space: nowrap;
+  padding-top: 0.55rem;
+}
+
+.line-coverage-toggle input {
+  accent-color: var(--mc-primary);
 }
 
 .encounter-detail-badges {

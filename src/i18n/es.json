@@ -17,6 +17,7 @@
     "users": "Usuarios",
     "ars": "ARS",
     "settings": "Configuración",
+    "reportes": "Reportes",
     "communications": "Comunicaciones",
     "logout": "Cerrar sesión",
     "groups": {
@@ -223,6 +224,7 @@
     "new": "Nuevo usuario",
     "username": "Usuario",
     "role": "Rol",
+    "center": "Centro",
     "firstName": "Nombre",
     "lastName": "Apellido",
     "password": "Contraseña",
@@ -359,8 +361,12 @@
     "quantity": "Cantidad",
     "serviceNotes": "Notas del servicio",
     "addService": "Añadir servicio",
+    "addDoctor": "Añadir médico",
     "authorizationNumber": "N.º de autorización",
+    "arsCovered": "Cobertura ARS",
+    "particular": "Particular",
     "arsLockedNote": "El paciente ya tiene ARS/programa en su ficha; no se pueden cambiar aquí.",
+    "selfPayNote": "Sin ARS seleccionada: se facturará al paciente.",
     "patientRequired": "Selecciona un paciente.",
     "typeAndDoctorRequired": "Selecciona el tipo de servicio y el médico.",
     "servicesRequired": "Se requiere al menos un servicio.",
@@ -658,6 +664,34 @@
         "help": "Filas mostradas por página cuando una lista no especifica un tamaño de página (limitado a 200)."
       }
     }
+  },
+  "reportes": {
+    "title": "Reportes",
+    "tabs": {
+      "individuales": "Individuales",
+      "paquetes": "Paquetes"
+    },
+    "newDefinition": "Nuevo reporte",
+    "newPack": "Nuevo paquete",
+    "generate": "Generar",
+    "generatePack": "Generar paquete",
+    "download": "Descargar",
+    "month": "Mes",
+    "ars": "ARS",
+    "programa": "Programa",
+    "centro": "Centro",
+    "allArs": "Todas",
+    "allProgramas": "Todos",
+    "allCenters": "Todos",
+    "name": "Nombre",
+    "category": "Categoría",
+    "description": "Descripción",
+    "periodicity": "Periodicidad",
+    "engine": "Motor",
+    "active": "Activo",
+    "deactivate": "Desactivar",
+    "activate": "Activar",
+    "empty": "No hay reportes."
   },
   "communications": {
     "title": "Comunicaciones",

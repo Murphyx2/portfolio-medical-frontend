@@ -14,6 +14,8 @@ export interface User {
   last_name: string;
   full_name: string;
   role: Role;
+  center: number | null;
+  center_name: string | null;
   is_active: boolean;
   is_locked: boolean;
   locked_until: string | null;
@@ -78,6 +80,28 @@ export interface MedicalCenter {
   is_default: boolean;
   doctor_count: number;
   active: boolean;
+}
+
+export type ReportEngineKey = "servicios_prestados";
+export type ReportPackEngineKey = "paquete_ars";
+
+export interface ReportDefinition {
+  id: number;
+  name: string;
+  category: string;
+  description: string;
+  engine_key: ReportEngineKey;
+  active: boolean;
+  last_generated_at: string | null;
+}
+
+export interface ReportPack {
+  id: number;
+  name: string;
+  periodicity: string;
+  engine_key: ReportPackEngineKey;
+  active: boolean;
+  last_generated_at: string | null;
 }
 
 export interface ServiceLite {
@@ -524,9 +548,13 @@ export interface EncounterService {
   service_name?: string;
   doctor: number | null;
   doctor_name?: string | null;
+  room: number | null;
+  room_name?: string | null;
   quantity: number;
   notes: string;
   status: EncounterServiceStatus;
+  ars_covered: boolean;
+  authorization_number: number | null;
 }
 
 export interface Encounter {
@@ -536,11 +564,7 @@ export interface Encounter {
   service_type_name: string;
   patient: number;
   patient_info: EncounterPatientSummary;
-  doctor: number | null;
-  doctor_info: { id: number; code: string; full_name: string } | null;
   referring_doctor_name: string;
-  room: number | null;
-  room_name: string | null;
   center: number | null;
   center_name: string | null;
   status: EncounterStatus;
@@ -553,7 +577,6 @@ export interface Encounter {
   ars_name: string | null;
   ars_program: number | null;
   ars_program_name: string | null;
-  authorization_number: string;
   diagnoses: EncounterDiagnosis[];
   services: EncounterService[];
   created_by: number;

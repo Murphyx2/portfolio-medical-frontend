@@ -366,6 +366,7 @@
     "arsCovered": "ARS Coverage",
     "particular": "Particular",
     "arsLockedNote": "This patient already has an ARS/Program on file; they can't be changed here.",
+    "selfPayNote": "No ARS selected: the patient will be billed directly.",
     "patientRequired": "Select a patient.",
     "typeAndDoctorRequired": "Select the service type and doctor.",
     "servicesRequired": "At least one service is required.",

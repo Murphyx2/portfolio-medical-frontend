@@ -1593,41 +1593,108 @@ input[type="radio"]:focus-visible {
   color: var(--mc-warning);
 }
 
-.encounter-line-row {
-  display: grid;
-  grid-template-columns: auto 2fr 1.5fr auto auto auto;
-  align-items: end;
-  gap: 0 1rem;
-  margin-bottom: 0.5rem;
+.patient-confirm-card {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+  border: 1px solid var(--mc-border);
+  border-radius: 10px;
+  padding: 0.75rem 0.9rem;
+  margin: 0.6rem 0 0.9rem;
+  background: var(--mc-lightest);
 }
 
-.encounter-admission-row {
+.patient-confirm-name {
+  font-weight: 700;
+  color: var(--mc-primary-dark);
+}
+
+.patient-confirm-meta {
+  font-size: 0.85rem;
+  color: var(--mc-muted);
+}
+
+.patient-confirm-badges {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+}
+
+.patient-confirm-badge {
+  font-size: 0.75rem;
+  font-weight: 700;
+  padding: 0.15rem 0.55rem;
+  border-radius: 999px;
+  background: var(--mc-white);
+  color: var(--mc-primary-dark);
+  border: 1px solid var(--mc-border);
+}
+
+.patient-confirm-badge-alert {
+  font-size: 0.75rem;
+  font-weight: 700;
+  padding: 0.15rem 0.55rem;
+  border-radius: 999px;
+  background: var(--mc-warning-bg);
+  color: var(--mc-warning-text);
+  border: 1px solid var(--mc-warning);
+}
+
+.encounter-line-card {
+  border: 1px solid var(--mc-border);
+  border-radius: 10px;
+  padding: 0.9rem 1rem 0.6rem;
+  margin-bottom: 0.75rem;
+  background: var(--mc-white);
+}
+
+.encounter-line-card-header {
+  display: flex;
+  align-items: flex-end;
+  gap: 0.65rem;
+  margin-bottom: 0.6rem;
+}
+
+.encounter-line-card-header .field {
+  flex: 1;
+  min-width: 0;
+  margin-bottom: 0;
+}
+
+.encounter-line-card-header .btn {
+  flex-shrink: 0;
+}
+
+.encounter-line-grid {
   display: grid;
-  grid-template-columns: auto 1fr 1fr;
-  align-items: end;
+  grid-template-columns: 1fr 1fr 1fr;
   gap: 0 1rem;
-  margin-bottom: 0.5rem;
+}
+
+.encounter-line-grid .field {
+  margin-bottom: 0.6rem;
+}
+
+.encounter-line-footer {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 0.75rem 1.25rem;
+  padding-top: 0.15rem;
+  border-top: 1px dashed var(--mc-border);
+  margin-top: 0.15rem;
+}
+
+.encounter-line-footer .field {
+  flex: 1;
+  min-width: 160px;
+  margin-bottom: 0.6rem;
 }
 
 @media (max-width: 640px) {
-  .encounter-line-row,
-  .encounter-admission-row {
+  .encounter-line-grid {
     grid-template-columns: 1fr;
   }
-}
-
-.line-order-badge {
-  min-width: 1.6rem;
-  height: 1.6rem;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  border-radius: 999px;
-  background: var(--mc-primary-soft, #eaf5ea);
-  color: var(--mc-primary-dark);
-  font-size: 0.75rem;
-  font-weight: 700;
-  margin-bottom: 0.6rem;
 }
 
 .line-coverage-toggle {
@@ -1638,7 +1705,7 @@ input[type="radio"]:focus-visible {
   color: var(--mc-text);
   font-weight: 600;
   white-space: nowrap;
-  padding-bottom: 0.6rem;
+  padding-top: 0.55rem;
 }
 
 .line-coverage-toggle input {

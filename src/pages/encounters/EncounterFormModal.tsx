@@ -66,6 +66,19 @@ function roomForDoctor(doctor: DoctorProfile): number | null {
   return doctor.rooms_detail.length === 1 ? doctor.rooms_detail[0].id : null;
 }
 
+/** Cédula/NSS plus whatever else is on file (sex, age, ARS) so reception
+ * can tell same-name patients apart while searching, and confirm the right
+ * one was picked -- everything here already comes back on the search
+ * response, no extra request. */
+function patientSublabel(p: Patient): string {
+  const parts = [`${formatCedula(p.cedula)} · NSS ${p.nss || "—"}`];
+  if (p.gender) parts.push(p.gender);
+  if (p.age != null) parts.push(String(p.age));
+  if (p.phone) parts.push(p.phone);
+  if (p.ars_name) parts.push(p.ars_name);
+  return parts.join(" · ");
+}
+
 /** Create/edit encounter form: patient picker (new encounters only) or a
  * read-only patient name (editing), diagnoses/services line-item editors,
  * per-line doctor+room admission rows (each service line is its own
@@ -216,6 +229,10 @@ export function EncounterFormModal({
     const body = {
       patient: patientId,
       service_type: derivedServiceType.id,
+      // Silently carries the patient's own center binding onto the
+      // encounter (unbound patients stay centerless) -- no user-facing
+      // field, only set on create since edits keep whatever they already have.
+      center: editingEncounter ? undefined : (selectedPatient?.center ?? null),
       chief_complaint: form.chief_complaint,
       priority: form.priority,
       ars: effectiveArs ? Number(effectiveArs) : null,
@@ -253,96 +270,41 @@ export function EncounterFormModal({
               search={searchPatients}
               placeholder={t("records.patientPickerPlaceholder")}
               getLabel={(p) => p.full_name}
-              getSublabel={(p) => `${formatCedula(p.cedula)} · NSS ${p.nss || "—"}`}
+              getSublabel={(p) => patientSublabel(p)}
             />
           </Field>
           <button type="button" className="btn ghost small" onClick={onRequestNewPatient}>
             + {t("patients.new")}
           </button>
+          {selectedPatient && (
+            <div className="patient-confirm-card">
+              <div className="patient-confirm-name">
+                <MaskedValue value={selectedPatient.full_name} />
+              </div>
+              <div className="patient-confirm-meta">{patientSublabel(selectedPatient)}</div>
+              <div className="patient-confirm-badges">
+                {selectedPatient.ars_name && (
+                  <span className="patient-confirm-badge">{selectedPatient.ars_name}</span>
+                )}
+                {selectedPatient.allergies && (
+                  <span className="patient-confirm-badge-alert">
+                    {t("patients.allergies")}: <MaskedValue value={selectedPatient.allergies} />
+                  </span>
+                )}
+                {selectedPatient.critical_conditions && (
+                  <span className="patient-confirm-badge-alert">
+                    {t("patients.criticalConditions")}: <MaskedValue value={selectedPatient.critical_conditions} />
+                  </span>
+                )}
+              </div>
+            </div>
+          )}
         </>
       )}
 
       <h4>{t("encounters.sectionServices")}</h4>
       {form.services.map((s, i) => {
-        const { availableServices } = useDoctorServiceFilter({
-          doctors,
-          services,
-          serviceTypes,
-          selectedServiceIds: [s.service],
-          currentDoctorId: s.doctor ?? 0,
-        });
-        return (
-          <div key={i} className="encounter-line-row">
-            <span className="line-order-badge">#{i + 1}</span>
-            <Field label={t("encounters.service")}>
-              <SearchableSelect<Service>
-                value={availableServices.find((sv) => sv.id === s.service) ?? null}
-                onSelect={(sv) => updateServiceLineService(i, sv.id)}
-                search={async (query) => {
-                  const q = query.trim().toLowerCase();
-                  const results = q ? availableServices.filter((sv) => sv.name.toLowerCase().includes(q)) : availableServices;
-                  return { results, count: results.length };
-                }}
-                minChars={1}
-                placeholder={t("encounters.service")}
-                getLabel={(sv) => toSentenceCase(sv.name)}
-                getSublabel={(sv) => toSentenceCase(sv.type_name)}
-              />
-            </Field>
-            <Field label={t("encounters.serviceNotes")}>
-              <input value={s.notes} onChange={(e) => updateServiceLine(i, { notes: e.target.value })} />
-            </Field>
-            {s.ars_covered && (
-              <Field label={t("encounters.authorizationNumber")}>
-                <input
-                  type="number"
-                  min={1}
-                  step={1}
-                  inputMode="numeric"
-                  value={s.authorization_number ?? ""}
-                  onChange={(e) => {
-                    const raw = e.target.value;
-                    if (raw === "") {
-                      updateServiceLine(i, { authorization_number: null });
-                      return;
-                    }
-                    const n = Number(raw);
-                    if (Number.isInteger(n) && n > 0) updateServiceLine(i, { authorization_number: n });
-                  }}
-                />
-              </Field>
-            )}
-            <label className="line-coverage-toggle">
-              <input
-                type="checkbox"
-                checked={s.ars_covered}
-                onChange={(e) =>
-                  updateServiceLine(i, {
-                    ars_covered: e.target.checked,
-                    authorization_number: e.target.checked ? s.authorization_number : null,
-                  })
-                }
-              />
-              {t("encounters.arsCovered")}
-            </label>
-            <button
-              type="button"
-              className="btn small danger"
-              aria-label={t("common.delete")}
-              onClick={() => removeServiceLine(i)}
-            >
-              ×
-            </button>
-          </div>
-        );
-      })}
-      <button type="button" className="btn ghost small" onClick={addServiceLine}>
-        + {t("encounters.addService")}
-      </button>
-
-      <h4>{t("encounters.sectionAdmission")}</h4>
-      {form.services.map((s, i) => {
-        const { availableDoctors, currentDoctor } = useDoctorServiceFilter({
+        const { availableServices, availableDoctors, currentDoctor } = useDoctorServiceFilter({
           doctors,
           services,
           serviceTypes,
@@ -355,48 +317,120 @@ export function EncounterFormModal({
             ? rooms.filter((rm) => currentDoctor.rooms.includes(rm.id))
             : rooms;
         return (
-          <div key={i} className="encounter-admission-row">
-            <span className="line-order-badge">#{i + 1}</span>
-            <Field label={t("encounters.doctor")}>
-              <select
-                value={s.doctor ?? 0}
-                onChange={(e) => updateServiceLineDoctor(i, Number(e.target.value), s.service)}
-                required={doctorRequired}
+          <div key={i} className="encounter-line-card">
+            <div className="encounter-line-card-header">
+              <Field label={t("encounters.service")}>
+                <SearchableSelect<Service>
+                  value={availableServices.find((sv) => sv.id === s.service) ?? null}
+                  onSelect={(sv) => updateServiceLineService(i, sv.id)}
+                  search={async (query) => {
+                    const q = query.trim().toLowerCase();
+                    const results = q ? availableServices.filter((sv) => sv.name.toLowerCase().includes(q)) : availableServices;
+                    return { results, count: results.length };
+                  }}
+                  minChars={1}
+                  placeholder={t("encounters.service")}
+                  getLabel={(sv) => toSentenceCase(sv.name)}
+                  getSublabel={(sv) => toSentenceCase(sv.type_name)}
+                />
+              </Field>
+              <button
+                type="button"
+                className="btn small danger"
+                aria-label={t("common.delete")}
+                onClick={() => removeServiceLine(i)}
               >
-                <option value={0} disabled={doctorRequired}>—</option>
-                {availableDoctors.map((d) => (
-                  <option key={d.id} value={d.id}>{d.full_name}</option>
-                ))}
-              </select>
-            </Field>
-            <Field label={t("encounters.room")}>
-              <select value={s.room ?? 0} onChange={(e) => updateServiceLine(i, { room: Number(e.target.value) || null })}>
-                <option value={0}>—</option>
-                {availableRooms.map((r) => (
-                  <option key={r.id} value={r.id}>{r.name}</option>
-                ))}
-              </select>
-            </Field>
+                ×
+              </button>
+            </div>
+
+            <div className="encounter-line-grid">
+              <Field label={t("encounters.doctor")}>
+                <select
+                  value={s.doctor ?? 0}
+                  onChange={(e) => updateServiceLineDoctor(i, Number(e.target.value), s.service)}
+                  required={doctorRequired}
+                >
+                  <option value={0} disabled={doctorRequired}>—</option>
+                  {availableDoctors.map((d) => (
+                    <option key={d.id} value={d.id}>{d.full_name}</option>
+                  ))}
+                </select>
+              </Field>
+              <Field label={t("encounters.room")}>
+                <select value={s.room ?? 0} onChange={(e) => updateServiceLine(i, { room: Number(e.target.value) || null })}>
+                  <option value={0}>—</option>
+                  {availableRooms.map((r) => (
+                    <option key={r.id} value={r.id}>{r.name}</option>
+                  ))}
+                </select>
+              </Field>
+              <Field label={t("encounters.serviceNotes")}>
+                <input value={s.notes} onChange={(e) => updateServiceLine(i, { notes: e.target.value })} />
+              </Field>
+            </div>
+
+            <div className="encounter-line-footer">
+              <Field label={t("encounters.authorizationNumber")}>
+                <input
+                  type="number"
+                  min={1}
+                  step={1}
+                  inputMode="numeric"
+                  disabled={!s.ars_covered}
+                  value={s.authorization_number ?? ""}
+                  onChange={(e) => {
+                    const raw = e.target.value;
+                    if (raw === "") {
+                      updateServiceLine(i, { authorization_number: null });
+                      return;
+                    }
+                    const n = Number(raw);
+                    if (Number.isInteger(n) && n > 0) updateServiceLine(i, { authorization_number: n });
+                  }}
+                />
+              </Field>
+              <label className="line-coverage-toggle">
+                <input
+                  type="checkbox"
+                  checked={s.ars_covered}
+                  onChange={(e) =>
+                    updateServiceLine(i, {
+                      ars_covered: e.target.checked,
+                      authorization_number: e.target.checked ? s.authorization_number : null,
+                    })
+                  }
+                />
+                {t("encounters.arsCovered")}
+              </label>
+            </div>
           </div>
         );
       })}
       <button type="button" className="btn ghost small" onClick={addServiceLine}>
-        + {t("encounters.addDoctor")}
+        + {t("encounters.addService")}
       </button>
-      <Field label={t("encounters.priority")}>
-        <select value={form.priority} onChange={(e) => setForm({ ...form, priority: e.target.value as Encounter["priority"] })}>
-          <option value="ROUTINE">{t(priorityLabel("ROUTINE"))}</option>
-          <option value="URGENT">{t(priorityLabel("URGENT"))}</option>
-          <option value="EMERGENCY">{t(priorityLabel("EMERGENCY"))}</option>
-        </select>
-      </Field>
-      <Field label={t("encounters.chiefComplaint")}>
-        <textarea value={form.chief_complaint} onChange={(e) => setForm({ ...form, chief_complaint: e.target.value })} />
-      </Field>
+
+      <h4>{t("encounters.sectionAdmission")}</h4>
+      <div className="form-columns">
+        <Field label={t("encounters.priority")}>
+          <select value={form.priority} onChange={(e) => setForm({ ...form, priority: e.target.value as Encounter["priority"] })}>
+            <option value="ROUTINE">{t(priorityLabel("ROUTINE"))}</option>
+            <option value="URGENT">{t(priorityLabel("URGENT"))}</option>
+            <option value="EMERGENCY">{t(priorityLabel("EMERGENCY"))}</option>
+          </select>
+        </Field>
+        <Field label={t("encounters.chiefComplaint")}>
+          <textarea value={form.chief_complaint} onChange={(e) => setForm({ ...form, chief_complaint: e.target.value })} />
+        </Field>
+      </div>
 
       <h4>{t("encounters.sectionCoverage")}</h4>
       {(arsLocked || arsProgramLocked) && (
         <p className="muted">{t("encounters.arsLockedNote")}</p>
+      )}
+      {!arsLocked && !arsProgramLocked && !effectiveArs && (
+        <p className="muted">{t("encounters.selfPayNote")}</p>
       )}
       <div className="form-columns">
         <Field label={t("patients.ars")}>

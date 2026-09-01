@@ -8,6 +8,9 @@ export interface ListPageProps<T extends { id: number }> {
   search: string;
   setSearch: (value: string) => void;
   searchSubmit: () => void;
+  /** Extra control(s) rendered before even the search bar, first in the
+   * toolbar row (e.g. Appointments' Calendar/List view toggle). */
+  toolbarStart?: ReactNode;
   /** Extra toolbar controls rendered before the search bar (e.g. Encounters'
    * date filter). */
   toolbarBefore?: ReactNode;
@@ -70,6 +73,7 @@ export function ListPage<T extends { id: number }>({
   search,
   setSearch,
   searchSubmit,
+  toolbarStart,
   toolbarBefore,
   toolbarAfter,
   isAdmin,
@@ -119,6 +123,7 @@ export function ListPage<T extends { id: number }>({
   return (
     <>
       <div className="list-toolbar">
+        {toolbarStart}
         <SearchBar
           value={search}
           onChange={setSearch}

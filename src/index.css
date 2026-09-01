@@ -964,6 +964,13 @@ body {
   margin-bottom: 1rem;
 }
 
+/* Nested inside .list-toolbar (Appointments): the toolbar row already
+   supplies its own gap/margin-bottom, so the standalone-row margin above
+   would just add unwanted extra space inside the row. */
+.list-toolbar .view-toggle {
+  margin-bottom: 0;
+}
+
 .view-toggle-btn {
   border: none;
   background: transparent;

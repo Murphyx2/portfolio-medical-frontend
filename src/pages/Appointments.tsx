@@ -558,6 +558,29 @@ export function Appointments() {
     },
   ];
 
+  const viewToggle = (
+    <div className="view-toggle" role="tablist" aria-label={t("appointments.viewToggle")}>
+      <button
+        type="button"
+        role="tab"
+        aria-selected={viewMode === "calendar"}
+        className={viewMode === "calendar" ? "view-toggle-btn active" : "view-toggle-btn"}
+        onClick={() => setViewMode("calendar")}
+      >
+        {t("appointments.viewCalendar")}
+      </button>
+      <button
+        type="button"
+        role="tab"
+        aria-selected={viewMode === "list"}
+        className={viewMode === "list" ? "view-toggle-btn active" : "view-toggle-btn"}
+        onClick={() => setViewMode("list")}
+      >
+        {t("appointments.viewList")}
+      </button>
+    </div>
+  );
+
   return (
     <Page
       card
@@ -573,33 +596,13 @@ export function Appointments() {
         )
       }
     >
-      <div className="view-toggle" role="tablist" aria-label={t("appointments.viewToggle")}>
-        <button
-          type="button"
-          role="tab"
-          aria-selected={viewMode === "calendar"}
-          className={viewMode === "calendar" ? "view-toggle-btn active" : "view-toggle-btn"}
-          onClick={() => setViewMode("calendar")}
-        >
-          {t("appointments.viewCalendar")}
-        </button>
-        <button
-          type="button"
-          role="tab"
-          aria-selected={viewMode === "list"}
-          className={viewMode === "list" ? "view-toggle-btn active" : "view-toggle-btn"}
-          onClick={() => setViewMode("list")}
-        >
-          {t("appointments.viewList")}
-        </button>
-      </div>
-
       {viewMode === "list" ? (
         <ListPage<Appointment>
           initialLoading={initialLoading}
           search={search}
           setSearch={setSearch}
           searchSubmit={searchSubmit}
+          toolbarStart={viewToggle}
           toolbarBefore={
             <DateNavigator
               value={dateFilter}
@@ -624,6 +627,7 @@ export function Appointments() {
       ) : (
         <>
           <div className="list-toolbar">
+            {viewToggle}
             <SearchBar
               value={calendarSearch}
               onChange={setCalendarSearch}

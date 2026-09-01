@@ -19,6 +19,10 @@ import { useAuth } from "../store/auth";
 import { can } from "../utils/can";
 import { flattenError } from "../utils/errors";
 
+function isCenterManagerRole(role?: string | null): boolean {
+  return role === "CENTER_MANAGER";
+}
+
 function previousMonth(): string {
   const now = new Date();
   const d = new Date(now.getFullYear(), now.getMonth() - 1, 1);
@@ -194,7 +198,7 @@ function DefinitionsTab({ canEdit }: { canEdit: boolean }) {
 function GenerateReportModal({ definition, onClose }: { definition: ReportDefinition; onClose: () => void }) {
   const { t } = useTranslation();
   const { user } = useAuth();
-  const isCenterManager = user?.role === "CENTER_MANAGER";
+  const isCenterManager = isCenterManagerRole(user?.role);
   const [mes, setMes] = useState(previousMonth());
   const [arsList, setArsList] = useState<ARS[]>([]);
   const [ars, setArs] = useState("");
@@ -435,7 +439,7 @@ function PacksTab({ canEdit }: { canEdit: boolean }) {
 function GeneratePackModal({ pack, onClose }: { pack: ReportPack; onClose: () => void }) {
   const { t } = useTranslation();
   const { user } = useAuth();
-  const isCenterManager = user?.role === "CENTER_MANAGER";
+  const isCenterManager = isCenterManagerRole(user?.role);
   const [mes, setMes] = useState(previousMonth());
   const [centers, setCenters] = useState<MedicalCenter[]>([]);
   const [centro, setCentro] = useState("");

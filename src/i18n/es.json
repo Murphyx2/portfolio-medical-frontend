@@ -62,6 +62,7 @@
     "searchResultsLimited": "Mostrando {{shown}} de {{count}} resultados. Refina tu búsqueda para ver más.",
     "actions": "Acciones",
     "more": "Más",
+    "lineNumber": "línea {{n}}",
     "loading": "Cargando...",
     "noData": "No se encontraron datos",
     "back": "Volver",

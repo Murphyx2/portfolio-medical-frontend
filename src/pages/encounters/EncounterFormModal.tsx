@@ -373,20 +373,14 @@ export function EncounterFormModal({
             <div className="encounter-line-footer">
               <Field label={t("encounters.authorizationNumber")}>
                 <input
-                  type="number"
-                  min={1}
-                  step={1}
+                  type="text"
                   inputMode="numeric"
+                  maxLength={20}
                   disabled={!s.ars_covered}
                   value={s.authorization_number ?? ""}
                   onChange={(e) => {
-                    const raw = e.target.value;
-                    if (raw === "") {
-                      updateServiceLine(i, { authorization_number: null });
-                      return;
-                    }
-                    const n = Number(raw);
-                    if (Number.isInteger(n) && n > 0) updateServiceLine(i, { authorization_number: n });
+                    const digits = e.target.value.replace(/\D/g, "").slice(0, 20);
+                    updateServiceLine(i, { authorization_number: digits || null });
                   }}
                 />
               </Field>

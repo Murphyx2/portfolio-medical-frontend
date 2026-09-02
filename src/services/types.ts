@@ -554,7 +554,7 @@ export interface EncounterService {
   notes: string;
   status: EncounterServiceStatus;
   ars_covered: boolean;
-  authorization_number: number | null;
+  authorization_number: string | null;
 }
 
 export interface Encounter {

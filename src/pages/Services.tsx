@@ -116,6 +116,9 @@ export function Services() {
             <button className="btn ghost" onClick={() => navigate("/services/types")}>
               {t("services.manageTypes")}
             </button>
+            <button className="btn ghost" onClick={() => navigate("/services/prices")}>
+              {t("services.managePrices")}
+            </button>
             <button className="btn primary" onClick={openNew}>
               + {t("services.new")}
             </button>

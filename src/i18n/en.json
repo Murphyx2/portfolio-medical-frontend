@@ -211,7 +211,8 @@
     "type": "Type",
     "coPago": "Co-pay",
     "privado": "Private",
-    "manageTypes": "Manage service types"
+    "manageTypes": "Manage service types",
+    "managePrices": "Manage prices"
   },
   "serviceTypes": {
     "title": "Service types",
@@ -219,6 +220,15 @@
     "name": "Name",
     "back": "Back to Services",
     "requiresDoctor": "Requires doctor"
+  },
+  "servicePrices": {
+    "title": "Service prices",
+    "new": "New price",
+    "service": "Service",
+    "ars": "ARS",
+    "program": "Program",
+    "allPrograms": "(all programs)",
+    "hint": "Overrides the service's default Co-pago for a specific ARS, or a specific ARS + Program. Services with no override here use their default Co-pago."
   },
   "users": {
     "title": "Users",

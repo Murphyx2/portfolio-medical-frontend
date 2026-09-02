@@ -211,7 +211,8 @@
     "type": "Tipo",
     "coPago": "Co-pago",
     "privado": "Privado",
-    "manageTypes": "Gestionar tipos de servicio"
+    "manageTypes": "Gestionar tipos de servicio",
+    "managePrices": "Gestionar precios"
   },
   "serviceTypes": {
     "title": "Tipos de servicio",
@@ -219,6 +220,15 @@
     "name": "Nombre",
     "back": "Volver a Servicios",
     "requiresDoctor": "Requiere médico"
+  },
+  "servicePrices": {
+    "title": "Precios de servicios",
+    "new": "Nuevo precio",
+    "service": "Servicio",
+    "ars": "ARS",
+    "program": "Programa",
+    "allPrograms": "(todos los programas)",
+    "hint": "Reemplaza el Co-pago por defecto del servicio para una ARS específica, o para una ARS + Programa específica. Los servicios sin una excepción aquí usan su Co-pago por defecto."
   },
   "users": {
     "title": "Usuarios",

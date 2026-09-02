@@ -452,6 +452,24 @@ export interface Service {
   active: boolean;
 }
 
+// A Co-pago override for one Service under a specific ARS, or a specific
+// ARS+Program combo -- ars_program null means "applies to the whole ARS,
+// any program". No display of this price happens in the encounter flow yet
+// (no Billing/Cashier module) -- this is purely how staff maintain the
+// price list the backend resolves against when a service line is created.
+export interface ServicePrice {
+  id: number;
+  service: number;
+  service_name: string;
+  ars: number;
+  ars_name: string;
+  ars_program: number | null;
+  ars_program_name: string | null;
+  co_pago: string;
+  created_at: string;
+  active: boolean;
+}
+
 export interface APCategory {
   id: number;
   name: string;

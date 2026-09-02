@@ -33,6 +33,7 @@ export type Resource =
   | "centers"
   | "services"
   | "serviceTypes"
+  | "servicePrices"
   | "settings"
   | "language"
   | "communications"
@@ -187,6 +188,12 @@ const POLICY: Partial<Record<Resource, Partial<Record<Action, Role[]>>>> = {
     delete: CENTER_MANAGER_WRITE,
   },
   serviceTypes: {
+    view: ALL_ROLES,
+    create: CENTER_MANAGER_WRITE,
+    edit: CENTER_MANAGER_WRITE,
+    delete: CENTER_MANAGER_WRITE,
+  },
+  servicePrices: {
     view: ALL_ROLES,
     create: CENTER_MANAGER_WRITE,
     edit: CENTER_MANAGER_WRITE,

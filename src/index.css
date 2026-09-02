@@ -505,6 +505,14 @@ body {
   color: var(--mc-text);
 }
 
+.field input:disabled,
+.field select:disabled,
+.field textarea:disabled {
+  background: var(--mc-lightest);
+  color: var(--mc-muted);
+  cursor: not-allowed;
+}
+
 .inline-field-with-action {
   display: flex;
   align-items: center;

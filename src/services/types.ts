@@ -70,6 +70,16 @@ export interface Paginated<T> {
   results: T[];
 }
 
+export interface CenterPhone {
+  id?: number;
+  number: string;
+}
+
+export interface CenterEmail {
+  id?: number;
+  email: string;
+}
+
 export interface MedicalCenter {
   id: number;
   name: string;
@@ -77,6 +87,12 @@ export interface MedicalCenter {
   address: string;
   phone: string;
   email: string;
+  rnc: string;
+  nombre_legal: string;
+  nombre_corto: string;
+  logo: string | null;
+  phones: CenterPhone[];
+  emails: CenterEmail[];
   is_default: boolean;
   doctor_count: number;
   active: boolean;
@@ -195,13 +211,63 @@ export interface ARS {
   active: boolean;
 }
 
+export type MedicineForma =
+  | ""
+  | "TABLETA"
+  | "CAPSULA"
+  | "JARABE"
+  | "GOTAS"
+  | "CREMA"
+  | "UNGUENTO"
+  | "AMPOLLA"
+  | "VIAL"
+  | "INHALADOR"
+  | "PARCHE"
+  | "SUSPENSION"
+  | "SUPOSITORIO"
+  | "OTRO";
+
+export type MedicineViaAdministracion =
+  | ""
+  | "ORAL"
+  | "SUBLINGUAL"
+  | "SC"
+  | "IM"
+  | "IV"
+  | "TOPICA"
+  | "OFTALMICA"
+  | "OTICA"
+  | "NASAL"
+  | "INHALATORIA"
+  | "RECTAL"
+  | "OTRO";
+
+export type MedicineConcentracionUnidad =
+  | ""
+  | "mg"
+  | "mcg"
+  | "g"
+  | "ml"
+  | "UI"
+  | "UI/ml"
+  | "%"
+  | "mg/ml"
+  | "OTRO";
+
 export interface Medicine {
   id: number;
   generic_name: string;
   commercial_name: string;
   concentration: string;
+  forma: MedicineForma;
+  via_pred: MedicineViaAdministracion;
+  concentracion_valor: string;
+  concentracion_unidad: MedicineConcentracionUnidad;
+  concentracion_unidad_otro: string;
   active: boolean;
 }
+
+export type RecordImageKind = "image" | "pdf";
 
 export interface RecordImage {
   id: number;
@@ -210,6 +276,7 @@ export interface RecordImage {
   image_url: string | null;
   caption: string;
   uploaded_by: number | null;
+  kind: RecordImageKind;
   active: boolean;
   created_at: string;
 }
@@ -717,4 +784,53 @@ export interface CommunicationsSettings {
   whatsapp_configured: boolean;
   webhook_url: string;
   updated_at: string;
+}
+
+// --- Recetas médicas (prescriptions) ---
+
+export type RecetaEstado = "BORRADOR" | "EMITIDA" | "ANULADA";
+
+/** Dose-builder frequency kinds -- see DoseBuilder.tsx for the composer UI
+ * that produces this shape and the preview-string renderer that reads it. */
+export type DosisFrecuenciaTipo = "cada_n_horas" | "n_veces_dia" | "cada_n_dias" | "una_vez_semana" | "libre";
+
+export interface DosisJson {
+  unidades_por_toma: number;
+  unidad_toma: string;
+  frecuencia_tipo: DosisFrecuenciaTipo;
+  frecuencia_n: number | null;
+  frecuencia_texto_libre: string;
+  uso_continuo: boolean;
+}
+
+export interface RecetaLinea {
+  id?: number;
+  medicamento: number | null;
+  nombre_impreso: string;
+  cantidad: number | string;
+  concentracion_valor: string;
+  unidad: string;
+  via: string;
+  forma: string;
+  fuera_de_catalogo: boolean;
+  dosis_json: DosisJson;
+  dosis_texto: string;
+  indicacion_extra: string;
+  uso_continuo: boolean;
+  orden: number;
+}
+
+export interface Receta {
+  id: number;
+  patient: number;
+  centro: number;
+  medico: number;
+  created_by: number | null;
+  fecha: string;
+  proxima_cita_at: string | null;
+  cita: number | null;
+  estado: RecetaEstado;
+  pdf: string | null;
+  lineas: RecetaLinea[];
+  active: boolean;
 }

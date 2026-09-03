@@ -38,7 +38,8 @@ export type Resource =
   | "language"
   | "communications"
   | "communicationsSettings"
-  | "reportes";
+  | "reportes"
+  | "recetas";
 
 export type Action =
   | "view"
@@ -233,6 +234,17 @@ const POLICY: Partial<Record<Resource, Partial<Record<Action, Role[]>>>> = {
     view: ["ADMIN"],
     manageTemplates: ["ADMIN"],
     manageWhatsappSettings: ["ADMIN"],
+  },
+  recetas: {
+    // RECETAS_REQUIREMENTS.md §10: viewing an issued receta is open to
+    // anyone who can open the expediente at all (Records' own `view` policy
+    // already gates that door); creating/emitting/duplicating one is
+    // Admin/Doctor only -- Nurse and CenterManager can see recetas but not
+    // author them. `anular` is further narrowed to author-or-admin, which is
+    // an object-level check the flat table can't express (see
+    // RecetasTab.tsx's own canAnular helper).
+    view: ["ADMIN", "DOCTOR", "NURSE", "CENTER_MANAGER"],
+    edit: ["ADMIN", "DOCTOR"],
   },
   reportes: {
     // Requirements/ReportPage/REPORTES_REQUIREMENTS.md §2: unlike this

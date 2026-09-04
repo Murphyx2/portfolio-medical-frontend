@@ -71,6 +71,16 @@ export function RecordImageGallery({
     inputRef.current?.click();
   }
 
+  // The "+" add-tile is a <div role="button">, not a native <button> (it
+  // needs to sit inside the CSS grid alongside the image thumbnails) --
+  // unlike a real button, it doesn't get Enter/Space activation for free.
+  function onAddTileKeyDown(e: React.KeyboardEvent) {
+    if (e.key === "Enter" || e.key === " ") {
+      e.preventDefault();
+      openPicker();
+    }
+  }
+
   function onFilesSelected(e: React.ChangeEvent<HTMLInputElement>) {
     const files = Array.from(e.target.files ?? []);
     e.target.value = "";
@@ -182,7 +192,14 @@ export function RecordImageGallery({
         {images.length === 0 ? (
           <div className="dc-empty-gallery">
             {canEdit && (
-              <div className="dc-add-tile" onClick={openPicker} role="button" tabIndex={0}>
+              <div
+                className="dc-add-tile"
+                onClick={openPicker}
+                onKeyDown={onAddTileKeyDown}
+                role="button"
+                tabIndex={0}
+                aria-label={t("records.uploadImage")}
+              >
                 +
               </div>
             )}
@@ -214,7 +231,14 @@ export function RecordImageGallery({
               </div>
             ))}
             {canEdit && (
-              <div className="dc-add-tile" onClick={openPicker} role="button" tabIndex={0}>
+              <div
+                className="dc-add-tile"
+                onClick={openPicker}
+                onKeyDown={onAddTileKeyDown}
+                role="button"
+                tabIndex={0}
+                aria-label={t("records.uploadImage")}
+              >
                 +
               </div>
             )}

@@ -50,6 +50,7 @@ export type Action =
   | "manage"
   | "manageServices"
   | "manageRooms"
+  | "unlinkAccount"
   | "confirm"
   | "complete"
   | "cancel"
@@ -145,6 +146,11 @@ const POLICY: Partial<Record<Resource, Partial<Record<Action, Role[]>>>> = {
     delete: ["ADMIN", "IT", "CENTER_MANAGER"],
     manageServices: CENTER_MANAGER_WRITE,
     manageRooms: CENTER_MANAGER_WRITE,
+    // Desvincular cuenta is stricter than the general doctors.edit set
+    // above (mirrors the backend's unlink_account action: IsAdmin, not
+    // IsAdminOrITOrCenterManager) -- unlinking a login is more sensitive
+    // than editing médico fields.
+    unlinkAccount: ["ADMIN"],
   },
   appointments: {
     view: ALL_ROLES,

@@ -147,8 +147,10 @@ export interface PatientGuardian {
 export interface DoctorProfile {
   id: number;
   code: string;
-  user_id: number;
+  user_id: number | null;
   username: string;
+  first_name: string;
+  last_name: string;
   full_name: string;
   license_number: string;
   contact_phone: string;
@@ -163,6 +165,31 @@ export interface DoctorProfile {
   rooms_detail: RoomLite[];
   active: boolean;
 }
+
+/** Write-only nested payload accepted by POST/PATCH /doctors/profiles/ when
+ * "Crear cuenta de usuario" is checked -- creates the linked Doctor/a user
+ * in the same request instead of picking an existing one. */
+export interface DoctorAccountCreatePayload {
+  username: string;
+  password: string;
+  email?: string;
+}
+
+/** Write-only nested payload accepted by POST/PATCH /auth/users/ when
+ * role=DOCTOR -- required unless the user being edited already has a
+ * médico linked. */
+export type DoctorProfileLinkPayload =
+  | { mode: "link"; doctor_profile_id: number }
+  | {
+      mode: "create";
+      license_number?: string;
+      contact_phone?: string;
+      extra_phones?: string[];
+      contact_email?: string;
+      bio?: string;
+      services?: number[];
+      rooms?: number[];
+    };
 
 export interface Patient {
   id: number;

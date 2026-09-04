@@ -856,6 +856,7 @@
       "schedule": "Programar",
       "now": "Ahora",
       "later": "Programar fecha y hora",
+      "scheduledFor": "Fecha y hora programada",
       "willSendTo": "Se enviará a {{n}} personas",
       "testSend": "Enviarme una prueba",
       "testSendDisabled": "Guarda el aviso como borrador antes de enviar una prueba.",

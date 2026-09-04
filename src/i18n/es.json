@@ -137,12 +137,17 @@
     "new": "Nuevo médico",
     "code": "Código",
     "user": "Cuenta de usuario",
-    "userRequired": "Selecciona una cuenta de médico.",
     "license": "Exequátur",
     "contactPhone": "Teléfono de contacto",
     "contactEmail": "Correo de contacto",
     "bio": "Biografía",
     "fullName": "Nombre completo",
+    "fullNameRequired": "El nombre completo es obligatorio.",
+    "createAccount": "Crear cuenta de usuario",
+    "accountBlockTitle": "Cuenta (rol Doctor/a)",
+    "editUser": "Editar usuario",
+    "unlinkAccount": "Desvincular cuenta",
+    "unlinkAccountConfirm": "¿Desvincular la cuenta de este médico? El médico y el usuario se conservan, pero dejará de iniciar sesión como este médico.",
     "services": "Servicios",
     "manageServices": "Gestionar servicios",
     "noServices": "No hay servicios activos disponibles.",
@@ -327,7 +332,18 @@
     "actionUPDATE": "Actualización",
     "actionDELETE": "Eliminación",
     "actionREAD": "Lectura",
-    "actionEXPORT": "Exportación"
+    "actionEXPORT": "Exportación",
+    "doctorProfile": {
+      "title": "Perfil de médico (obligatorio)",
+      "modeLink": "Vincular médico existente",
+      "modeCreate": "Crear médico nuevo",
+      "select": "Médico",
+      "noneAvailable": "No hay médicos sin cuenta. Cree el perfil abajo.",
+      "required": "Debe vincular o crear un perfil de médico.",
+      "openProfile": "Abrir perfil",
+      "roleChangeConfirm": "Este usuario dejará de iniciar sesión como médico. El perfil en Médicos se conserva.",
+      "nameFromProfile": "El nombre de este usuario proviene del perfil de médico vinculado. Para cambiarlo, edite el perfil en Médicos."
+    }
   },
   "appointments": {
     "title": "Citas",

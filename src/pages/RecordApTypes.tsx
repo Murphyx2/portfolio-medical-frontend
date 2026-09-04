@@ -5,11 +5,11 @@ import { useNavigate } from "react-router-dom";
 import { ListPage } from "../components/ListPage";
 import { Dialog, Field, FormModal, Page, Table, type Column } from "../components/ui";
 import { useListPage } from "../hooks/useListPage";
-import { api, ApiError } from "../services/api";
+import { api } from "../services/api";
 import type { APCategory, APType, Paginated } from "../services/types";
 import { useAuth } from "../store/auth";
 import { can } from "../utils/can";
-import { flattenError } from "../utils/errors";
+import { apiErrorMessage } from "../utils/errors";
 
 const EMPTY_TYPE = { name: "", category: 0, sort_order: 0 };
 const EMPTY_CATEGORY = { name: "", sort_order: 0 };
@@ -85,7 +85,7 @@ export function RecordApTypes() {
       setModal(false);
       load();
     } catch (err) {
-      setFormError(err instanceof ApiError ? flattenError(err.message) : String(err));
+      setFormError(apiErrorMessage(err));
     }
   }
 
@@ -313,7 +313,7 @@ function CategoriesModal({
         }
       }
     } catch (err) {
-      setFormError(err instanceof ApiError ? flattenError(err.message) : String(err));
+      setFormError(apiErrorMessage(err));
     }
   }
 

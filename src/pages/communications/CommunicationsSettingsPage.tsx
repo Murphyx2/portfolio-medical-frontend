@@ -2,7 +2,6 @@ import { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 
 import { Field, Page } from "../../components/ui";
-import { ApiError } from "../../services/api";
 import {
   getCommunicationsSettings,
   sendTestEmailGlobal,
@@ -10,7 +9,7 @@ import {
   updateCommunicationsSettings,
 } from "../../services/communications";
 import type { CommunicationsSettings } from "../../services/types";
-import { flattenError } from "../../utils/errors";
+import { apiErrorMessage } from "../../utils/errors";
 import { UnderConstructionBanner } from "./shared";
 
 export function CommunicationsSettingsPage() {
@@ -49,7 +48,7 @@ export function CommunicationsSettingsPage() {
         setMasterEnabled(data.whatsapp_master_enabled);
         setLoadError("");
       })
-      .catch((err) => setLoadError(err instanceof ApiError ? flattenError(err.message) : String(err)))
+      .catch((err) => setLoadError(apiErrorMessage(err)))
       .finally(() => setLoading(false));
   }
 
@@ -77,7 +76,7 @@ export function CommunicationsSettingsPage() {
       setAccessToken("");
       setAppSecret("");
     } catch (err) {
-      setSaveError(err instanceof ApiError ? flattenError(err.message) : String(err));
+      setSaveError(apiErrorMessage(err));
     } finally {
       setSaving(false);
     }
@@ -89,7 +88,7 @@ export function CommunicationsSettingsPage() {
       await sendTestEmailGlobal();
       setStatus(t("communications.settingsPage.testEmailSent"));
     } catch (err) {
-      setStatus(err instanceof ApiError ? flattenError(err.message) : String(err));
+      setStatus(apiErrorMessage(err));
     }
   }
 
@@ -99,7 +98,7 @@ export function CommunicationsSettingsPage() {
       await sendTestWhatsapp(testPhone);
       setStatus(t("communications.settingsPage.testWhatsappSent"));
     } catch (err) {
-      setStatus(err instanceof ApiError ? flattenError(err.message) : String(err));
+      setStatus(apiErrorMessage(err));
     }
   }
 

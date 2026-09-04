@@ -1,5 +1,6 @@
 import i18n from "../i18n";
 import { translateApiMessage } from "./apiErrorTranslations";
+import { ApiError } from "../services/api";
 
 /** Raw DRF field names -> the i18n key already used for that field's own
  * label elsewhere in the UI, so a nested validation error reads with the
@@ -46,6 +47,14 @@ function flattenValue(value: unknown, path: string[]): string[] {
 
 function formatLine(path: string[], message: string): string {
   return path.length ? `${path.join(" – ")}: ${message}` : message;
+}
+
+/** The one line repeated at ~54 call sites across the app:
+ * `err instanceof ApiError ? flattenError(err.message) : String(err)`.
+ * Collapses every `catch (err)`/`.catch((err) => ...)` block down to
+ * `apiErrorMessage(err)`, no behavior change. */
+export function apiErrorMessage(err: unknown): string {
+  return err instanceof ApiError ? flattenError(err.message) : String(err);
 }
 
 export function flattenError(message: string): string {

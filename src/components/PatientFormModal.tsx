@@ -5,10 +5,10 @@ import { DateField } from "./DateField";
 import { GuardianListField } from "./GuardianListField";
 import { PhoneNumberListField } from "./PhoneNumberListField";
 import { Field, FormModal } from "./ui";
-import { api, ApiError } from "../services/api";
+import { api } from "../services/api";
 import type { ARS, ExtraPhone, Paginated, Patient, PatientGuardian } from "../services/types";
 import { calculateAge, todayLocalISO } from "../utils/date";
-import { flattenError } from "../utils/errors";
+import { apiErrorMessage } from "../utils/errors";
 import { formatCedula } from "../utils/cedula";
 import { formatPhone, formatPhoneInput, isValidPhone, isValidRequiredPhone, stripToDigits } from "../utils/phone";
 
@@ -122,7 +122,7 @@ export function PatientFormModal({
       setFormError("");
       onSaved(saved);
     } catch (err) {
-      setFormError(err instanceof ApiError ? flattenError(err.message) : String(err));
+      setFormError(apiErrorMessage(err));
     }
   }
 

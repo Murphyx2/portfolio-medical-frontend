@@ -23,7 +23,7 @@ import {
 import { useCalendarAppointments } from "../hooks/useCalendarAppointments";
 import { useDoctorServiceFilter } from "../hooks/useDoctorServiceFilter";
 import { useListPage } from "../hooks/useListPage";
-import { api, ApiError } from "../services/api";
+import { api } from "../services/api";
 import { formatPhone } from "../utils/phone";
 import { searchPatients } from "../services/patients";
 import type {
@@ -39,7 +39,7 @@ import { useAuth } from "../store/auth";
 import { can, canEditAppointment } from "../utils/can";
 import { formatCedula } from "../utils/cedula";
 import { formatDateTime, nextLocalISO, todayLocalISO } from "../utils/date";
-import { flattenError } from "../utils/errors";
+import { apiErrorMessage } from "../utils/errors";
 import { toSentenceCase } from "../utils/text";
 
 const EMPTY = { patient: 0, doctor: 0, service: 0, date_time: "", notes: "" };
@@ -83,7 +83,7 @@ function WhatsappReminderButton({ appointment }: { appointment: Appointment }) {
       await api.post(`/appointments/${appointment.id}/send_whatsapp_reminder/`, {});
       setMessage(t("communications.appointmentReminder.queued"));
     } catch (err) {
-      setMessage(err instanceof ApiError ? flattenError(err.message) : String(err));
+      setMessage(apiErrorMessage(err));
     } finally {
       setSending(false);
     }
@@ -409,7 +409,7 @@ export function Appointments() {
       load();
       reloadCalendar();
     } catch (err) {
-      setFormError(err instanceof ApiError ? flattenError(err.message) : String(err));
+      setFormError(apiErrorMessage(err));
     }
   }
 
@@ -436,7 +436,7 @@ export function Appointments() {
       load();
       reloadCalendar();
     } catch (err) {
-      setRescheduleError(err instanceof ApiError ? flattenError(err.message) : String(err));
+      setRescheduleError(apiErrorMessage(err));
     }
   }
 
@@ -459,7 +459,7 @@ export function Appointments() {
       load();
       reloadCalendar();
     } catch (err) {
-      setCancelError(err instanceof ApiError ? flattenError(err.message) : String(err));
+      setCancelError(apiErrorMessage(err));
     }
   }
 

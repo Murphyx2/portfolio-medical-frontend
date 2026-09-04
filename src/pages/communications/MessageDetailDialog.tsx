@@ -3,10 +3,9 @@ import { useTranslation } from "react-i18next";
 
 import { Dialog, Spinner, Table, type Column } from "../../components/ui";
 import { getMessage, listDeliveries } from "../../services/communications";
-import { ApiError } from "../../services/api";
 import type { CommunicationsDelivery, CommunicationsMessage } from "../../services/types";
 import { formatDateTime } from "../../utils/date";
-import { flattenError } from "../../utils/errors";
+import { apiErrorMessage } from "../../utils/errors";
 import { kindLabel, StatusBadge } from "./shared";
 
 export function MessageDetailDialog({ messageId, onClose }: { messageId: number; onClose: () => void }) {
@@ -27,7 +26,7 @@ export function MessageDetailDialog({ messageId, onClose }: { messageId: number;
         setDeliveries(deliveryPage.results);
         setError("");
       })
-      .catch((err) => setError(err instanceof ApiError ? flattenError(err.message) : String(err)))
+      .catch((err) => setError(apiErrorMessage(err)))
       .finally(() => setLoading(false));
   }, [messageId]);
 

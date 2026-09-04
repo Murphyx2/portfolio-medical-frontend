@@ -5,12 +5,12 @@ import { useNavigate } from "react-router-dom";
 import { ListPage } from "../components/ListPage";
 import { Field, FormModal, Page, type Column } from "../components/ui";
 import { useListPage } from "../hooks/useListPage";
-import { api, ApiError } from "../services/api";
+import { api } from "../services/api";
 import type { ARS, Paginated, Service, ServicePrice } from "../services/types";
 import { useAuth } from "../store/auth";
 import { can } from "../utils/can";
 import { formatCurrencyDOP } from "../utils/currency";
-import { flattenError } from "../utils/errors";
+import { apiErrorMessage } from "../utils/errors";
 
 const EMPTY = { service: 0, ars: 0, ars_program: 0, co_pago: "" };
 
@@ -79,7 +79,7 @@ export function ServicePrices() {
       setModal(false);
       load();
     } catch (err) {
-      setFormError(err instanceof ApiError ? flattenError(err.message) : String(err));
+      setFormError(apiErrorMessage(err));
     }
   }
 

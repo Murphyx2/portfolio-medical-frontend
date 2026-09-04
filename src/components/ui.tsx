@@ -6,11 +6,11 @@ import { useTranslation } from "react-i18next";
 import { MIN_SEARCH_CHARS } from "../hooks/useListControls";
 import type { SortDir } from "../hooks/useListControls";
 export type { SortDir };
-import { ApiError, onMutationSuccess } from "../services/api";
-import { flattenError } from "../utils/errors";
+import { onMutationSuccess } from "../services/api";
+import { apiErrorMessage } from "../utils/errors";
 
 function actionErrorMessage(err: unknown): string {
-  return err instanceof ApiError ? flattenError(err.message) : String(err);
+  return apiErrorMessage(err);
 }
 
 /** Shared "confirm before running a row action" state machine -- extracted

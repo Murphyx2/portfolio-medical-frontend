@@ -2,10 +2,9 @@ import { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 
 import { Field, FormModal, Page, Table, type Column } from "../../components/ui";
-import { ApiError } from "../../services/api";
 import { createTemplate, deleteTemplate, listTemplates, updateTemplate } from "../../services/communications";
 import type { CommunicationsChannel, CommunicationsKind, CommunicationsTemplate } from "../../services/types";
-import { flattenError } from "../../utils/errors";
+import { apiErrorMessage } from "../../utils/errors";
 import { kindLabel, UnderConstructionBanner } from "./shared";
 
 const KINDS: CommunicationsKind[] = [
@@ -45,7 +44,7 @@ export function CommunicationsTemplates() {
         setRows(r.results);
         setError("");
       })
-      .catch((err) => setError(err instanceof ApiError ? flattenError(err.message) : String(err)))
+      .catch((err) => setError(apiErrorMessage(err)))
       .finally(() => setLoading(false));
   }
 
@@ -87,7 +86,7 @@ export function CommunicationsTemplates() {
       setEditing(undefined);
       load();
     } catch (err) {
-      setFormError(err instanceof ApiError ? flattenError(err.message) : String(err));
+      setFormError(apiErrorMessage(err));
     }
   }
 

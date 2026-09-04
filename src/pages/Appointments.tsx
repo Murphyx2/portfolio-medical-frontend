@@ -732,10 +732,16 @@ export function Appointments() {
               value={form.date_time}
               onChange={(v) => { setForm({ ...form, date_time: v }); setDateTimeError(""); }}
               ariaLabel={t("appointments.dateTime")}
+              ariaInvalid={!!dateTimeError}
+              ariaDescribedBy={dateTimeError ? "appointment-datetime-error" : undefined}
               min={editingAppointment ? undefined : new Date().toISOString().slice(0, 16)}
               required
             />
-            {dateTimeError && <span className="field-error">{dateTimeError}</span>}
+            {dateTimeError && (
+              <span id="appointment-datetime-error" className="field-error" role="alert">
+                {dateTimeError}
+              </span>
+            )}
           </Field>
           <Field label={t("appointments.notes")}>
             <textarea value={form.notes} onChange={(e) => setForm({ ...form, notes: e.target.value })} />
@@ -763,10 +769,16 @@ export function Appointments() {
               value={rescheduleDateTime}
               onChange={(v) => { setRescheduleDateTime(v); setRescheduleDateTimeError(""); }}
               ariaLabel={t("appointments.dateTime")}
+              ariaInvalid={!!rescheduleDateTimeError}
+              ariaDescribedBy={rescheduleDateTimeError ? "appointment-reschedule-datetime-error" : undefined}
               min={new Date().toISOString().slice(0, 16)}
               required
             />
-            {rescheduleDateTimeError && <span className="field-error">{rescheduleDateTimeError}</span>}
+            {rescheduleDateTimeError && (
+              <span id="appointment-reschedule-datetime-error" className="field-error" role="alert">
+                {rescheduleDateTimeError}
+              </span>
+            )}
           </Field>
         </FormModal>
       )}

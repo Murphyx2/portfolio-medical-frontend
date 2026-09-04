@@ -155,12 +155,14 @@
     "noServices": "No active services available.",
     "noServicesMatch": "No services match your search.",
     "allServiceTypes": "All service types",
+    "filterByServiceType": "Filter by service type",
     "moreServices": "+{{count}} more",
     "rooms": "Rooms",
     "manageRooms": "Manage rooms",
     "noRooms": "No active rooms available.",
     "noRoomsMatch": "No rooms match your search.",
     "allRoomTypes": "All room types",
+    "filterByRoomType": "Filter by room type",
     "moreRooms": "+{{count}} more"
   },
   "centers": {

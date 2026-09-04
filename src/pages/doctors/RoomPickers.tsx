@@ -71,7 +71,11 @@ export function RoomCheckboxList({
     <div>
       <div className="list-toolbar service-picker-toolbar">
         <SearchBar value={search} onChange={setSearch} placeholder={t("common.searchPlaceholder")} label={t("common.search")} />
-        <select value={typeFilter} onChange={(e) => setTypeFilter(e.target.value)}>
+        <select
+          value={typeFilter}
+          onChange={(e) => setTypeFilter(e.target.value)}
+          aria-label={t("doctors.filterByRoomType")}
+        >
           <option value="">{t("doctors.allRoomTypes")}</option>
           {types.map((ty) => (
             <option key={ty.id} value={ty.id}>

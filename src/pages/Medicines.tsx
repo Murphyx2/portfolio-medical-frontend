@@ -6,6 +6,7 @@ import { Field, FormModal, Page, type Column } from "../components/ui";
 import { useListPage } from "../hooks/useListPage";
 import { api, ApiError } from "../services/api";
 import { RecetaComposerModal } from "./prescriptions/RecetaComposerModal";
+import { FORMA_OPTIONS, VIA_OPTIONS } from "../services/prescriptions";
 import type {
   Medicine,
   MedicineConcentracionUnidad,
@@ -15,37 +16,6 @@ import type {
 import { useAuth } from "../store/auth";
 import { can } from "../utils/can";
 import { flattenError } from "../utils/errors";
-
-const FORMA_OPTIONS: MedicineForma[] = [
-  "TABLETA",
-  "CAPSULA",
-  "JARABE",
-  "GOTAS",
-  "CREMA",
-  "UNGUENTO",
-  "AMPOLLA",
-  "VIAL",
-  "INHALADOR",
-  "PARCHE",
-  "SUSPENSION",
-  "SUPOSITORIO",
-  "OTRO",
-];
-
-const VIA_OPTIONS: MedicineViaAdministracion[] = [
-  "ORAL",
-  "SUBLINGUAL",
-  "SC",
-  "IM",
-  "IV",
-  "TOPICA",
-  "OFTALMICA",
-  "OTICA",
-  "NASAL",
-  "INHALATORIA",
-  "RECTAL",
-  "OTRO",
-];
 
 const UNIDAD_OPTIONS: MedicineConcentracionUnidad[] = [
   "mg",
@@ -167,7 +137,7 @@ export function Medicines() {
       card
       title={t("medicines.title")}
       actions={
-        <>
+        <div className="page-actions-row">
           {canCreateReceta && (
             <button className="btn ghost" onClick={() => setRecetaModal(true)}>
               + {t("prescriptions.newReceta")}
@@ -178,7 +148,7 @@ export function Medicines() {
               + {t("medicines.new")}
             </button>
           )}
-        </>
+        </div>
       }
     >
       <ListPage<Medicine>

@@ -129,8 +129,11 @@ const POLICY: Partial<Record<Resource, Partial<Record<Action, Role[]>>>> = {
   },
   medicines: {
     view: ALL_ROLES,
-    create: ROOM_LIKE_WRITE,
-    edit: ROOM_LIKE_WRITE,
+    // Doctor/Nurse can add a medicine to the catalog on the spot (backend:
+    // CanManageMedicines) -- delete stays the same narrower set as before,
+    // matching IsAdminOrITOrCenterManager server-side.
+    create: [...ROOM_LIKE_WRITE, "DOCTOR", "NURSE"],
+    edit: [...ROOM_LIKE_WRITE, "DOCTOR", "NURSE"],
     delete: ROOM_LIKE_WRITE,
   },
   doctors: {

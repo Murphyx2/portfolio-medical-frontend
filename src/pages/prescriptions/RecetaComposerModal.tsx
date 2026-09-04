@@ -2,19 +2,32 @@ import { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 
 import { ConfirmDialog, Dialog, Field, SearchableSelect } from "../../components/ui";
+import { useDoctorServiceFilter } from "../../hooks/useDoctorServiceFilter";
 import { api, ApiError, openBlobInNewTab } from "../../services/api";
 import { searchPatients } from "../../services/patients";
-import { EMPTY_DOSIS, renderDosisTexto, searchMedicines } from "../../services/prescriptions";
+import {
+  EMPTY_DOSIS,
+  FORMA_OPTIONS,
+  FORMA_TO_UNIDAD_TOMA,
+  renderDosisTexto,
+  searchMedicines,
+  unidadesForForma,
+  VIA_OPTIONS,
+} from "../../services/prescriptions";
 import type {
   DoctorProfile,
   DosisJson,
   MedicalCenter,
   Medicine,
+  MedicineConcentracionUnidad,
+  MedicineForma,
+  MedicineViaAdministracion,
   Paginated,
   Patient,
   Receta,
   RecetaLinea,
   Service,
+  ServiceType,
 } from "../../services/types";
 import { useAuth } from "../../store/auth";
 import { calculateAge } from "../../utils/date";
@@ -36,7 +49,16 @@ interface LineDraft {
   forma: string;
   dosis: DosisJson;
   indicacionExtra: string;
+  /** Collapsed to a one-line summary so several lines don't push Guardar/
+   * Emitir off-screen (§2) -- purely a UI concern, never sent on the wire. */
+  collapsed: boolean;
 }
+
+/** SearchableSelect requires `{ id: number }` items -- these wrap the
+ * Medicamentos page's own Forma/Vía enum lists (services/prescriptions.ts)
+ * into pickable objects instead of introducing a second list. */
+const FORMA_ITEMS = FORMA_OPTIONS.map((value, id) => ({ id, value }));
+const VIA_ITEMS = VIA_OPTIONS.map((value, id) => ({ id, value }));
 
 function makeKey(): string {
   return `${Date.now()}-${Math.random().toString(36).slice(2)}`;
@@ -55,6 +77,7 @@ function emptyLine(): LineDraft {
     forma: "",
     dosis: { ...EMPTY_DOSIS },
     indicacionExtra: "",
+    collapsed: false,
   };
 }
 
@@ -84,6 +107,16 @@ interface PatientRef {
  * fuera_de_catalogo line, or when the medicine could no longer be resolved,
  * in which case the line falls back to a free-text display of its saved
  * nombre_impreso so nothing is silently lost). */
+/** Defaults the dose builder's "Unidad de toma" from the medicine's forma
+ * (§3: "if the medicine by default is Tableta, Unidad a tomar should be Tab
+ * by default") -- only when the dose is still at its untouched initial
+ * value, so a value the user already picked is never silently overwritten. */
+function applyFormaDefaultUnidadToma(dosis: DosisJson, forma: MedicineForma): DosisJson {
+  const defaultUnidad = FORMA_TO_UNIDAD_TOMA[forma];
+  if (!defaultUnidad || dosis.unidad_toma !== EMPTY_DOSIS.unidad_toma) return dosis;
+  return { ...dosis, unidad_toma: defaultUnidad };
+}
+
 function payloadLineToDraft(l: RecetaLinea, medicine: Medicine | null): LineDraft {
   const fueraDeCatalogo = l.fuera_de_catalogo || (!l.medicamento || !medicine);
   return {
@@ -98,6 +131,10 @@ function payloadLineToDraft(l: RecetaLinea, medicine: Medicine | null): LineDraf
     forma: l.forma,
     dosis: l.dosis_json && Object.keys(l.dosis_json).length ? l.dosis_json : { ...EMPTY_DOSIS },
     indicacionExtra: l.indicacion_extra,
+    // A reopened draft's lines start expanded -- the point of collapsing is
+    // to keep the CURRENT editing session's footer reachable, not to hide
+    // data the user just asked to see.
+    collapsed: false,
   };
 }
 
@@ -145,12 +182,18 @@ export function RecetaComposerModal({ lockedPatient, initialReceta, onClose, onS
   const { t } = useTranslation();
   const { user } = useAuth();
   const isDoctorRole = user?.role === "DOCTOR";
+  // Reopening an already-issued receta within its 1-hour window (RecetasTab
+  // only shows Editar then) swaps Guardar borrador/Emitir for a single
+  // Guardar cambios action that amends líneas in place via guardar_cambios,
+  // instead of re-running the BORRADOR save/emit flow below.
+  const isEditingEmitida = initialReceta?.estado === "EMITIDA";
 
   const [patient, setPatient] = useState<Patient | null>(null);
   const patientRef: PatientRef | null = lockedPatient ?? patient;
   const [center, setCenter] = useState<MedicalCenter | null>(null);
   const [doctors, setDoctors] = useState<DoctorProfile[]>([]);
   const [services, setServices] = useState<Service[]>([]);
+  const [serviceTypes, setServiceTypes] = useState<ServiceType[]>([]);
   const [medico, setMedico] = useState<DoctorProfile | null>(null);
   // Never user-editable (§2, requirements §7: "Fecha -- default now"; the
   // Cita/Admisión-linked override is out of scope for this slice) -- fixed
@@ -196,8 +239,24 @@ export function RecetaComposerModal({ lockedPatient, initialReceta, onClose, onS
       .get<Paginated<Service>>("/services/?page_size=200")
       .then((r) => setServices(r.results))
       .catch(() => {});
+    api
+      .get<Paginated<ServiceType>>("/service-types/?page_size=100")
+      .then((r) => setServiceTypes(r.results))
+      .catch(() => {});
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
+
+  // Servicio de la próxima cita is scoped to the selected médico's own
+  // services, same rule as Appointments' New Appointment form and the
+  // Encounter admission form (useDoctorServiceFilter): an unrestricted
+  // doctor (empty `services`) still offers every service.
+  const { availableServices } = useDoctorServiceFilter({
+    doctors,
+    services,
+    serviceTypes,
+    selectedServiceIds: [servicio?.id ?? 0],
+    currentDoctorId: medico?.id ?? 0,
+  });
 
   // Hydrate the lines repeater from an existing draft (§3) -- resolves each
   // catalog line's full Medicine object (the saved receta only stores its
@@ -233,12 +292,18 @@ export function RecetaComposerModal({ lockedPatient, initialReceta, onClose, onS
 
   function addLine() {
     markDirty();
-    setLineas((prev) => [...prev, emptyLine()]);
+    // Collapse every existing line so a growing list of medicines doesn't
+    // push Guardar/Emitir off-screen (§2) -- only the new line starts open.
+    setLineas((prev) => [...prev.map((l) => ({ ...l, collapsed: true })), emptyLine()]);
   }
 
   function removeLine(key: string) {
     markDirty();
     setLineas((prev) => (prev.length > 1 ? prev.filter((l) => l.key !== key) : prev));
+  }
+
+  function toggleCollapsed(key: string) {
+    setLineas((prev) => prev.map((l) => (l.key === key ? { ...l, collapsed: !l.collapsed } : l)));
   }
 
   function moveLine(index: number, delta: number) {
@@ -260,6 +325,7 @@ export function RecetaComposerModal({ lockedPatient, initialReceta, onClose, onS
       unidad: medicine.concentracion_unidad,
       via: medicine.via_pred,
       forma: medicine.forma,
+      dosis: applyFormaDefaultUnidadToma(lineas.find((l) => l.key === key)?.dosis ?? EMPTY_DOSIS, medicine.forma),
     });
   }
 
@@ -359,6 +425,29 @@ export function RecetaComposerModal({ lockedPatient, initialReceta, onClose, onS
     }
   }
 
+  async function handleGuardarCambios() {
+    const hasValidLine = lineas.some(
+      (l) => (l.fueraDeCatalogo ? l.nombreLibre.trim() : l.medicamento) && l.cantidad && renderDosisTexto(l.dosis),
+    );
+    if (!hasValidLine) {
+      setFormError(t("prescriptions.errorLineRequired"));
+      return;
+    }
+    setSaving(true);
+    setFormError("");
+    try {
+      await api.post<Receta>(`/recetas/${recetaId}/guardar_cambios/`, {
+        lineas: lineas.map((l, i) => lineToPayload(l, i)),
+      });
+      onSaved();
+      onClose();
+    } catch (err) {
+      setFormError(err instanceof ApiError ? flattenError(err.message) : String(err));
+    } finally {
+      setSaving(false);
+    }
+  }
+
   function requestClose() {
     if (dirty) setConfirmingExit(true);
     else onClose();
@@ -427,7 +516,7 @@ export function RecetaComposerModal({ lockedPatient, initialReceta, onClose, onS
         )}
 
         <Field label={t("appointments.doctor")}>
-          {isDoctorRole ? (
+          {isDoctorRole || isEditingEmitida ? (
             <p className="receta-patient-info">
               <strong>{medico?.full_name ?? "—"}</strong>
             </p>
@@ -436,6 +525,12 @@ export function RecetaComposerModal({ lockedPatient, initialReceta, onClose, onS
               value={medico}
               onSelect={(d) => {
                 setMedico(d);
+                // Same reset rule as Appointments' pickDoctor: a servicio
+                // that isn't in the newly-picked doctor's own list (when
+                // they have one) can't stay selected.
+                if (servicio && d.services.length > 0 && !d.services.includes(servicio.id)) {
+                  setServicio(null);
+                }
                 markDirty();
               }}
               search={async (query) => {
@@ -451,6 +546,12 @@ export function RecetaComposerModal({ lockedPatient, initialReceta, onClose, onS
           )}
         </Field>
 
+        {/* Próxima cita / crear cita are BORRADOR-flow-only concerns
+            (emitir's own crear_cita step) -- guardar_cambios only ever
+            touches líneas, so there's nothing for these to do while editing
+            an already-issued receta within its 1-hour window. */}
+        {!isEditingEmitida && (
+        <>
         <Field label={t("prescriptions.proximaCita")}>
           <input type="datetime-local" value={proximaCitaAt} onChange={(e) => setProximaCitaAt(e.target.value)} />
         </Field>
@@ -460,6 +561,8 @@ export function RecetaComposerModal({ lockedPatient, initialReceta, onClose, onS
           <input type="checkbox" checked={crearCita} onChange={(e) => setCrearCita(e.target.checked)} />{" "}
           {t("prescriptions.crearCitaCalendario")}
         </label>
+        </>
+        )}
 
         {crearCita && (
           <Field label={t("prescriptions.servicioProximaCita")}>
@@ -468,7 +571,7 @@ export function RecetaComposerModal({ lockedPatient, initialReceta, onClose, onS
               onSelect={setServicio}
               search={async (query) => {
                 const q = query.trim().toLowerCase();
-                const results = q ? services.filter((s) => s.name.toLowerCase().includes(q)) : services;
+                const results = q ? availableServices.filter((s) => s.name.toLowerCase().includes(q)) : availableServices;
                 return { results, count: results.length };
               }}
               minChars={0}
@@ -484,7 +587,22 @@ export function RecetaComposerModal({ lockedPatient, initialReceta, onClose, onS
           {lineas.map((line, i) => (
             <div className="receta-line-card" key={line.key}>
               <div className="receta-line-head">
-                <span>{t("prescriptions.linea", { n: i + 1 })}</span>
+                <button
+                  type="button"
+                  className="receta-line-toggle"
+                  onClick={() => toggleCollapsed(line.key)}
+                  aria-expanded={!line.collapsed}
+                >
+                  <span aria-hidden="true">{line.collapsed ? "▸" : "▾"}</span>
+                  <span className="receta-line-label">{t("prescriptions.linea", { n: i + 1 })}</span>
+                  {line.collapsed && (
+                    <span className="receta-line-summary">
+                      {(line.fueraDeCatalogo ? line.nombreLibre : line.medicamento?.commercial_name || line.medicamento?.generic_name) || "—"}
+                      {line.cantidad ? ` · ${line.cantidad}` : ""}
+                      {renderDosisTexto(line.dosis) ? ` · ${renderDosisTexto(line.dosis)}` : ""}
+                    </span>
+                  )}
+                </button>
                 <div className="receta-line-actions">
                   <button type="button" className="btn ghost small" disabled={i === 0} onClick={() => moveLine(i, -1)}>
                     ↑
@@ -507,6 +625,9 @@ export function RecetaComposerModal({ lockedPatient, initialReceta, onClose, onS
                   </button>
                 </div>
               </div>
+
+              {!line.collapsed && (
+              <>
 
               <Field label={t("prescriptions.medicamento")}>
                 {line.fueraDeCatalogo ? (
@@ -549,25 +670,84 @@ export function RecetaComposerModal({ lockedPatient, initialReceta, onClose, onS
                   />
                 </Field>
                 <Field label={t("prescriptions.via")}>
-                  <input type="text" value={line.via} onChange={(e) => updateLine(line.key, { via: e.target.value })} />
+                  <SearchableSelect<{ id: number; value: MedicineViaAdministracion }>
+                    value={VIA_ITEMS.find((o) => o.value === line.via) ?? null}
+                    onSelect={(o) => updateLine(line.key, { via: o.value })}
+                    search={async (query) => {
+                      const q = query.trim().toLowerCase();
+                      const results = q
+                        ? VIA_ITEMS.filter((o) => t(`medicines.viaOptions.${o.value}`).toLowerCase().includes(q))
+                        : VIA_ITEMS;
+                      return { results, count: results.length };
+                    }}
+                    minChars={0}
+                    placeholder={t("prescriptions.via")}
+                    getLabel={(o) => t(`medicines.viaOptions.${o.value}`)}
+                    autoFocus={false}
+                  />
                 </Field>
                 <Field label={t("prescriptions.concentracion")}>
                   <div className="inline-field-group">
                     <input
                       type="text"
                       value={line.concentracionValor}
+                      disabled={!line.fueraDeCatalogo}
+                      title={!line.fueraDeCatalogo ? (t("prescriptions.concentracionDesdeCatalogo") as string) : undefined}
                       onChange={(e) => updateLine(line.key, { concentracionValor: e.target.value })}
                     />
-                    <input
-                      type="text"
-                      value={line.unidad}
-                      placeholder={t("prescriptions.abreviacion") as string}
-                      onChange={(e) => updateLine(line.key, { unidad: e.target.value })}
-                    />
+                    {(() => {
+                      // Narrowed to what makes sense for this line's forma
+                      // (§4: "a Tableta won't be measured in ml") -- never a
+                      // free-text input, so a typo here can't silently change
+                      // what the printed prescription says.
+                      const unidadItems = unidadesForForma(line.forma as MedicineForma).map((value, id) => ({ id, value }));
+                      return (
+                        <SearchableSelect<{ id: number; value: MedicineConcentracionUnidad }>
+                          value={unidadItems.find((o) => o.value === line.unidad) ?? null}
+                          onSelect={(o) => updateLine(line.key, { unidad: o.value })}
+                          search={async (query) => {
+                            const q = query.trim().toLowerCase();
+                            const results = q
+                              ? unidadItems.filter((o) => o.value.toLowerCase().includes(q))
+                              : unidadItems;
+                            return { results, count: results.length };
+                          }}
+                          minChars={0}
+                          placeholder={t("prescriptions.abreviacion")}
+                          getLabel={(o) => o.value}
+                          autoFocus={false}
+                        />
+                      );
+                    })()}
                   </div>
                 </Field>
                 <Field label={t("prescriptions.formaFarmaceutica")}>
-                  <input type="text" value={line.forma} onChange={(e) => updateLine(line.key, { forma: e.target.value })} />
+                  <SearchableSelect<{ id: number; value: MedicineForma }>
+                    value={FORMA_ITEMS.find((o) => o.value === line.forma) ?? null}
+                    onSelect={(o) => {
+                      // A unidad that's no longer plausible for the new forma
+                      // (e.g. "ml" after switching from Jarabe to Tableta)
+                      // can't stay selected -- same reset rule already used
+                      // for médico -> servicio.
+                      const stillValid = unidadesForForma(o.value).includes(line.unidad as MedicineConcentracionUnidad);
+                      updateLine(line.key, {
+                        forma: o.value,
+                        unidad: stillValid ? line.unidad : "",
+                        dosis: applyFormaDefaultUnidadToma(line.dosis, o.value),
+                      });
+                    }}
+                    search={async (query) => {
+                      const q = query.trim().toLowerCase();
+                      const results = q
+                        ? FORMA_ITEMS.filter((o) => t(`medicines.formaOptions.${o.value}`).toLowerCase().includes(q))
+                        : FORMA_ITEMS;
+                      return { results, count: results.length };
+                    }}
+                    minChars={0}
+                    placeholder={t("prescriptions.formaFarmaceutica")}
+                    getLabel={(o) => t(`medicines.formaOptions.${o.value}`)}
+                    autoFocus={false}
+                  />
                 </Field>
               </div>
 
@@ -583,6 +763,8 @@ export function RecetaComposerModal({ lockedPatient, initialReceta, onClose, onS
                   onChange={(e) => updateLine(line.key, { indicacionExtra: e.target.value })}
                 />
               </Field>
+              </>
+              )}
             </div>
           ))}
         </div>
@@ -597,12 +779,20 @@ export function RecetaComposerModal({ lockedPatient, initialReceta, onClose, onS
         )}
 
         <div className="modal-actions">
-          <button type="button" className="btn ghost" onClick={handleGuardarBorrador} disabled={saving || emitting}>
-            {saving ? t("common.saving") : t("prescriptions.guardarBorrador")}
-          </button>
-          <button type="button" className="btn primary" onClick={handleEmitir} disabled={saving || emitting}>
-            {emitting ? t("common.saving") : t("prescriptions.emitirYVerPdf")}
-          </button>
+          {isEditingEmitida ? (
+            <button type="button" className="btn primary" onClick={handleGuardarCambios} disabled={saving}>
+              {saving ? t("common.saving") : t("prescriptions.guardarCambios")}
+            </button>
+          ) : (
+            <>
+              <button type="button" className="btn ghost" onClick={handleGuardarBorrador} disabled={saving || emitting}>
+                {saving ? t("common.saving") : t("prescriptions.guardarBorrador")}
+              </button>
+              <button type="button" className="btn primary" onClick={handleEmitir} disabled={saving || emitting}>
+                {emitting ? t("common.saving") : t("prescriptions.emitirYVerPdf")}
+              </button>
+            </>
+          )}
           <button type="button" className="btn ghost" onClick={requestClose} disabled={saving || emitting}>
             {t("prescriptions.cerrar")}
           </button>

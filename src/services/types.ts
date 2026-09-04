@@ -831,6 +831,11 @@ export interface Receta {
   cita: number | null;
   estado: RecetaEstado;
   pdf: string | null;
+  /** Set once, when emitir() flipped this receta to EMITIDA -- the anchor
+   * for the 1-hour "Guardar cambios" edit window (see
+   * RecetasTab.tsx::withinEditWindow). Null for a BORRADOR/ANULADA-without-
+   * ever-having-been-emitida receta. */
+  emitida_at: string | null;
   lineas: RecetaLinea[];
   active: boolean;
 }

@@ -540,7 +540,8 @@ body {
   min-width: 0;
 }
 
-.inline-field-group select {
+.inline-field-group select,
+.inline-field-group .searchable-select {
   flex: 1;
   min-width: 0;
 }
@@ -3129,6 +3130,36 @@ input[type="radio"]:focus-visible {
   letter-spacing: 0.02em;
 }
 
+/* The line's collapse/expand control (§2) -- a plain button reset to read
+   as the same bold label the bare <span> used to be, just clickable. */
+.receta-line-toggle {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  background: none;
+  border: none;
+  padding: 0;
+  cursor: pointer;
+  font: inherit;
+  text-align: left;
+}
+
+.receta-line-label {
+  font-weight: 700;
+  color: var(--mc-muted);
+  font-size: 0.8rem;
+  text-transform: uppercase;
+  letter-spacing: 0.02em;
+}
+
+.receta-line-summary {
+  font-weight: 400;
+  text-transform: none;
+  letter-spacing: normal;
+  color: var(--mc-text);
+  font-size: 0.85rem;
+}
+
 .receta-line-actions {
   display: flex;
   gap: 0.25rem;
@@ -3228,15 +3259,16 @@ input[type="radio"]:focus-visible {
   margin: 0;
 }
 
-/* ---------- Recetas visual PROTOTYPE (deliberate DESIGN.md deviation) ----------
-   Requested by the user as an explicit, comparable, easily-revertible test:
-   adopts recetas_mockup.html's own palette/materials (a brighter, more
-   saturated green than Clinical Green, a navy letterhead frame, pill-style
-   buttons) scoped ONLY to elements inside .receta-prototype, so nothing
-   outside the Recetas composer/tab is touched and DESIGN.md itself is not
-   edited. Remove the .receta-prototype wrapper class (RecetaComposerModal.tsx
-   / RecetasTab.tsx) to instantly revert to the standing "Quiet Clinic" system
-   above. Do not extend this palette to any other part of the app. */
+/* ---------- Recetas visual system (adopted direction, see DESIGN.md) ----------
+   Shipped and permanent: adopts recetas_mockup.html's own palette/materials
+   (a brighter, more saturated green than Clinical Green, a navy letterhead
+   frame, pill-style buttons, bold field labels) for the Recetas composer/tab.
+   Per DESIGN.md's "Adopted Direction" section, this is the direction the
+   whole app is moving toward -- currently rolled out here only, with the
+   rest of the app's re-theme planned as separate future work. Scoped to
+   elements inside .receta-prototype (class name kept as-is; it no longer
+   means "prototype" in the throwaway sense) so today's rollout stays
+   contained to this one surface. */
 .receta-prototype {
   --rx-g: #1f7a3a;
   --rx-soft: #e7f6ec;
@@ -3287,9 +3319,14 @@ input[type="radio"]:focus-visible {
   font-weight: 700;
 }
 
-.receta-prototype .field label,
+/* `Field` (components/ui.tsx) renders <label class="field"><span>...</span>
+   ...</label> -- the base `.field span` rule sets an explicit color, which
+   an inherited color from a `label` selector can't override (only a rule
+   targeting the span itself can), so this must match the span directly. */
+.receta-prototype .field span,
 .receta-prototype label {
   color: var(--rx-muted);
+  font-weight: 700;
 }
 
 .receta-prototype input,

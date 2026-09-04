@@ -10,6 +10,15 @@ import { can } from "../../utils/can";
 import { formatDateTime } from "../../utils/date";
 import { flattenError } from "../../utils/errors";
 
+// The 1-hour "Guardar cambios" window (RecetaComposerModal/backend
+// Receta.editable_by_within_window) -- an EMITIDA receta stays editable by
+// its own doctor for this long after emitida_at; Admin bypasses it entirely.
+const EDIT_WINDOW_MS = 60 * 60 * 1000;
+
+function withinEditWindow(r: Receta): boolean {
+  return !!r.emitida_at && Date.now() - new Date(r.emitida_at).getTime() <= EDIT_WINDOW_MS;
+}
+
 function estadoBadgeClass(estado: RecetaEstado): string {
   // Borrador maps onto the same neutral/"not final yet" pill as Draft
   // elsewhere; Emitida reuses the green "final/successful" pill; Anulada
@@ -116,12 +125,24 @@ export function RecetasTab({ patient }: { patient: PatientLite }) {
     return user?.role === "ADMIN" || r.created_by === user?.id;
   }
 
+  // The `guardar_cambios` window additionally recognizes the prescribing
+  // médico (not just whoever technically created the row) as an owner,
+  // mirroring Receta.editable_by_within_window on the backend.
+  function isOwningDoctor(r: Receta): boolean {
+    return doctors.find((d) => d.id === r.medico)?.user_id === user?.id;
+  }
+
   function canAnular(r: Receta): boolean {
     return r.estado !== "ANULADA" && isAuthorOrAdmin(r);
   }
 
   function canEditar(r: Receta): boolean {
-    return r.estado === "BORRADOR" && canCreate && isAuthorOrAdmin(r);
+    if (!canCreate) return false;
+    if (r.estado === "BORRADOR") return isAuthorOrAdmin(r);
+    if (r.estado === "EMITIDA") {
+      return user?.role === "ADMIN" || ((isAuthorOrAdmin(r) || isOwningDoctor(r)) && withinEditWindow(r));
+    }
+    return false;
   }
 
   const visibleRecetas = recetas.filter((r) => showAnuladas || r.estado !== "ANULADA");

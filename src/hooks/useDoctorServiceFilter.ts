@@ -1,10 +1,11 @@
 import type { DoctorProfile, Service, ServiceType } from "../services/types";
 
 /** Mutual doctor<->service filtering: a doctor with a restricted `services`
- * list only offers a subset of services, and only services whose type
- * `requires_doctor` participate in narrowing the Doctor dropdown at all
- * (e.g. lab-only services stay freely selectable no matter which doctor, if
- * any, is picked). Originally inline in EncounterFormModal (Admission form);
+ * list only ever offers exactly that list (no exceptions by service type),
+ * and only services whose type `requires_doctor` participate in narrowing
+ * the Doctor dropdown at all, in the reverse direction (e.g. lab-only
+ * services stay freely assignable to any doctor when picking a doctor FOR a
+ * given service). Originally inline in EncounterFormModal (Admission form);
  * extracted so Appointments' single-service selection can reuse the same
  * rule instead of re-deriving it.
  *
@@ -57,11 +58,14 @@ export function useDoctorServiceFilter({
   );
 
   // Service picker: once a doctor with a non-empty services list is picked,
-  // narrow doctor-bound services to what they actually offer -- services
-  // whose type doesn't require a doctor stay available regardless.
+  // narrow strictly to what they actually offer -- no exception for
+  // services whose type doesn't require a doctor. A restricted doctor's own
+  // list is the sole source of truth here, full stop (RECETAS follow-up:
+  // the user explicitly rejected the "some types stay universal" carve-out
+  // this used to have).
   const availableServices =
     currentDoctor && currentDoctor.services.length > 0
-      ? services.filter((sv) => !isDoctorBoundService(sv.id) || currentDoctor.services.includes(sv.id))
+      ? services.filter((sv) => currentDoctor.services.includes(sv.id))
       : services;
 
   return { isDoctorBoundService, eligibleForDoctor, availableDoctors, availableServices, currentDoctor };

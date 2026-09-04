@@ -425,7 +425,7 @@ function LoadedRecordPhase({ record: initialRecord, focusNewEntry, canEdit, apCa
       </TabPanel>
 
       <TabPanel tabKey="clinical" active={activeTab} idPrefix="record">
-        <div className="clinical-theme">
+        <div className="mc-form">
           <RecordVitalsSection
             workingEntry={workingEntry}
             updateField={updateField}
@@ -460,7 +460,7 @@ function LoadedRecordPhase({ record: initialRecord, focusNewEntry, canEdit, apCa
           </div>
         )}
 
-        <div className="clinical-theme">
+        <div className="mc-form">
           <div className="dc-concl-grid">
             <Field label={t("records.dxLabel")}>
               <textarea placeholder={t("records.dxPlaceholder")} value={workingEntry.dx} onChange={(e) => updateField({ dx: e.target.value })} disabled={!canEdit} />

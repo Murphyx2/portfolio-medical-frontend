@@ -177,7 +177,7 @@ export function Settings() {
       )}
 
       {settings && (
-        <>
+        <div className="mc-form">
           <div className="settings-section">
             <h3 className="settings-section-title">{t("settings.sections.language")}</h3>
             <div className="settings-field-grid">
@@ -261,7 +261,7 @@ export function Settings() {
               </div>
             )}
           </div>
-        </>
+        </div>
       )}
 
       {confirmingReset && (

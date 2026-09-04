@@ -118,7 +118,7 @@ export function CommunicationsSettingsPage() {
         </p>
       )}
       {settings && (
-        <>
+        <div className="mc-form">
           <div className="settings-section">
             <h3 className="settings-section-title">{t("communications.settingsPage.sections.email")}</h3>
             <p className="muted">{t("communications.settingsPage.emailBackendNotice")}</p>
@@ -220,7 +220,7 @@ export function CommunicationsSettingsPage() {
               {saving ? t("common.saving") : t("common.save")}
             </button>
           </div>
-        </>
+        </div>
       )}
     </Page>
   );

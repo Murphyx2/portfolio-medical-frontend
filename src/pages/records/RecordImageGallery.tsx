@@ -19,6 +19,32 @@ function makeQueueId(): string {
   return `${Date.now()}-${Math.random().toString(36).slice(2)}`;
 }
 
+/** PDF-file tile icon -- same inline-SVG stroke weight/style as
+ * `MaskedValue`'s lock icon (ui.tsx), not an emoji or a third-party icon
+ * library, since the Archivos gallery now accepts PDFs alongside images
+ * (RECETAS_REQUIREMENTS.md §9) and needs a way to represent one without an
+ * `<img>` thumbnail. A simple page-with-folded-corner shape. */
+function PdfFileIcon() {
+  return (
+    <svg
+      width="36"
+      height="36"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="1.5"
+      strokeLinejoin="round"
+      aria-hidden="true"
+    >
+      <path d="M6 2.5h8l4 4V21a.5.5 0 0 1-.5.5h-11A.5.5 0 0 1 6 21V3a.5.5 0 0 1 .5-.5Z" />
+      <path d="M14 2.5V6a1 1 0 0 0 1 1h3.5" />
+      <path d="M8.5 13h1.6a1.2 1.2 0 1 1 0 2.4H8.5V13Zm0 0v4.5" />
+      <path d="M13 17.5V13h2a1.5 1.5 0 0 1 0 3h-2" />
+      <path d="M17 17.5V13h2M17 15.2h1.6" />
+    </svg>
+  );
+}
+
 export function RecordImageGallery({
   images,
   recordId,
@@ -145,7 +171,7 @@ export function RecordImageGallery({
   return (
     <>
       <div className="dc-section-row">
-        <h4>{t("records.images")}</h4>
+        <h4>{t("records.archivos")}</h4>
         {canEdit && (
           <button type="button" className="dc-ghost-btn" onClick={openPicker}>
             {t("records.uploadImage")}
@@ -166,7 +192,13 @@ export function RecordImageGallery({
           <div className="dc-gallery">
             {images.map((img) => (
               <div className="dc-thumb" key={img.id}>
-                <img src={img.image_url ?? ""} alt={img.caption} loading="lazy" />
+                {img.kind === "pdf" ? (
+                  <div className="dc-thumb-pdf">
+                    <PdfFileIcon />
+                  </div>
+                ) : (
+                  <img src={img.image_url ?? ""} alt={img.caption} loading="lazy" />
+                )}
                 <div className="dc-thumb-actions">
                   <button type="button" onClick={() => window.open(img.image_url ?? "#", "_blank", "noreferrer")}>
                     {t("records.viewImage")}
@@ -193,7 +225,7 @@ export function RecordImageGallery({
       <input
         ref={inputRef}
         type="file"
-        accept="image/*"
+        accept="image/*,application/pdf"
         multiple
         style={{ display: "none" }}
         onChange={onFilesSelected}
@@ -203,7 +235,13 @@ export function RecordImageGallery({
         <Dialog title={t("records.uploadAction")} onClose={closeSheet} preventClose={submitting}>
           {queue.map((item) => (
             <div className="dc-upload-row" key={item.id}>
-              <img src={item.previewUrl} alt="" />
+              {item.file.type === "application/pdf" ? (
+                <div className="dc-thumb-pdf dc-upload-row-pdf">
+                  <PdfFileIcon />
+                </div>
+              ) : (
+                <img src={item.previewUrl} alt="" />
+              )}
               <input
                 type="text"
                 placeholder={t("records.imageTitle")}

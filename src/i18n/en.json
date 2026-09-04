@@ -130,7 +130,9 @@
     "guardianNotOnFile": "No guardian information on file",
     "guardianCedulaTooltip": "This cedula belongs to the patient's guardian, not the patient",
     "addGuardian": "Add guardian",
-    "removeGuardian": "Remove guardian"
+    "removeGuardian": "Remove guardian",
+    "removePhone": "Remove phone number",
+    "additionalPhone": "Additional phone"
   },
   "doctors": {
     "title": "Doctors",
@@ -183,6 +185,8 @@
     "emails": "Additional emails",
     "addPhone": "Add phone",
     "addEmail": "Add email",
+    "removePhone": "Remove phone",
+    "additionalPhone": "Additional phone",
     "moreCount": "+{{count}} more"
   },
   "medicines": {

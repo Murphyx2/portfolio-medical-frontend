@@ -262,16 +262,24 @@ export function PatientFormModal({
             value={form.phone}
             placeholder="(809) 555-1212"
             maxLength={14}
+            aria-invalid={!!phoneError}
+            aria-describedby={phoneError ? "patient-phone-error" : undefined}
             onChange={(e) => {
               setForm({ ...form, phone: formatPhoneInput(e.target.value) });
               setPhoneError("");
             }}
           />
-          {phoneError && <span className="field-error">{phoneError}</span>}
+          {phoneError && (
+            <span id="patient-phone-error" className="field-error" role="alert">
+              {phoneError}
+            </span>
+          )}
           <PhoneNumberListField
             values={extraPhones}
             onChange={setExtraPhones}
             addLabel={t("patients.addPhone")}
+            removeLabel={t("patients.removePhone")}
+            itemLabel={t("patients.additionalPhone")}
           />
         </Field>
         <Field label={t("patients.email")}>

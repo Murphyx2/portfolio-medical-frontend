@@ -66,9 +66,15 @@ export function DoctorProfileFormFields({
           value={contactPhone}
           placeholder="(809) 555-1212"
           maxLength={14}
+          aria-invalid={!!contactPhoneError}
+          aria-describedby={contactPhoneError ? "doctor-contact-phone-error" : undefined}
           onChange={(e) => onContactPhoneChange(e.target.value)}
         />
-        {contactPhoneError && <span className="field-error">{contactPhoneError}</span>}
+        {contactPhoneError && (
+          <span id="doctor-contact-phone-error" className="field-error" role="alert">
+            {contactPhoneError}
+          </span>
+        )}
         <PhoneNumberListField
           values={extraPhones}
           onChange={onExtraPhonesChange}

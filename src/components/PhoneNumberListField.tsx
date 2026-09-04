@@ -10,10 +10,17 @@ export function PhoneNumberListField({
   values,
   onChange,
   addLabel,
+  removeLabel,
+  itemLabel,
 }: {
   values: string[];
   onChange: (next: string[]) => void;
   addLabel: string;
+  removeLabel: string;
+  /** Accessible name for each row's input -- placeholder text alone isn't a
+   * valid label, and every row shares the single outer Field's "Phone"
+   * label (implicit label-for only binds the first control in a <label>). */
+  itemLabel: string;
 }) {
   function updateAt(index: number, next: string) {
     onChange(values.map((v, i) => (i === index ? next : v)));
@@ -33,12 +40,13 @@ export function PhoneNumberListField({
             value={value}
             placeholder="(809) 555-1212"
             maxLength={14}
+            aria-label={itemLabel}
             onChange={(e) => updateAt(index, formatPhoneInput(e.target.value))}
           />
           <button
             type="button"
             className="phone-list-remove-btn"
-            aria-label="Remove phone number"
+            aria-label={removeLabel}
             onClick={() => removeAt(index)}
           >
             <X size={16} strokeWidth={1.75} aria-hidden="true" />

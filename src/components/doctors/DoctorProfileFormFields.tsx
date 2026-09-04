@@ -69,7 +69,13 @@ export function DoctorProfileFormFields({
           onChange={(e) => onContactPhoneChange(e.target.value)}
         />
         {contactPhoneError && <span className="field-error">{contactPhoneError}</span>}
-        <PhoneNumberListField values={extraPhones} onChange={onExtraPhonesChange} addLabel={t("patients.addPhone")} />
+        <PhoneNumberListField
+          values={extraPhones}
+          onChange={onExtraPhonesChange}
+          addLabel={t("patients.addPhone")}
+          removeLabel={t("patients.removePhone")}
+          itemLabel={t("patients.additionalPhone")}
+        />
       </Field>
       <Field label={t("doctors.contactEmail")}>
         <input type="email" value={contactEmail} onChange={(e) => onContactEmailChange(e.target.value)} />

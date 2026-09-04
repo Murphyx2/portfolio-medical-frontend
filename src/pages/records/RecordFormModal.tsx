@@ -11,13 +11,13 @@ import {
   useDraftSave,
   type WorkingEntryFields,
 } from "../../hooks/useDraftSave";
-import { api, ApiError, showToast } from "../../services/api";
+import { api, showToast } from "../../services/api";
 import { searchPatients } from "../../services/patients";
 import type { APCategory, APType, MedicalRecord, Paginated, Patient, RecordEntry, RecordPersonalCondition } from "../../services/types";
 import { useAuth } from "../../store/auth";
 import { can } from "../../utils/can";
 import { formatCedula } from "../../utils/cedula";
-import { flattenError } from "../../utils/errors";
+import { apiErrorMessage } from "../../utils/errors";
 import { RecordFamilyApSection } from "./RecordFamilyApSection";
 import { RecordHabitsSection } from "./RecordHabitsSection";
 import { RecordHistoryList } from "./RecordHistoryList";
@@ -258,7 +258,7 @@ function LoadedRecordPhase({ record: initialRecord, focusNewEntry, canEdit, apCa
       await draftSave.flush();
       showToast(t("records.toastDraftSaved"));
     } catch (err) {
-      setSaveError(err instanceof ApiError ? flattenError(err.message) : String(err));
+      setSaveError(apiErrorMessage(err));
     } finally {
       setSaving(false);
     }
@@ -299,7 +299,7 @@ function LoadedRecordPhase({ record: initialRecord, focusNewEntry, canEdit, apCa
       setActiveTab("historial");
       onEntrySaved();
     } catch (err) {
-      setSaveError(err instanceof ApiError ? flattenError(err.message) : String(err));
+      setSaveError(apiErrorMessage(err));
     } finally {
       setSaving(false);
     }

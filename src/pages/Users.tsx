@@ -17,7 +17,7 @@ import {
   type RowActionsMenuItem,
 } from "../components/ui";
 import { useListPage } from "../hooks/useListPage";
-import { api, ApiError } from "../services/api";
+import { api } from "../services/api";
 import type {
   AuditLogEntry,
   DoctorProfile,
@@ -31,7 +31,7 @@ import type {
 import { useAuth } from "../store/auth";
 import { can } from "../utils/can";
 import { formatDateTime } from "../utils/date";
-import { flattenError } from "../utils/errors";
+import { apiErrorMessage } from "../utils/errors";
 import { formatPhoneInput, isValidRequiredPhone } from "../utils/phone";
 import { roleLabel } from "../utils/roleLabel";
 
@@ -288,7 +288,7 @@ export function Users() {
       setModal(false);
       load();
     } catch (err) {
-      setFormError(err instanceof ApiError ? flattenError(err.message) : String(err));
+      setFormError(apiErrorMessage(err));
     }
   }
 
@@ -310,7 +310,7 @@ export function Users() {
       await api.post(`/auth/users/${passwordTarget.id}/set_password/`, { password: newPassword });
       setPasswordTarget(null);
     } catch (err) {
-      setPasswordError(err instanceof ApiError ? flattenError(err.message) : String(err));
+      setPasswordError(apiErrorMessage(err));
     }
   }
 

@@ -3,12 +3,12 @@ import { useTranslation } from "react-i18next";
 import { useNavigate } from "react-router-dom";
 
 import { ConfirmDialog, Field, Page } from "../../components/ui";
-import { api, ApiError } from "../../services/api";
+import { api } from "../../services/api";
 import { createMessage, sendTestEmail } from "../../services/communications";
 import type { CommunicationsKind, CommunicationsPriority, Paginated, Role, User } from "../../services/types";
 import { useAuth } from "../../store/auth";
 import { can } from "../../utils/can";
-import { flattenError } from "../../utils/errors";
+import { apiErrorMessage } from "../../utils/errors";
 import { UnderConstructionBanner } from "./shared";
 
 const ROLES: Role[] = ["ADMIN", "DOCTOR", "RECEPTIONIST", "IT", "NURSE", "CENTER_MANAGER"];
@@ -96,7 +96,7 @@ export function ComposeMessage() {
       setDraftId(created.id);
       if (status === "QUEUED") navigate("/comunicaciones");
     } catch (err) {
-      setError(err instanceof ApiError ? flattenError(err.message) : String(err));
+      setError(apiErrorMessage(err));
     } finally {
       setSaving(false);
       setConfirming(false);
@@ -110,7 +110,7 @@ export function ComposeMessage() {
       await sendTestEmail(draftId);
       setTestStatus(t("communications.compose.testSent"));
     } catch (err) {
-      setTestStatus(err instanceof ApiError ? flattenError(err.message) : String(err));
+      setTestStatus(apiErrorMessage(err));
     }
   }
 

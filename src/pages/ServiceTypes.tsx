@@ -5,11 +5,11 @@ import { useNavigate } from "react-router-dom";
 import { ListPage } from "../components/ListPage";
 import { Field, FormModal, Page, type Column } from "../components/ui";
 import { useListPage } from "../hooks/useListPage";
-import { api, ApiError } from "../services/api";
+import { api } from "../services/api";
 import type { ServiceType } from "../services/types";
 import { useAuth } from "../store/auth";
 import { can } from "../utils/can";
-import { flattenError } from "../utils/errors";
+import { apiErrorMessage } from "../utils/errors";
 
 const EMPTY = { name: "", requires_doctor: false };
 
@@ -64,7 +64,7 @@ export function ServiceTypes() {
       setModal(false);
       load();
     } catch (err) {
-      setFormError(err instanceof ApiError ? flattenError(err.message) : String(err));
+      setFormError(apiErrorMessage(err));
     }
   }
 

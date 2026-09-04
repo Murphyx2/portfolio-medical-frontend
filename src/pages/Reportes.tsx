@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 
 import { Field, FormModal, Page, RowActionsMenu, Table, Tabs, type Column, type RowActionsMenuItem } from "../components/ui";
-import { ApiError, api } from "../services/api";
+import { api } from "../services/api";
 import {
   createDefinition,
   createPack,
@@ -17,7 +17,7 @@ import {
 import type { ARS, MedicalCenter, Paginated, ReportDefinition, ReportEngineKey, ReportPack, ReportPackEngineKey } from "../services/types";
 import { useAuth } from "../store/auth";
 import { can } from "../utils/can";
-import { flattenError } from "../utils/errors";
+import { apiErrorMessage } from "../utils/errors";
 
 function isCenterManagerRole(role?: string | null): boolean {
   return role === "CENTER_MANAGER";
@@ -119,7 +119,7 @@ function DefinitionsTab({ canEdit }: { canEdit: boolean }) {
     setLoading(true);
     listDefinitions()
       .then((r) => setRows(r.results))
-      .catch((err) => setError(err instanceof ApiError ? flattenError(err.message) : String(err)))
+      .catch((err) => setError(apiErrorMessage(err)))
       .finally(() => setLoading(false));
   }
 
@@ -235,7 +235,7 @@ function GenerateReportModal({ definition, onClose }: { definition: ReportDefini
       saveBlob(blob, filename ?? `reporte-${mes}.xlsx`);
       onClose();
     } catch (err) {
-      setError(err instanceof ApiError ? flattenError(err.message) : String(err));
+      setError(apiErrorMessage(err));
     }
   }
 
@@ -307,7 +307,7 @@ function DefinitionFormModal({
       else await createDefinition(body);
       onSaved();
     } catch (err) {
-      setError(err instanceof ApiError ? flattenError(err.message) : String(err));
+      setError(apiErrorMessage(err));
     }
   }
 
@@ -361,7 +361,7 @@ function PacksTab({ canEdit }: { canEdit: boolean }) {
     setLoading(true);
     listPacks()
       .then((r) => setRows(r.results))
-      .catch((err) => setError(err instanceof ApiError ? flattenError(err.message) : String(err)))
+      .catch((err) => setError(apiErrorMessage(err)))
       .finally(() => setLoading(false));
   }
 
@@ -468,7 +468,7 @@ function GeneratePackModal({ pack, onClose }: { pack: ReportPack; onClose: () =>
       saveBlob(blob, filename ?? `paquete-${mes}.zip`);
       onClose();
     } catch (err) {
-      setError(err instanceof ApiError ? flattenError(err.message) : String(err));
+      setError(apiErrorMessage(err));
     }
   }
 
@@ -519,7 +519,7 @@ function PackFormModal({
       else await createPack(body);
       onSaved();
     } catch (err) {
-      setError(err instanceof ApiError ? flattenError(err.message) : String(err));
+      setError(apiErrorMessage(err));
     }
   }
 

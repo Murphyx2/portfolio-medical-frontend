@@ -1,9 +1,9 @@
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
 
-import { api, ApiError } from "../../services/api";
+import { api } from "../../services/api";
 import type { Encounter } from "../../services/types";
-import { flattenError } from "../../utils/errors";
+import { apiErrorMessage } from "../../utils/errors";
 import type { EncounterConfirmAction } from "./EncounterRowActions";
 
 /**
@@ -61,7 +61,7 @@ export function useEncounterConfirmAction(load: () => void) {
       setConflictPrompt(false);
       load();
     } catch (err) {
-      const message = err instanceof ApiError ? flattenError(err.message) : String(err);
+      const message = apiErrorMessage(err);
       // The admit action returns this specific message when the patient
       // already has another active encounter today (code
       // ACTIVE_ENCOUNTER_EXISTS) -- offer to override instead of just

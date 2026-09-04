@@ -4,12 +4,11 @@ import { useNavigate } from "react-router-dom";
 
 import { Page, Pagination, SearchBar, Spinner, Table, Tabs, type Column } from "../../components/ui";
 import { listDeliveries, listMessages } from "../../services/communications";
-import { ApiError } from "../../services/api";
 import type { CommunicationsDelivery, CommunicationsKind, CommunicationsMessage } from "../../services/types";
 import { useAuth } from "../../store/auth";
 import { can } from "../../utils/can";
 import { formatDateTime } from "../../utils/date";
-import { flattenError } from "../../utils/errors";
+import { apiErrorMessage } from "../../utils/errors";
 import { kindLabel, StatusBadge, UnderConstructionBanner } from "./shared";
 import { MessageDetailDialog } from "./MessageDetailDialog";
 
@@ -82,7 +81,7 @@ function StaffTab() {
         setCount(r.count);
         setError("");
       })
-      .catch((err) => setError(err instanceof ApiError ? flattenError(err.message) : String(err)))
+      .catch((err) => setError(apiErrorMessage(err)))
       .finally(() => setLoading(false));
   }, [page, pageSize, search, kind, status]);
 
@@ -168,7 +167,7 @@ function PatientTab() {
         setCount(r.count);
         setError("");
       })
-      .catch((err) => setError(err instanceof ApiError ? flattenError(err.message) : String(err)))
+      .catch((err) => setError(apiErrorMessage(err)))
       .finally(() => setLoading(false));
   }, [page, pageSize, kind, status]);
 

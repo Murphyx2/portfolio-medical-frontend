@@ -3,7 +3,7 @@ import { useTranslation } from "react-i18next";
 
 import { Field, FormModal, MaskedValue, SearchableSelect } from "../../components/ui";
 import { useDoctorServiceFilter } from "../../hooks/useDoctorServiceFilter";
-import { api, ApiError } from "../../services/api";
+import { api } from "../../services/api";
 import { searchPatients } from "../../services/patients";
 import type {
   ARS,
@@ -17,7 +17,7 @@ import type {
   ServiceType,
 } from "../../services/types";
 import { formatCedula } from "../../utils/cedula";
-import { flattenError } from "../../utils/errors";
+import { apiErrorMessage } from "../../utils/errors";
 import { toSentenceCase } from "../../utils/text";
 
 const EMPTY_LINE: EncounterService = {
@@ -245,7 +245,7 @@ export function EncounterFormModal({
       setFormError("");
       onSaved();
     } catch (err) {
-      setFormError(err instanceof ApiError ? flattenError(err.message) : String(err));
+      setFormError(apiErrorMessage(err));
     }
   }
 

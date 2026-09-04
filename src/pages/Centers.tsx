@@ -5,11 +5,11 @@ import { ListPage } from "../components/ListPage";
 import { PhoneNumberListField } from "../components/PhoneNumberListField";
 import { Field, FormModal, Page, type Column } from "../components/ui";
 import { useListPage } from "../hooks/useListPage";
-import { api, ApiError, upload } from "../services/api";
+import { api, upload } from "../services/api";
 import type { MedicalCenter } from "../services/types";
 import { useAuth } from "../store/auth";
 import { can } from "../utils/can";
-import { flattenError } from "../utils/errors";
+import { apiErrorMessage } from "../utils/errors";
 import { formatPhone, formatPhoneInput, isValidRequiredPhone } from "../utils/phone";
 
 const EMPTY = {
@@ -163,7 +163,7 @@ export function Centers() {
       setModal(false);
       load();
     } catch (err) {
-      setFormError(err instanceof ApiError ? flattenError(err.message) : String(err));
+      setFormError(apiErrorMessage(err));
     }
   }
 

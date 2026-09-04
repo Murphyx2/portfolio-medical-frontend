@@ -607,7 +607,7 @@ export function RecordHabitsSection({ workingEntry, updateField, record, canEdit
   }
 
   return (
-    <div className="habits-theme">
+    <div className="mc-form">
       <div className="habits-toolbar">
         <div>
           <h4>{t("records.habitsSectionTitle")}</h4>

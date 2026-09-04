@@ -262,7 +262,7 @@ export function RecordHistoryList({
   }
 
   return (
-    <div className="history-theme record-history-list">
+    <div className="mc-form record-history-list">
       {entries.map((e, i) => {
         const isLatest = i === 0;
         const prev = entries[i + 1] ?? null;

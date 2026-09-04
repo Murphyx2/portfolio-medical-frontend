@@ -289,14 +289,14 @@ export function PatientFormModal({
         />
       </Field>
 
-      <Field label={t("communications.patient.optIn")}>
-        <label>
+      <div className="whatsapp-opt-in-field">
+        <label className="show-inactive-toggle">
+          {t("communications.patient.optIn")}
           <input
             type="checkbox"
             checked={form.whatsapp_opt_in}
             onChange={(e) => setForm({ ...form, whatsapp_opt_in: e.target.checked })}
-          />{" "}
-          {t("communications.patient.optIn")}
+          />
         </label>
         <p className="settings-field-help">{t("communications.patient.optInHelp")}</p>
         {form.phone && (
@@ -304,7 +304,7 @@ export function PatientFormModal({
             {t("communications.patient.currentPhone")}: {formatPhone(form.phone)}
           </p>
         )}
-      </Field>
+      </div>
     </FormModal>
   );
 }

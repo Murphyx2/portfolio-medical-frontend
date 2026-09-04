@@ -118,6 +118,7 @@ export function ComposeMessage() {
     <Page title={t("communications.new")}>
       <UnderConstructionBanner t={t} />
       <form
+        className="mc-form"
         onSubmit={(e) => {
           e.preventDefault();
         }}

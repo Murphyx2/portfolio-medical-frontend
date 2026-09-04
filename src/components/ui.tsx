@@ -167,7 +167,7 @@ export function Dialog({ title, onClose, children, wide, xwide, preventClose, co
     >
       <div
         ref={modalRef}
-        className={xwide ? "modal xwide" : wide ? "modal wide" : "modal"}
+        className={`mc-form ${xwide ? "modal xwide" : wide ? "modal wide" : "modal"}`}
         role="dialog"
         aria-modal="true"
         aria-labelledby={titleId}

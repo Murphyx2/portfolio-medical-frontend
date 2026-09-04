@@ -513,6 +513,18 @@ body {
   cursor: not-allowed;
 }
 
+/* A checkbox/radio nested inside a Field-labeled block (e.g. a Field whose
+   children are a set of option rows) would otherwise inherit the text-input
+   width:100%/border/padding rule above, stretching the control across the
+   row and shoving its label text away from it. */
+.field input[type="checkbox"],
+.field input[type="radio"] {
+  width: auto;
+  padding: 0;
+  border: none;
+  border-radius: 0;
+}
+
 .inline-field-with-action {
   display: flex;
   align-items: center;
@@ -1613,6 +1625,13 @@ input[type="radio"]:focus-visible {
   font-size: 0.9rem;
   color: var(--mc-muted);
   white-space: nowrap;
+}
+
+/* Not `.field` -- that class's `input { width: 100% }` rule stretches a
+   checkbox input just as much as a text input, which shoves this row's
+   label text far to the right of the (now huge) checkbox. */
+.whatsapp-opt-in-field {
+  margin-bottom: 0.9rem;
 }
 
 .kv-grid {
@@ -3465,4 +3484,80 @@ input[type="radio"]:focus-visible {
   width: 56px;
   height: 56px;
   flex-shrink: 0;
+}
+
+/* ---------- .mc-form: system-wide form redesign ---------- */
+/* Permanent successor to the .receta-prototype/.clinical-theme/.habits-theme/
+   .history-theme pilots -- one shared token set + generic overrides for the
+   Field/SearchableSelect/DateField/.btn primitives everything already funnels
+   through, applied once on Dialog's own className (ui.tsx) so it cascades
+   into every FormModal/ConfirmDialog/bare Dialog with no per-page CSS. The
+   habits tab's near-miss #1f6b3a is intentionally folded into the single
+   #1f7a3a here (per rollout decision) -- do not reintroduce a separate teal. */
+
+.mc-form {
+  --mcf-g: #1f7a3a;
+  --mcf-g-dark: #175a2c;
+  --mcf-soft: #e7f6ec;
+  --mcf-line: #d7e3d9;
+  --mcf-muted: #5c6b60;
+  --mcf-text: #1c2a20;
+  --mcf-navy: #1a3a6b;
+  color: var(--mcf-text);
+}
+
+.mc-form h3,
+.mc-form h4 {
+  color: var(--mcf-g);
+}
+
+.mc-form .field span,
+.mc-form label {
+  color: var(--mcf-muted);
+  font-weight: 700;
+}
+
+.mc-form .field input,
+.mc-form .field select,
+.mc-form .field textarea,
+.mc-form .date-field input[type="text"],
+.mc-form .searchable-select-trigger,
+.mc-form .searchable-select-input {
+  border-color: var(--mcf-line);
+  color: var(--mcf-text);
+}
+
+.mc-form .field input:focus,
+.mc-form .field select:focus,
+.mc-form .field textarea:focus,
+.mc-form .date-field input[type="text"]:focus {
+  border-color: var(--mcf-g);
+  outline: 2px solid var(--mcf-g);
+}
+
+.mc-form .searchable-select-list {
+  border-color: var(--mcf-line);
+}
+
+.mc-form .searchable-select-option:hover {
+  background: var(--mcf-soft);
+}
+
+.mc-form .btn.primary {
+  background: var(--mcf-g);
+  border-color: var(--mcf-g);
+}
+
+.mc-form .btn.primary:hover {
+  background: var(--mcf-g-dark);
+}
+
+.mc-form .btn.ghost {
+  background: transparent;
+  border: 1px solid var(--mcf-g);
+  color: var(--mcf-g);
+}
+
+.mc-form .btn.ghost:hover {
+  background: var(--mcf-soft);
 }

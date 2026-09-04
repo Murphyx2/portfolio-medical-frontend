@@ -856,6 +856,7 @@
       "schedule": "Schedule",
       "now": "Now",
       "later": "Schedule date and time",
+      "scheduledFor": "Scheduled date and time",
       "willSendTo": "Will be sent to {{n}} people",
       "testSend": "Send me a test",
       "testSendDisabled": "Save the notice as a draft before sending a test.",

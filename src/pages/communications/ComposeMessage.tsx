@@ -213,7 +213,12 @@ export function ComposeMessage() {
             {t("communications.compose.later")}
           </label>
           {scheduleLater && (
-            <input type="datetime-local" value={scheduledFor} onChange={(e) => setScheduledFor(e.target.value)} />
+            <input
+              type="datetime-local"
+              value={scheduledFor}
+              aria-label={t("communications.compose.scheduledFor")}
+              onChange={(e) => setScheduledFor(e.target.value)}
+            />
           )}
         </Field>
 

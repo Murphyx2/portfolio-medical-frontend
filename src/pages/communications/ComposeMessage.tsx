@@ -148,18 +148,18 @@ export function ComposeMessage() {
         </Field>
 
         <Field label={t("communications.compose.recipients")}>
-          <label>
+          <label className="touch-label">
             <input type="radio" checked={mode === "all"} onChange={() => setMode("all")} />{" "}
             {t("communications.compose.allStaff")}
           </label>
-          <label>
+          <label className="touch-label">
             <input type="radio" checked={mode === "roles"} onChange={() => setMode("roles")} />{" "}
             {t("communications.compose.byRole")}
           </label>
           {mode === "roles" && (
             <div className="checkbox-list">
               {ROLES.map((r) => (
-                <label key={r}>
+                <label key={r} className="touch-label">
                   <input
                     type="checkbox"
                     checked={selectedRoles.includes(r)}
@@ -174,14 +174,14 @@ export function ComposeMessage() {
           )}
           {roster.length > 0 && (
             <>
-              <label>
+              <label className="touch-label">
                 <input type="radio" checked={mode === "people"} onChange={() => setMode("people")} />{" "}
                 {t("communications.compose.byPerson")}
               </label>
               {mode === "people" && (
                 <div className="checkbox-list">
                   {activeRoster.map((u) => (
-                    <label key={u.id}>
+                    <label key={u.id} className="touch-label">
                       <input
                         type="checkbox"
                         checked={selectedUserIds.includes(u.id)}
@@ -204,11 +204,11 @@ export function ComposeMessage() {
         </Field>
 
         <Field label={t("communications.compose.schedule")}>
-          <label>
+          <label className="touch-label">
             <input type="radio" checked={!scheduleLater} onChange={() => setScheduleLater(false)} />{" "}
             {t("communications.compose.now")}
           </label>
-          <label>
+          <label className="touch-label">
             <input type="radio" checked={scheduleLater} onChange={() => setScheduleLater(true)} />{" "}
             {t("communications.compose.later")}
           </label>

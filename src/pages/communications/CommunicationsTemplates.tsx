@@ -190,7 +190,7 @@ export function CommunicationsTemplates() {
             </Field>
           )}
           <Field label={t("communications.templates.active")}>
-            <label>
+            <label className="touch-label">
               <input
                 type="checkbox"
                 checked={form.is_active}

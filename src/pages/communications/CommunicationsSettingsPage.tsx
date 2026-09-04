@@ -194,7 +194,7 @@ export function CommunicationsSettingsPage() {
                 />
               </Field>
             </div>
-            <label>
+            <label className="touch-label">
               <input type="checkbox" checked={masterEnabled} onChange={(e) => setMasterEnabled(e.target.checked)} />{" "}
               {t("communications.settingsPage.masterEnabled")}
             </label>

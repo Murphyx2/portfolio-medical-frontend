@@ -368,7 +368,7 @@ export function Doctors() {
                   </select>
                 </Field>
               )}
-              <label className="muted">
+              <label className="muted touch-label">
                 <input
                   type="checkbox"
                   checked={createAccount}

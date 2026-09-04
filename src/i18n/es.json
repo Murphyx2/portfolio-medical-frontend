@@ -928,6 +928,7 @@
     "verPdf": "Ver PDF",
     "imprimir": "Imprimir",
     "noRecetas": "Aún no hay recetas",
+    "mostrarAnuladas": "Mostrar anuladas",
     "confirmAnular": "¿Anular esta receta? El PDF se conserva para auditoría.",
     "errorPatientRequired": "Seleccione un paciente.",
     "errorMedicoRequired": "Seleccione un médico.",

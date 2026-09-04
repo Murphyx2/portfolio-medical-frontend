@@ -3228,6 +3228,140 @@ input[type="radio"]:focus-visible {
   margin: 0;
 }
 
+/* ---------- Recetas visual PROTOTYPE (deliberate DESIGN.md deviation) ----------
+   Requested by the user as an explicit, comparable, easily-revertible test:
+   adopts recetas_mockup.html's own palette/materials (a brighter, more
+   saturated green than Clinical Green, a navy letterhead frame, pill-style
+   buttons) scoped ONLY to elements inside .receta-prototype, so nothing
+   outside the Recetas composer/tab is touched and DESIGN.md itself is not
+   edited. Remove the .receta-prototype wrapper class (RecetaComposerModal.tsx
+   / RecetasTab.tsx) to instantly revert to the standing "Quiet Clinic" system
+   above. Do not extend this palette to any other part of the app. */
+.receta-prototype {
+  --rx-g: #1f7a3a;
+  --rx-soft: #e7f6ec;
+  --rx-line: #d7e3d9;
+  --rx-muted: #5c6b60;
+  --rx-text: #1c2a20;
+  --rx-navy: #1a3a6b;
+  color: var(--rx-text);
+}
+
+.receta-prototype h4 {
+  color: var(--rx-g);
+}
+
+.receta-prototype .receta-letterhead {
+  border: 2px solid var(--rx-navy);
+  border-radius: 4px;
+  padding: 0.75rem 1rem;
+  background: var(--mc-white);
+}
+
+.receta-prototype .receta-letterhead-name {
+  color: var(--rx-navy);
+}
+
+.receta-prototype .receta-letterhead-short {
+  color: var(--rx-navy);
+}
+
+.receta-prototype .receta-letterhead-line {
+  color: var(--rx-muted);
+}
+
+.receta-prototype .receta-patient-info {
+  color: var(--rx-muted);
+}
+
+.receta-prototype .receta-line-card {
+  border: 1px solid var(--rx-line);
+  border-radius: 10px;
+  background: #fafcfa;
+}
+
+.receta-prototype .receta-line-head span {
+  color: var(--rx-muted);
+  text-transform: none;
+  letter-spacing: normal;
+  font-weight: 700;
+}
+
+.receta-prototype .field label,
+.receta-prototype label {
+  color: var(--rx-muted);
+}
+
+.receta-prototype input,
+.receta-prototype select,
+.receta-prototype textarea {
+  border-color: var(--rx-line);
+  border-radius: 8px;
+}
+
+.receta-prototype input:focus,
+.receta-prototype select:focus,
+.receta-prototype textarea:focus {
+  border-color: var(--rx-g);
+  outline: 2px solid var(--rx-g);
+  outline-offset: 1px;
+}
+
+.receta-prototype .dose-builder {
+  border-top: 1px dashed var(--rx-line);
+}
+
+.receta-prototype .dose-builder-preview {
+  background: var(--rx-soft);
+  color: var(--rx-g);
+  border-radius: 8px;
+  font-weight: 700;
+}
+
+.receta-prototype .btn.primary {
+  background: var(--rx-g);
+  border-color: var(--rx-g);
+  color: #fff;
+  border-radius: 8px;
+  font-weight: 700;
+}
+
+.receta-prototype .btn.primary:hover {
+  filter: brightness(0.92);
+}
+
+.receta-prototype .btn.ghost {
+  background: #fff;
+  border: 1px solid var(--rx-g);
+  color: var(--rx-g);
+  border-radius: 8px;
+  font-weight: 700;
+}
+
+.receta-prototype .btn.ghost:hover {
+  background: var(--rx-soft);
+}
+
+.receta-prototype .receta-row {
+  border: 1px solid var(--rx-line);
+  border-radius: 10px;
+  background: #fafcfa;
+}
+
+.receta-prototype .badge.status-draft {
+  background: var(--rx-muted);
+}
+
+.receta-prototype .badge.status-completed {
+  background: var(--rx-g);
+}
+
+.receta-prototype .dc-ghost-btn {
+  border-color: var(--rx-g);
+  color: var(--rx-g);
+  border-radius: 8px;
+}
+
 /* PDF-file tile in the Archivos gallery -- same .dc-thumb container as an
    image tile, but the icon replaces <img>. */
 .clinical-theme .dc-thumb-pdf {

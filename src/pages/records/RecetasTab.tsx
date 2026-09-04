@@ -34,16 +34,27 @@ export function RecetasTab({ patient }: { patient: PatientLite }) {
 
   const [recetas, setRecetas] = useState<Receta[]>([]);
   const [doctors, setDoctors] = useState<DoctorProfile[]>([]);
-  const [loading, setLoading] = useState(true);
+  // Only gates the very first fetch -- `load()` is also called as `onSaved`
+  // while the composer modal is open (e.g. after Guardar borrador), and
+  // re-showing a full-tab loading state on every such refresh used to
+  // unmount the whole tab (composer included), silently discarding whatever
+  // was on screen even though the save itself had already succeeded.
+  const [initialLoading, setInitialLoading] = useState(true);
   const [error, setError] = useState("");
-  const [composerOpen, setComposerOpen] = useState(false);
+  // "new" opens a brand-new draft; a Receta object reopens that draft for
+  // editing (§3); null means the composer is closed.
+  const [composerTarget, setComposerTarget] = useState<Receta | "new" | null>(null);
   const [anulando, setAnulando] = useState<Receta | null>(null);
   const [anularError, setAnularError] = useState("");
   const [anularPending, setAnularPending] = useState(false);
   const [rowError, setRowError] = useState("");
+  // Anulada rows are hidden by default (they're a soft-void, not a delete --
+  // the PDF stays for audit per RECETAS_REQUIREMENTS.md §10 -- but shouldn't
+  // clutter the working list); any role that can view this tab at all may
+  // toggle them back into view, it's not restricted to who may create.
+  const [showAnuladas, setShowAnuladas] = useState(false);
 
   function load() {
-    setLoading(true);
     setError("");
     Promise.all([
       api.get<Paginated<Receta>>(`/recetas/?patient=${patient.id}&page_size=100`),
@@ -54,7 +65,7 @@ export function RecetasTab({ patient }: { patient: PatientLite }) {
         setDoctors(d.results);
       })
       .catch((err) => setError(err instanceof ApiError ? flattenError(err.message) : String(err)))
-      .finally(() => setLoading(false));
+      .finally(() => setInitialLoading(false));
   }
 
   useEffect(load, [patient.id]);
@@ -97,19 +108,32 @@ export function RecetasTab({ patient }: { patient: PatientLite }) {
     }
   }
 
-  function canAnular(r: Receta): boolean {
-    if (r.estado === "ANULADA") return false;
+  // A doctor may not reopen or void a colleague's receta -- Admin can act on
+  // any of them (RECETAS_REQUIREMENTS.md §10: Anular is "Author or Admin";
+  // extended the same way to Editar, since re-editing someone else's
+  // in-progress draft carries the same concern).
+  function isAuthorOrAdmin(r: Receta): boolean {
     return user?.role === "ADMIN" || r.created_by === user?.id;
   }
 
-  if (loading) return <p className="muted">{t("common.loading")}</p>;
+  function canAnular(r: Receta): boolean {
+    return r.estado !== "ANULADA" && isAuthorOrAdmin(r);
+  }
+
+  function canEditar(r: Receta): boolean {
+    return r.estado === "BORRADOR" && canCreate && isAuthorOrAdmin(r);
+  }
+
+  const visibleRecetas = recetas.filter((r) => showAnuladas || r.estado !== "ANULADA");
+
+  if (initialLoading) return <p className="muted">{t("common.loading")}</p>;
 
   return (
-    <>
+    <div className="receta-prototype">
       <div className="dc-section-row">
         <h4>{t("records.tabRecetas")}</h4>
         {canCreate && (
-          <button type="button" className="dc-ghost-btn" onClick={() => setComposerOpen(true)}>
+          <button type="button" className="dc-ghost-btn" onClick={() => setComposerTarget("new")}>
             + {t("prescriptions.newReceta")}
           </button>
         )}
@@ -118,10 +142,17 @@ export function RecetasTab({ patient }: { patient: PatientLite }) {
       {error && <p className="form-error" role="alert">{error}</p>}
       {rowError && <p className="form-error" role="alert">{rowError}</p>}
 
-      {recetas.length === 0 ? (
+      {recetas.some((r) => r.estado === "ANULADA") && (
+        <label className="show-inactive-toggle">
+          <input type="checkbox" checked={showAnuladas} onChange={(e) => setShowAnuladas(e.target.checked)} />{" "}
+          {t("prescriptions.mostrarAnuladas")}
+        </label>
+      )}
+
+      {visibleRecetas.length === 0 ? (
         <div className="recetas-tab-empty">
           {canCreate && (
-            <div className="dc-add-tile" onClick={() => setComposerOpen(true)} role="button" tabIndex={0}>
+            <div className="dc-add-tile" onClick={() => setComposerTarget("new")} role="button" tabIndex={0}>
               +
             </div>
           )}
@@ -129,7 +160,7 @@ export function RecetasTab({ patient }: { patient: PatientLite }) {
         </div>
       ) : (
         <div className="recetas-tab-list">
-          {recetas.map((r) => (
+          {visibleRecetas.map((r) => (
             <div className="receta-row" key={r.id}>
               <div className="receta-row-info">
                 <span>{formatDateTime(r.fecha)}</span>
@@ -138,6 +169,11 @@ export function RecetasTab({ patient }: { patient: PatientLite }) {
                 <span className={estadoBadgeClass(r.estado)}>{t(`prescriptions.estado.${r.estado}`)}</span>
               </div>
               <div className="receta-row-actions">
+                {canEditar(r) && (
+                  <button type="button" className="btn ghost small" onClick={() => setComposerTarget(r)}>
+                    {t("common.edit")}
+                  </button>
+                )}
                 {r.estado === "EMITIDA" && (
                   <>
                     <button type="button" className="btn ghost small" onClick={() => verPdf(r)}>
@@ -162,10 +198,11 @@ export function RecetasTab({ patient }: { patient: PatientLite }) {
         </div>
       )}
 
-      {composerOpen && (
+      {composerTarget && (
         <RecetaComposerModal
           lockedPatient={patient}
-          onClose={() => setComposerOpen(false)}
+          initialReceta={composerTarget === "new" ? null : composerTarget}
+          onClose={() => setComposerTarget(null)}
           onSaved={load}
         />
       )}
@@ -185,6 +222,6 @@ export function RecetasTab({ patient }: { patient: PatientLite }) {
           }}
         />
       )}
-    </>
+    </div>
   );
 }

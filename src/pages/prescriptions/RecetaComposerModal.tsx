@@ -78,6 +78,29 @@ interface PatientRef {
   gender: string;
 }
 
+/** Reverse of `lineToPayload`, used to hydrate the composer when reopening
+ * an existing draft (§3: "Editar" on a Borrador row) -- `medicine` is the
+ * already-resolved `Medicine` object for a catalog line (null for a
+ * fuera_de_catalogo line, or when the medicine could no longer be resolved,
+ * in which case the line falls back to a free-text display of its saved
+ * nombre_impreso so nothing is silently lost). */
+function payloadLineToDraft(l: RecetaLinea, medicine: Medicine | null): LineDraft {
+  const fueraDeCatalogo = l.fuera_de_catalogo || (!l.medicamento || !medicine);
+  return {
+    key: makeKey(),
+    medicamento: fueraDeCatalogo ? null : medicine,
+    fueraDeCatalogo,
+    nombreLibre: fueraDeCatalogo ? l.nombre_impreso : "",
+    cantidad: String(l.cantidad ?? 1),
+    concentracionValor: l.concentracion_valor,
+    unidad: l.unidad,
+    via: l.via,
+    forma: l.forma,
+    dosis: l.dosis_json && Object.keys(l.dosis_json).length ? l.dosis_json : { ...EMPTY_DOSIS },
+    indicacionExtra: l.indicacion_extra,
+  };
+}
+
 function lineToPayload(l: LineDraft, orden: number): Omit<RecetaLinea, "id"> {
   const nombre_impreso = l.fueraDeCatalogo
     ? l.nombreLibre.trim()
@@ -107,10 +130,13 @@ function lineToPayload(l: LineDraft, orden: number): Omit<RecetaLinea, "id"> {
  * "Nueva receta") or with an open, editable patient picker (Medicamentos'
  * header button) -- `lockedPatient` selects which.
  */
-export function RecetaComposerModal({ lockedPatient, onClose, onSaved }: {
+export function RecetaComposerModal({ lockedPatient, initialReceta, onClose, onSaved }: {
   /** Non-null when opened from the Expediente -- the patient field renders
    * as a locked read-only display instead of a `SearchableSelect`. */
   lockedPatient: PatientRef | null;
+  /** Non-null when reopening a saved Borrador for editing (§3) -- prefills
+   * every field below instead of starting a brand-new draft. */
+  initialReceta?: Receta | null;
   onClose: () => void;
   /** Called after a successful Guardar borrador or Emitir, so the caller can
    * refresh whatever list/tab is showing recetas. */
@@ -118,6 +144,7 @@ export function RecetaComposerModal({ lockedPatient, onClose, onSaved }: {
 }) {
   const { t } = useTranslation();
   const { user } = useAuth();
+  const isDoctorRole = user?.role === "DOCTOR";
 
   const [patient, setPatient] = useState<Patient | null>(null);
   const patientRef: PatientRef | null = lockedPatient ?? patient;
@@ -125,12 +152,20 @@ export function RecetaComposerModal({ lockedPatient, onClose, onSaved }: {
   const [doctors, setDoctors] = useState<DoctorProfile[]>([]);
   const [services, setServices] = useState<Service[]>([]);
   const [medico, setMedico] = useState<DoctorProfile | null>(null);
-  const [fecha, setFecha] = useState(nowLocalDateTime());
-  const [proximaCitaAt, setProximaCitaAt] = useState("");
+  // Never user-editable (§2, requirements §7: "Fecha -- default now"; the
+  // Cita/Admisión-linked override is out of scope for this slice) -- fixed
+  // at "now" for a brand-new draft, or the receta's own saved value when
+  // reopening an existing one, so re-editing a draft never silently redates
+  // it.
+  const [fecha] = useState(initialReceta?.fecha ?? nowLocalDateTime());
+  const [proximaCitaAt, setProximaCitaAt] = useState(
+    initialReceta?.proxima_cita_at ? initialReceta.proxima_cita_at.slice(0, 16) : "",
+  );
   const [crearCita, setCrearCita] = useState(false);
   const [servicio, setServicio] = useState<Service | null>(null);
   const [lineas, setLineas] = useState<LineDraft[]>([emptyLine()]);
-  const [recetaId, setRecetaId] = useState<number | null>(null);
+  const [recetaId, setRecetaId] = useState<number | null>(initialReceta?.id ?? null);
+  const [hydrating, setHydrating] = useState(!!initialReceta);
 
   const [dirty, setDirty] = useState(false);
   const [confirmingExit, setConfirmingExit] = useState(false);
@@ -151,14 +186,39 @@ export function RecetaComposerModal({ lockedPatient, onClose, onSaved }: {
       .get<Paginated<DoctorProfile>>("/doctors/profiles/?page_size=100")
       .then((r) => {
         setDoctors(r.results);
-        const mine = r.results.find((d) => d.user_id === user?.id);
-        if (mine) setMedico(mine);
+        const target = initialReceta
+          ? r.results.find((d) => d.id === initialReceta.medico)
+          : r.results.find((d) => d.user_id === user?.id);
+        if (target) setMedico(target);
       })
       .catch(() => {});
     api
       .get<Paginated<Service>>("/services/?page_size=200")
       .then((r) => setServices(r.results))
       .catch(() => {});
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  // Hydrate the lines repeater from an existing draft (§3) -- resolves each
+  // catalog line's full Medicine object (the saved receta only stores its
+  // id) so SearchableSelect has something to display; a line whose medicine
+  // can no longer be resolved (deleted/deactivated since) falls back to a
+  // free-text display of its already-snapshotted nombre_impreso rather than
+  // silently dropping it.
+  useEffect(() => {
+    if (!initialReceta) return;
+    const medicineIds = Array.from(
+      new Set(initialReceta.lineas.filter((l) => !l.fuera_de_catalogo && l.medicamento != null).map((l) => l.medicamento as number)),
+    );
+    Promise.all(medicineIds.map((id) => api.get<Medicine>(`/medicines/${id}/`).catch(() => null)))
+      .then((resolved) => {
+        const byId = new Map(medicineIds.map((id, i) => [id, resolved[i]]));
+        const sorted = [...initialReceta.lineas].sort((a, b) => a.orden - b.orden);
+        setLineas(
+          sorted.map((l) => payloadLineToDraft(l, l.medicamento != null ? (byId.get(l.medicamento) ?? null) : null)),
+        );
+      })
+      .finally(() => setHydrating(false));
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
@@ -319,7 +379,10 @@ export function RecetaComposerModal({ lockedPatient, onClose, onSaved }: {
       xwide
       preventClose={saving || emitting}
     >
-      <div onChangeCapture={markDirty} onInputCapture={markDirty}>
+      {hydrating ? (
+        <p className="muted">{t("common.loading")}</p>
+      ) : (
+      <div className="receta-prototype" onChangeCapture={markDirty} onInputCapture={markDirty}>
         {center && (
           <div className="receta-letterhead">
             <div className="receta-letterhead-name">
@@ -364,26 +427,28 @@ export function RecetaComposerModal({ lockedPatient, onClose, onSaved }: {
         )}
 
         <Field label={t("appointments.doctor")}>
-          <SearchableSelect<DoctorProfile>
-            value={medico}
-            onSelect={(d) => {
-              setMedico(d);
-              markDirty();
-            }}
-            search={async (query) => {
-              const q = query.trim().toLowerCase();
-              const results = q ? doctors.filter((d) => d.full_name.toLowerCase().includes(q)) : doctors;
-              return { results, count: results.length };
-            }}
-            minChars={0}
-            placeholder={t("appointments.doctor")}
-            getLabel={(d) => d.full_name}
-            autoFocus={false}
-          />
-        </Field>
-
-        <Field label={t("appointments.dateTime")}>
-          <input type="datetime-local" value={fecha} onChange={(e) => setFecha(e.target.value)} required />
+          {isDoctorRole ? (
+            <p className="receta-patient-info">
+              <strong>{medico?.full_name ?? "—"}</strong>
+            </p>
+          ) : (
+            <SearchableSelect<DoctorProfile>
+              value={medico}
+              onSelect={(d) => {
+                setMedico(d);
+                markDirty();
+              }}
+              search={async (query) => {
+                const q = query.trim().toLowerCase();
+                const results = q ? doctors.filter((d) => d.full_name.toLowerCase().includes(q)) : doctors;
+                return { results, count: results.length };
+              }}
+              minChars={0}
+              placeholder={t("appointments.doctor")}
+              getLabel={(d) => d.full_name}
+              autoFocus={false}
+            />
+          )}
         </Field>
 
         <Field label={t("prescriptions.proximaCita")}>
@@ -543,6 +608,7 @@ export function RecetaComposerModal({ lockedPatient, onClose, onSaved }: {
           </button>
         </div>
       </div>
+      )}
 
       {confirmingExit && (
         <ConfirmDialog

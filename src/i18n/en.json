@@ -928,6 +928,7 @@
     "verPdf": "View PDF",
     "imprimir": "Print",
     "noRecetas": "No prescriptions yet",
+    "mostrarAnuladas": "Show voided",
     "confirmAnular": "Void this prescription? The PDF is kept for audit purposes.",
     "errorPatientRequired": "Select a patient.",
     "errorMedicoRequired": "Select a doctor.",

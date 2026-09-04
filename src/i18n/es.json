@@ -155,12 +155,14 @@
     "noServices": "No hay servicios activos disponibles.",
     "noServicesMatch": "Ningún servicio coincide con tu búsqueda.",
     "allServiceTypes": "Todos los tipos de servicio",
+    "filterByServiceType": "Filtrar por tipo de servicio",
     "moreServices": "+{{count}} más",
     "rooms": "Salas",
     "manageRooms": "Gestionar salas",
     "noRooms": "No hay salas activas disponibles.",
     "noRoomsMatch": "Ninguna sala coincide con tu búsqueda.",
     "allRoomTypes": "Todos los tipos de sala",
+    "filterByRoomType": "Filtrar por tipo de sala",
     "moreRooms": "+{{count}} más"
   },
   "centers": {

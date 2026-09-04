@@ -2289,12 +2289,13 @@ input[type="radio"]:focus-visible {
   margin-bottom: 0.75rem;
 }
 
-/* ---------- Datos clínicos + Conclusiones (pilot restyle) ---------- */
-/* Requirements/Datos_Conclusiones/datos_conclusiones_mockup.html -- scoped
-   to .clinical-theme via --dc-* tokens, same pattern as .habits-theme /
-   .history-theme. Values happen to match --hist-* exactly; do not alias. */
+/* ---------- Datos clínicos + Conclusiones ---------- */
+/* Formerly a standalone .clinical-theme pilot restyle
+   (Requirements/Datos_Conclusiones/datos_conclusiones_mockup.html); folded
+   into .mc-form as part of the system-wide rollout. --dc-* tokens match
+   --hist-*'s values exactly -- do not alias. */
 
-.clinical-theme {
+.mc-form {
   --dc-green: #1f7a3a;
   --dc-soft: #e7f6ec;
   --dc-wash: #f3faf5;
@@ -2305,7 +2306,7 @@ input[type="radio"]:focus-visible {
 
 /* ---- Signos vitales ---- */
 
-.clinical-theme .dc-section-row {
+.mc-form .dc-section-row {
   display: flex;
   justify-content: space-between;
   align-items: center;
@@ -2313,13 +2314,13 @@ input[type="radio"]:focus-visible {
   margin: 10px 0 4px;
 }
 
-.clinical-theme .dc-section-row h4 {
+.mc-form .dc-section-row h4 {
   margin: 0;
   color: var(--dc-green);
   font-size: 16px;
 }
 
-.clinical-theme .dc-ghost-btn {
+.mc-form .dc-ghost-btn {
   background: #fff;
   border: 1px solid var(--dc-green);
   color: var(--dc-green);
@@ -2329,7 +2330,7 @@ input[type="radio"]:focus-visible {
   cursor: pointer;
 }
 
-.clinical-theme .dc-card {
+.mc-form .dc-card {
   border: 1px solid var(--dc-line);
   border-radius: 10px;
   padding: 14px 16px;
@@ -2338,79 +2339,79 @@ input[type="radio"]:focus-visible {
   color: var(--dc-text);
 }
 
-.clinical-theme .dc-mini-grid {
+.mc-form .dc-mini-grid {
   display: grid;
   grid-template-columns: repeat(4, minmax(0, 1fr));
   gap: 8px;
 }
 
 @media (max-width: 900px) {
-  .clinical-theme .dc-mini-grid { grid-template-columns: repeat(2, 1fr); }
+  .mc-form .dc-mini-grid { grid-template-columns: repeat(2, 1fr); }
 }
 @media (max-width: 560px) {
-  .clinical-theme .dc-mini-grid { grid-template-columns: 1fr; }
+  .mc-form .dc-mini-grid { grid-template-columns: 1fr; }
 }
 
-.clinical-theme .dc-mini-cell {
+.mc-form .dc-mini-cell {
   background: #fff;
   border: 1px solid var(--dc-line);
   border-radius: 8px;
   padding: 6px 8px;
 }
 
-.clinical-theme .dc-mini-cell em {
+.mc-form .dc-mini-cell em {
   display: block;
   font-style: normal;
   font-size: 11px;
   color: var(--dc-muted);
 }
 
-.clinical-theme .dc-mini-cell b {
+.mc-form .dc-mini-cell b {
   font-size: 14px;
   color: var(--dc-text);
 }
 
-.clinical-theme .dc-vitals-grid {
+.mc-form .dc-vitals-grid {
   display: grid;
   grid-template-columns: repeat(4, minmax(0, 1fr));
   gap: 10px;
 }
 
 @media (max-width: 900px) {
-  .clinical-theme .dc-vitals-grid { grid-template-columns: repeat(2, 1fr); }
+  .mc-form .dc-vitals-grid { grid-template-columns: repeat(2, 1fr); }
 }
 @media (max-width: 560px) {
-  .clinical-theme .dc-vitals-grid { grid-template-columns: 1fr; }
+  .mc-form .dc-vitals-grid { grid-template-columns: 1fr; }
 }
 
-.clinical-theme .dc-vitals-grid label.field span {
+.mc-form .dc-vitals-grid label.field span {
   font-size: 12px;
   color: var(--dc-muted);
   font-weight: 700;
 }
 
-.clinical-theme .dc-vitals-grid input {
+.mc-form .dc-vitals-grid input {
   border: 1px solid var(--dc-line);
   border-radius: 8px;
   padding: 8px 10px;
   color: var(--dc-text);
 }
 
-.clinical-theme .dc-ta-inputs {
+.mc-form .dc-ta-inputs {
   display: flex;
   align-items: center;
   gap: 6px;
 }
 
-.clinical-theme .dc-ta-inputs input {
+.mc-form .dc-ta-inputs input {
   width: 72px;
 }
 
-.clinical-theme .dc-vitals-notes {
+.mc-form .dc-vitals-notes {
   margin-top: 10px;
 }
 
-.clinical-theme .dc-vitals-notes textarea {
+.mc-form .dc-vitals-notes textarea {
   width: 100%;
   resize: vertical;
   min-height: 72px;
@@ -2420,7 +2421,7 @@ input[type="radio"]:focus-visible {
   color: var(--dc-text);
 }
 
-.clinical-theme .dc-badge {
+.mc-form .dc-badge {
   display: inline-block;
   margin-top: 10px;
   background: var(--dc-soft);
@@ -2432,19 +2433,19 @@ input[type="radio"]:focus-visible {
 
 /* ---- Imágenes ---- */
 
-.clinical-theme .dc-gallery {
+.mc-form .dc-gallery {
   display: flex;
   gap: 10px;
   flex-wrap: wrap;
   margin-top: 4px;
 }
 
-.clinical-theme .dc-thumb {
+.mc-form .dc-thumb {
   width: 128px;
   position: relative;
 }
 
-.clinical-theme .dc-thumb img {
+.mc-form .dc-thumb img {
   width: 128px;
   height: 128px;
   object-fit: cover;
@@ -2454,7 +2455,7 @@ input[type="radio"]:focus-visible {
   display: block;
 }
 
-.clinical-theme .dc-thumb .dc-cap {
+.mc-form .dc-thumb .dc-cap {
   font-size: 12px;
   font-weight: 700;
   margin-top: 4px;
@@ -2464,12 +2465,12 @@ input[type="radio"]:focus-visible {
   color: var(--dc-text);
 }
 
-.clinical-theme .dc-thumb .dc-when {
+.mc-form .dc-thumb .dc-when {
   font-size: 11px;
   color: var(--dc-muted);
 }
 
-.clinical-theme .dc-thumb-actions {
+.mc-form .dc-thumb-actions {
   position: absolute;
   inset: 0;
   bottom: 40px;
@@ -2481,11 +2482,11 @@ input[type="radio"]:focus-visible {
   border-radius: 8px;
 }
 
-.clinical-theme .dc-thumb:hover .dc-thumb-actions {
+.mc-form .dc-thumb:hover .dc-thumb-actions {
   display: flex;
 }
 
-.clinical-theme .dc-thumb-actions button {
+.mc-form .dc-thumb-actions button {
   border: 0;
   border-radius: 6px;
   padding: 4px 8px;
@@ -2496,7 +2497,7 @@ input[type="radio"]:focus-visible {
   color: var(--dc-text);
 }
 
-.clinical-theme .dc-add-tile {
+.mc-form .dc-add-tile {
   width: 128px;
   height: 128px;
   border: 1.5px dashed var(--dc-green);
@@ -2510,13 +2511,13 @@ input[type="radio"]:focus-visible {
   font-size: 24px;
 }
 
-.clinical-theme .dc-empty-gallery {
+.mc-form .dc-empty-gallery {
   display: flex;
   align-items: center;
   gap: 12px;
 }
 
-.clinical-theme .dc-empty-gallery p {
+.mc-form .dc-empty-gallery p {
   color: var(--dc-muted);
   font-size: 13px;
   margin: 0;
@@ -2524,14 +2525,14 @@ input[type="radio"]:focus-visible {
 
 /* ---- Upload sheet ---- */
 
-.clinical-theme .dc-upload-row {
+.mc-form .dc-upload-row {
   display: flex;
   align-items: center;
   gap: 10px;
   padding: 8px 0;
 }
 
-.clinical-theme .dc-upload-row img {
+.mc-form .dc-upload-row img {
   width: 56px;
   height: 56px;
   object-fit: cover;
@@ -2539,42 +2540,42 @@ input[type="radio"]:focus-visible {
   border: 1px solid var(--dc-line);
 }
 
-.clinical-theme .dc-upload-row input[type="text"] {
+.mc-form .dc-upload-row input[type="text"] {
   flex: 1;
   border: 1px solid var(--dc-line);
   border-radius: 8px;
   padding: 6px 8px;
 }
 
-.clinical-theme .dc-upload-status {
+.mc-form .dc-upload-status {
   font-size: 12px;
   color: var(--dc-muted);
 }
 
-.clinical-theme .dc-upload-status.error {
+.mc-form .dc-upload-status.error {
   color: #b3261e;
 }
 
 /* ---- Conclusiones ---- */
 
-.clinical-theme .dc-concl-grid {
+.mc-form .dc-concl-grid {
   display: grid;
   grid-template-columns: 1fr 1fr;
   gap: 16px;
 }
 
 @media (max-width: 900px) {
-  .clinical-theme .dc-concl-grid { grid-template-columns: 1fr; }
+  .mc-form .dc-concl-grid { grid-template-columns: 1fr; }
 }
 
-.clinical-theme .dc-concl-grid label.field span,
-.clinical-theme .dc-observaciones label.field span {
+.mc-form .dc-concl-grid label.field span,
+.mc-form .dc-observaciones label.field span {
   font-size: 13px;
   font-weight: 700;
   color: #175a2c;
 }
 
-.clinical-theme .dc-concl-grid textarea {
+.mc-form .dc-concl-grid textarea {
   min-height: 120px;
   width: 100%;
   resize: vertical;
@@ -2584,11 +2585,11 @@ input[type="radio"]:focus-visible {
   color: var(--dc-text);
 }
 
-.clinical-theme .dc-observaciones {
+.mc-form .dc-observaciones {
   margin-top: 12px;
 }
 
-.clinical-theme .dc-observaciones textarea {
+.mc-form .dc-observaciones textarea {
   min-height: 140px;
   width: 100%;
   resize: vertical;
@@ -2598,27 +2599,29 @@ input[type="radio"]:focus-visible {
   color: var(--dc-text);
 }
 
-.clinical-theme .dc-help {
+.mc-form .dc-help {
   color: var(--dc-muted);
   font-size: 12px;
   margin-top: 4px;
 }
 
 /* ---------- Hábitos tab ---------- */
-/* Pilot restyle (Requirements/Habits/habitos_tab_mockup.html): scoped to
-   .habits-theme via --hb-* tokens so it never leaks into other tabs, which
-   still share .ap-chip/.btn/.field/.badge base rules untouched. */
+/* Formerly a standalone .habits-theme pilot restyle
+   (Requirements/Habits/habitos_tab_mockup.html) with its own near-miss
+   green (#1f6b3a); folded into the shared .mc-form system-wide green
+   (#1f7a3a) as part of the full rollout -- do not reintroduce a separate
+   teal here. */
 
-.habits-theme {
-  --hb-teal: #1f6b3a;
-  --hb-teal-dark: #1a5a31;
+.mc-form {
+  --hb-teal: #1f7a3a;
+  --hb-teal-dark: #175a2c;
   --hb-teal-soft: #e7f6ec;
   --hb-line: #d7e3d9;
   --hb-muted: #5c6b60;
   --hb-text: #1c2a20;
   --hb-warn: #8a4b12;
   --hb-warn-bg: #fff4e5;
-  --hb-ok: #1f6b3a;
+  --hb-ok: #1f7a3a;
   --hb-ok-bg: #e7f6ec;
   --hb-pill: #f3f7f4;
   --hb-header-bg: #f4f7fa;
@@ -2667,14 +2670,14 @@ input[type="radio"]:focus-visible {
   align-content: start;
 }
 
-.habits-theme .habit-column-card {
+.mc-form .habit-column-card {
   border: 1px solid var(--hb-line);
   border-radius: 10px;
   background: var(--hb-white);
   overflow: hidden;
 }
 
-.habits-theme .habit-column-header {
+.mc-form .habit-column-header {
   margin: 0;
   padding: 10px 14px;
   font-size: 12px;
@@ -2685,7 +2688,7 @@ input[type="radio"]:focus-visible {
   border-bottom: 1px solid var(--hb-line);
 }
 
-.habits-theme .habit-column-body {
+.mc-form .habit-column-body {
   display: grid;
   gap: 0.75rem;
   padding: 0.75rem;
@@ -2706,12 +2709,12 @@ input[type="radio"]:focus-visible {
   flex-wrap: wrap;
 }
 
-.habits-theme .habit-card .name {
+.mc-form .habit-card .name {
   font-weight: 700;
   color: var(--hb-teal);
 }
 
-.habits-theme .habit-card .date {
+.mc-form .habit-card .date {
   color: var(--hb-muted);
   font-size: 11px;
 }
@@ -2785,7 +2788,7 @@ input[type="radio"]:focus-visible {
   justify-self: start;
 }
 
-.habits-theme .badge.habit-badge-info {
+.mc-form .badge.habit-badge-info {
   background: var(--hb-ok-bg);
   color: var(--hb-ok);
   border-radius: 6px;
@@ -2823,7 +2826,7 @@ input[type="radio"]:focus-visible {
   margin-bottom: 0.6rem;
 }
 
-.habits-theme .habits-chip-summary .ap-chip.selected {
+.mc-form .habits-chip-summary .ap-chip.selected {
   background: var(--hb-teal-soft);
   color: var(--hb-teal);
   border-color: var(--hb-teal-soft);
@@ -2834,13 +2837,13 @@ input[type="radio"]:focus-visible {
   min-height: 0;
 }
 
-.habits-theme .habits-chip-summary .ap-chip.selected.warn {
+.mc-form .habits-chip-summary .ap-chip.selected.warn {
   background: var(--hb-warn-bg);
   color: var(--hb-warn);
   border-color: var(--hb-warn-bg);
 }
 
-.habits-theme .habits-columns .ap-chip {
+.mc-form .habits-columns .ap-chip {
   border: 1px dashed var(--hb-line);
   background: var(--hb-white);
   color: var(--hb-teal);
@@ -2851,18 +2854,18 @@ input[type="radio"]:focus-visible {
   font-weight: 400;
 }
 
-.habits-theme .habits-columns .ap-chip.selected {
+.mc-form .habits-columns .ap-chip.selected {
   background: var(--hb-teal-soft);
   border: 1px solid var(--hb-teal);
   color: var(--hb-teal);
   font-weight: 700;
 }
 
-.habits-theme .habits-columns .ap-chip:hover:not(:disabled) {
+.mc-form .habits-columns .ap-chip:hover:not(:disabled) {
   border-color: var(--hb-teal);
 }
 
-.habits-theme .btn.ghost {
+.mc-form .btn.ghost {
   border: 1px solid var(--hb-line);
   background: var(--hb-white);
   border-radius: 8px;
@@ -2870,26 +2873,26 @@ input[type="radio"]:focus-visible {
   font-weight: 600;
 }
 
-.habits-theme .btn.primary {
+.mc-form .btn.primary {
   background: var(--hb-teal);
   border-radius: 8px;
   font-weight: 700;
   color: #fff;
 }
 
-.habits-theme .btn.primary:hover {
+.mc-form .btn.primary:hover {
   background: var(--hb-teal-dark);
 }
 
-.habits-theme .field span {
+.mc-form .field span {
   font-size: 11px;
   font-weight: 600;
   color: var(--hb-muted);
 }
 
-.habits-theme .field input,
-.habits-theme .field select,
-.habits-theme .field textarea {
+.mc-form .field input,
+.mc-form .field select,
+.mc-form .field textarea {
   border: 1px solid var(--hb-line);
   border-radius: 6px;
   color: var(--hb-text);
@@ -2918,12 +2921,13 @@ input[type="radio"]:focus-visible {
 }
 
 /* ---------- Historial ---------- */
-/* Pilot restyle (Requirements/HistoryTab/historial_tab_mockup.html): scoped
-   to .history-theme via --hist-* tokens, same pattern as the Hábitos-tab
-   pilot's .habits-theme -- values are this mockup's own palette, close to
-   but not identical to --hb-*, do not merge/average the two. */
+/* Formerly a standalone .history-theme pilot restyle
+   (Requirements/HistoryTab/historial_tab_mockup.html); folded into
+   .mc-form as part of the system-wide rollout. --hist-* now matches
+   --hb- and --dc-'s green exactly (the pilots' near-miss greens were
+   merged into one system-wide palette). */
 
-.history-theme {
+.mc-form {
   --hist-green: #1f7a3a;
   --hist-green-soft: #e7f6ec;
   --hist-green-wash: #f3faf5;
@@ -2932,11 +2936,11 @@ input[type="radio"]:focus-visible {
   --hist-text: #1c2a20;
 }
 
-.history-theme.record-history-list {
+.mc-form.record-history-list {
   display: block;
 }
 
-.history-theme .history-card {
+.mc-form .history-card {
   border: 1px solid var(--hist-line);
   border-radius: 10px;
   padding: 14px 16px;
@@ -2945,26 +2949,26 @@ input[type="radio"]:focus-visible {
   color: var(--hist-text);
 }
 
-.history-theme .history-card.latest {
+.mc-form .history-card.latest {
   border: 2px solid var(--hist-green);
   background: var(--hist-green-wash);
 }
 
-.history-theme .history-head {
+.mc-form .history-head {
   display: flex;
   justify-content: space-between;
   gap: 12px;
   align-items: flex-start;
 }
 
-.history-theme .history-who {
+.mc-form .history-who {
   display: flex;
   flex-wrap: wrap;
   gap: 8px;
   align-items: center;
 }
 
-.history-theme .history-chip {
+.mc-form .history-chip {
   border: 1px solid var(--hist-green);
   color: var(--hist-green);
   border-radius: 999px;
@@ -2974,12 +2978,12 @@ input[type="radio"]:focus-visible {
   background: #fff;
 }
 
-.history-theme .history-when {
+.mc-form .history-when {
   color: var(--hist-muted);
   font-size: 13px;
 }
 
-.history-theme .history-edit {
+.mc-form .history-edit {
   border: 1px solid var(--hist-green);
   background: #fff;
   color: var(--hist-green);
@@ -2989,7 +2993,7 @@ input[type="radio"]:focus-visible {
   cursor: pointer;
 }
 
-.history-theme .history-changed {
+.mc-form .history-changed {
   margin: 8px 0 10px;
   display: flex;
   flex-wrap: wrap;
@@ -2997,7 +3001,7 @@ input[type="radio"]:focus-visible {
   align-items: center;
 }
 
-.history-theme .history-changed-lbl {
+.mc-form .history-changed-lbl {
   font-size: 11px;
   font-weight: 700;
   color: var(--hist-muted);
@@ -3005,7 +3009,7 @@ input[type="radio"]:focus-visible {
   text-transform: uppercase;
 }
 
-.history-theme .history-tag {
+.mc-form .history-tag {
   background: var(--hist-green-soft);
   color: var(--hist-green);
   border-radius: 999px;
@@ -3014,17 +3018,17 @@ input[type="radio"]:focus-visible {
   font-weight: 700;
 }
 
-.history-theme .history-tag.ghost {
+.mc-form .history-tag.ghost {
   background: #fff;
   border: 1px solid var(--hist-line);
   color: var(--hist-muted);
 }
 
-.history-theme .history-sec {
+.mc-form .history-sec {
   margin-top: 10px;
 }
 
-.history-theme .history-sec-lbl {
+.mc-form .history-sec-lbl {
   font-size: 11px;
   font-weight: 700;
   color: var(--hist-muted);
@@ -3033,30 +3037,30 @@ input[type="radio"]:focus-visible {
   margin-bottom: 6px;
 }
 
-.history-theme .history-vitals {
+.mc-form .history-vitals {
   display: grid;
   grid-template-columns: repeat(4, minmax(0, 1fr));
   gap: 8px;
 }
 
 @media (max-width: 720px) {
-  .history-theme .history-vitals {
+  .mc-form .history-vitals {
     grid-template-columns: repeat(2, 1fr);
   }
 }
 
-.history-theme .history-v {
+.mc-form .history-v {
   background: #fff;
   border: 1px solid var(--hist-line);
   border-radius: 8px;
   padding: 6px 8px;
 }
 
-.history-theme .history-card.latest .history-v {
+.mc-form .history-card.latest .history-v {
   border-color: #cfe6d5;
 }
 
-.history-theme .history-v em {
+.mc-form .history-v em {
   display: block;
   font-style: normal;
   font-size: 10px;
@@ -3064,38 +3068,38 @@ input[type="radio"]:focus-visible {
   font-weight: 700;
 }
 
-.history-theme .history-v b {
+.mc-form .history-v b {
   font-size: 14px;
 }
 
-.history-theme .history-row-chips {
+.mc-form .history-row-chips {
   display: flex;
   flex-wrap: wrap;
   gap: 6px;
 }
 
-.history-theme .history-dx {
+.mc-form .history-dx {
   font-size: 15px;
 }
 
-.history-theme .history-dx p {
+.mc-form .history-dx p {
   margin: 0 0 4px;
 }
 
-.history-theme .k {
+.mc-form .k {
   color: var(--hist-muted);
   font-weight: 700;
   font-size: 12px;
 }
 
-.history-theme .history-dx.compact p {
+.mc-form .history-dx.compact p {
   display: -webkit-box;
   -webkit-line-clamp: 3;
   -webkit-box-orient: vertical;
   overflow: hidden;
 }
 
-.history-theme .history-notes-line {
+.mc-form .history-notes-line {
   display: -webkit-box;
   -webkit-line-clamp: 2;
   -webkit-box-orient: vertical;
@@ -3104,7 +3108,7 @@ input[type="radio"]:focus-visible {
   margin-top: 4px;
 }
 
-.history-theme .history-more {
+.mc-form .history-more {
   margin-top: 10px;
   background: transparent;
   border: 0;
@@ -3114,18 +3118,18 @@ input[type="radio"]:focus-visible {
   padding: 0;
 }
 
-.history-theme .history-detail {
+.mc-form .history-detail {
   display: none;
   margin-top: 12px;
   padding-top: 12px;
   border-top: 1px dashed var(--hist-line);
 }
 
-.history-theme .history-detail.open {
+.mc-form .history-detail.open {
   display: block;
 }
 
-.history-theme .history-muted {
+.mc-form .history-muted {
   color: var(--hist-muted);
   font-size: 13px;
 }
@@ -3469,7 +3473,7 @@ input[type="radio"]:focus-visible {
 
 /* PDF-file tile in the Archivos gallery -- same .dc-thumb container as an
    image tile, but the icon replaces <img>. */
-.clinical-theme .dc-thumb-pdf {
+.mc-form .dc-thumb-pdf {
   width: 128px;
   height: 128px;
   border-radius: 8px;
@@ -3480,7 +3484,7 @@ input[type="radio"]:focus-visible {
   color: var(--dc-green);
 }
 
-.clinical-theme .dc-upload-row-pdf {
+.mc-form .dc-upload-row-pdf {
   width: 56px;
   height: 56px;
   flex-shrink: 0;

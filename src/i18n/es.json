@@ -189,6 +189,8 @@
     "addEmail": "Agregar correo",
     "removePhone": "Eliminar teléfono",
     "additionalPhone": "Teléfono adicional",
+    "removeEmail": "Eliminar correo",
+    "additionalEmail": "Correo adicional",
     "moreCount": "+{{count}} más"
   },
   "medicines": {
@@ -270,7 +272,8 @@
     "name": "Nombre",
     "programs": "Programas",
     "programName": "Nombre del programa",
-    "addProgram": "Añadir programa"
+    "addProgram": "Añadir programa",
+    "removeProgram": "Eliminar programa"
   },
   "services": {
     "title": "Servicios",

@@ -31,7 +31,7 @@ import type {
 } from "../../services/types";
 import { useAuth } from "../../store/auth";
 import { calculateAge } from "../../utils/date";
-import { flattenError } from "../../utils/errors";
+import { apiErrorMessage, flattenError } from "../../utils/errors";
 import { DoseBuilder } from "./DoseBuilder";
 
 /** One in-progress línea in the composer -- superset of `RecetaLinea` with a
@@ -369,7 +369,7 @@ export function RecetaComposerModal({ lockedPatient, initialReceta, onClose, onS
       setDirty(false);
       return saved;
     } catch (err) {
-      setFormError(err instanceof ApiError ? flattenError(err.message) : String(err));
+      setFormError(apiErrorMessage(err));
       return null;
     } finally {
       setSaving(false);
@@ -442,7 +442,7 @@ export function RecetaComposerModal({ lockedPatient, initialReceta, onClose, onS
       onSaved();
       onClose();
     } catch (err) {
-      setFormError(err instanceof ApiError ? flattenError(err.message) : String(err));
+      setFormError(apiErrorMessage(err));
     } finally {
       setSaving(false);
     }

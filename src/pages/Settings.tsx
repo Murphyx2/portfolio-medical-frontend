@@ -4,12 +4,11 @@ import { useTranslation } from "react-i18next";
 
 import { ConfirmDialog, Page } from "../components/ui";
 import { LanguageSwitcher } from "../components/LanguageSwitcher";
-import { ApiError } from "../services/api";
 import { getSettings, resetSettings, updateSettings } from "../services/settings";
 import type { SystemSettings } from "../services/types";
 import { useAuth } from "../store/auth";
 import { can } from "../utils/can";
-import { flattenError } from "../utils/errors";
+import { apiErrorMessage } from "../utils/errors";
 import { formatDateTime } from "../utils/date";
 
 type SettingsSection = "loginSecurity" | "sessions" | "rateLimits" | "dataMedia";
@@ -71,7 +70,7 @@ export function Settings() {
         setSettings(data);
         setForm(toFormState(data));
       })
-      .catch((err) => setLoadError(err instanceof ApiError ? flattenError(err.message) : String(err)))
+      .catch((err) => setLoadError(apiErrorMessage(err)))
       .finally(() => setLoading(false));
   }
 
@@ -116,7 +115,7 @@ export function Settings() {
       setSettings(updated);
       setForm(toFormState(updated));
     } catch (err) {
-      setSaveError(err instanceof ApiError ? flattenError(err.message) : String(err));
+      setSaveError(apiErrorMessage(err));
     } finally {
       setSaving(false);
     }
@@ -137,7 +136,7 @@ export function Settings() {
       setForm(toFormState(updated));
       setConfirmingReset(false);
     } catch (err) {
-      setResetError(err instanceof ApiError ? flattenError(err.message) : String(err));
+      setResetError(apiErrorMessage(err));
     } finally {
       setResetPending(false);
     }

@@ -2,13 +2,13 @@ import { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 
 import { ConfirmDialog } from "../../components/ui";
-import { api, ApiError, openBlobInNewTab } from "../../services/api";
+import { api, openBlobInNewTab } from "../../services/api";
 import { RecetaComposerModal } from "../prescriptions/RecetaComposerModal";
 import type { DoctorProfile, Paginated, PatientLite, Receta, RecetaEstado } from "../../services/types";
 import { useAuth } from "../../store/auth";
 import { can } from "../../utils/can";
 import { formatDateTime } from "../../utils/date";
-import { flattenError } from "../../utils/errors";
+import { apiErrorMessage } from "../../utils/errors";
 
 // The 1-hour "Guardar cambios" window (RecetaComposerModal/backend
 // Receta.editable_by_within_window) -- an EMITIDA receta stays editable by
@@ -73,7 +73,7 @@ export function RecetasTab({ patient }: { patient: PatientLite }) {
         setRecetas(r.results);
         setDoctors(d.results);
       })
-      .catch((err) => setError(err instanceof ApiError ? flattenError(err.message) : String(err)))
+      .catch((err) => setError(apiErrorMessage(err)))
       .finally(() => setInitialLoading(false));
   }
 
@@ -88,7 +88,7 @@ export function RecetasTab({ patient }: { patient: PatientLite }) {
     try {
       await openBlobInNewTab(`/recetas/${r.id}/pdf/`);
     } catch (err) {
-      setRowError(err instanceof ApiError ? flattenError(err.message) : String(err));
+      setRowError(apiErrorMessage(err));
     }
   }
 
@@ -98,7 +98,7 @@ export function RecetasTab({ patient }: { patient: PatientLite }) {
       await api.post(`/recetas/${r.id}/duplicar/`, {});
       load();
     } catch (err) {
-      setRowError(err instanceof ApiError ? flattenError(err.message) : String(err));
+      setRowError(apiErrorMessage(err));
     }
   }
 
@@ -111,7 +111,7 @@ export function RecetasTab({ patient }: { patient: PatientLite }) {
       setAnulando(null);
       load();
     } catch (err) {
-      setAnularError(err instanceof ApiError ? flattenError(err.message) : String(err));
+      setAnularError(apiErrorMessage(err));
     } finally {
       setAnularPending(false);
     }

@@ -4,7 +4,7 @@ import { useTranslation } from "react-i18next";
 import { ListPage } from "../components/ListPage";
 import { Field, FormModal, Page, type Column } from "../components/ui";
 import { useListPage } from "../hooks/useListPage";
-import { api, ApiError } from "../services/api";
+import { api } from "../services/api";
 import { RecetaComposerModal } from "./prescriptions/RecetaComposerModal";
 import { FORMA_OPTIONS, VIA_OPTIONS } from "../services/prescriptions";
 import type {
@@ -15,7 +15,7 @@ import type {
 } from "../services/types";
 import { useAuth } from "../store/auth";
 import { can } from "../utils/can";
-import { flattenError } from "../utils/errors";
+import { apiErrorMessage } from "../utils/errors";
 
 const UNIDAD_OPTIONS: MedicineConcentracionUnidad[] = [
   "mg",
@@ -100,7 +100,7 @@ export function Medicines() {
       setModal(false);
       load();
     } catch (err) {
-      setFormError(err instanceof ApiError ? flattenError(err.message) : String(err));
+      setFormError(apiErrorMessage(err));
     }
   }
 

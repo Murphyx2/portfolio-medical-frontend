@@ -8,11 +8,11 @@ import { ConfirmDialog, Field, FormModal, MaskedValue, Page, type Column } from 
 import { ServiceChipList, ServiceCheckboxList } from "./doctors/ServicePickers";
 import { RoomChipList, RoomCheckboxList } from "./doctors/RoomPickers";
 import { useListPage } from "../hooks/useListPage";
-import { api, ApiError } from "../services/api";
+import { api } from "../services/api";
 import type { DoctorProfile, ExtraPhone, Paginated, Room, Service, User } from "../services/types";
 import { useAuth } from "../store/auth";
 import { can } from "../utils/can";
-import { flattenError } from "../utils/errors";
+import { apiErrorMessage } from "../utils/errors";
 import { formatPhone, formatPhoneInput, isValidRequiredPhone } from "../utils/phone";
 
 const EMPTY = {
@@ -141,7 +141,7 @@ export function Doctors() {
       setConfirmUnlink(false);
       load();
     } catch (err) {
-      setFormError(err instanceof ApiError ? flattenError(err.message) : String(err));
+      setFormError(apiErrorMessage(err));
     }
   }
 
@@ -185,7 +185,7 @@ export function Doctors() {
       setModal(false);
       load();
     } catch (err) {
-      setFormError(err instanceof ApiError ? flattenError(err.message) : String(err));
+      setFormError(apiErrorMessage(err));
     }
   }
 
@@ -202,7 +202,7 @@ export function Doctors() {
       setServicesModalDoctor(null);
       load();
     } catch (err) {
-      setServicesError(err instanceof ApiError ? flattenError(err.message) : String(err));
+      setServicesError(apiErrorMessage(err));
     }
   }
 
@@ -219,7 +219,7 @@ export function Doctors() {
       setRoomsModalDoctor(null);
       load();
     } catch (err) {
-      setRoomsError(err instanceof ApiError ? flattenError(err.message) : String(err));
+      setRoomsError(apiErrorMessage(err));
     }
   }
 

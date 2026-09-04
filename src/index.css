@@ -610,6 +610,7 @@ body {
   display: flex;
   align-items: center;
   gap: 0.4rem;
+  min-height: 44px;
   font-weight: 400;
   color: var(--mc-text);
 }
@@ -1394,6 +1395,7 @@ input[type="radio"]:focus-visible {
   align-items: flex-start;
   gap: 0.5rem;
   padding: 0.2rem 0;
+  min-height: 44px;
   font-size: 0.9rem;
 }
 
@@ -1622,6 +1624,7 @@ input[type="radio"]:focus-visible {
   display: flex;
   align-items: center;
   gap: 0.4rem;
+  min-height: 44px;
   font-size: 0.9rem;
   color: var(--mc-muted);
   white-space: nowrap;
@@ -1632,6 +1635,22 @@ input[type="radio"]:focus-visible {
    label text far to the right of the (now huge) checkbox. */
 .whatsapp-opt-in-field {
   margin-bottom: 0.9rem;
+}
+
+/* ---------- touch-label: generic checkbox/radio hit-area fix ---------- */
+/* Native checkbox/radio boxes render ~13px, well under the 44px touch
+   target guideline (WCAG 2.5.5). Clicking anywhere in a <label> activates
+   its wrapped input, so growing the label's own box is a real fix, not
+   just visual spacing -- the checkbox/radio itself keeps its normal
+   visual size. Applied to every bare (unstyled) checkbox/radio label in
+   the app; named wrapper classes (.show-inactive-toggle, .habit-switch,
+   .service-checkbox-row, .line-coverage-toggle, .form-section
+   .radio-group label) get the same min-height added directly instead. */
+.touch-label {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  min-height: 44px;
 }
 
 .kv-grid {
@@ -1801,6 +1820,7 @@ input[type="radio"]:focus-visible {
   display: flex;
   align-items: center;
   gap: 0.4rem;
+  min-height: 44px;
   font-size: 0.85rem;
   color: var(--mc-text);
   font-weight: 600;
@@ -2805,6 +2825,7 @@ input[type="radio"]:focus-visible {
   display: flex;
   align-items: center;
   gap: 0.4rem;
+  min-height: 44px;
   font-size: 0.85rem;
   color: var(--hb-text);
   font-weight: 600;

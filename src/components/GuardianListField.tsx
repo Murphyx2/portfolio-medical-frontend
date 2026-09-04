@@ -79,12 +79,18 @@ export function GuardianListField({
                 placeholder="(809) 555-1212"
                 maxLength={14}
                 required
+                aria-invalid={!!phoneErrors[index]}
+                aria-describedby={phoneErrors[index] ? `guardian-phone-error-${index}` : undefined}
                 onChange={(e) => {
                   updateAt(index, { phone: stripToDigits(e.target.value) });
                   onPhoneErrorClear(index);
                 }}
               />
-              {phoneErrors[index] && <span className="field-error">{phoneErrors[index]}</span>}
+              {phoneErrors[index] && (
+                <span id={`guardian-phone-error-${index}`} className="field-error" role="alert">
+                  {phoneErrors[index]}
+                </span>
+              )}
             </Field>
           </div>
           <div className="form-columns">

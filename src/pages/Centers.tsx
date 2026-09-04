@@ -298,7 +298,13 @@ export function Centers() {
             {phoneError && <span className="field-error">{phoneError}</span>}
           </Field>
           <Field label={t("centers.phones")}>
-            <PhoneNumberListField values={extraPhones} onChange={setExtraPhones} addLabel={t("centers.addPhone")} />
+            <PhoneNumberListField
+              values={extraPhones}
+              onChange={setExtraPhones}
+              addLabel={t("centers.addPhone")}
+              removeLabel={t("centers.removePhone")}
+              itemLabel={t("centers.additionalPhone")}
+            />
           </Field>
           <Field label={t("centers.emailLegacy")}>
             <input type="email" value={form.email} onChange={(e) => setForm({ ...form, email: e.target.value })} />

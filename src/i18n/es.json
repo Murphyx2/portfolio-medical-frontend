@@ -130,7 +130,9 @@
     "guardianNotOnFile": "No hay información del tutor registrada",
     "guardianCedulaTooltip": "Esta cédula pertenece al tutor del paciente, no al paciente",
     "addGuardian": "Agregar tutor",
-    "removeGuardian": "Eliminar tutor"
+    "removeGuardian": "Eliminar tutor",
+    "removePhone": "Eliminar número de teléfono",
+    "additionalPhone": "Teléfono adicional"
   },
   "doctors": {
     "title": "Médicos",
@@ -183,6 +185,8 @@
     "emails": "Correos adicionales",
     "addPhone": "Agregar teléfono",
     "addEmail": "Agregar correo",
+    "removePhone": "Eliminar teléfono",
+    "additionalPhone": "Teléfono adicional",
     "moreCount": "+{{count}} más"
   },
   "medicines": {

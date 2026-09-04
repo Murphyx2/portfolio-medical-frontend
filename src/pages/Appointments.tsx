@@ -234,6 +234,11 @@ export function AppointmentDetailsDialog({
 export function Appointments() {
   const { t } = useTranslation();
   const { user } = useAuth();
+  // Locks the Doctor field to the logged-in doctor's own profile (mirrors
+  // RecetaComposerModal's isDoctorRole handling) so useDoctorServiceFilter
+  // has a doctor to narrow against from the very first render, instead of
+  // showing every service until the doctor manually re-picks themselves.
+  const isDoctorRole = user?.role === "DOCTOR";
   const canCreate = can(user?.role, "create", "appointments");
   const canEdit = can(user?.role, "edit", "appointments");
   const canConfirm = can(user?.role, "confirm", "appointments");
@@ -320,6 +325,8 @@ export function Appointments() {
     currentDoctorId: form.doctor,
   });
 
+  const myDoctorId = isDoctorRole ? (doctors.find((d) => d.user_id === user?.id)?.id ?? 0) : 0;
+
   useEffect(() => {
     // Form-picker options: fetched once, not on every page/sort/search
     // change (unlike `load`, which re-runs then). Patients are looked up
@@ -328,6 +335,18 @@ export function Appointments() {
     api.get<Paginated<Service>>("/services/?page_size=200").then((r) => setServices(r.results)).catch(() => {});
     api.get<Paginated<ServiceType>>("/service-types/?page_size=100").then((r) => setServiceTypes(r.results)).catch(() => {});
   }, []);
+
+  // Doctor profiles load asynchronously and the "+ New appointment" button
+  // may already have opened the form before that resolves -- catch up here
+  // once `doctors` arrives, same "only while still unset" guard the
+  // composer's own auto-resolve relies on so this never clobbers an
+  // in-progress edit.
+  useEffect(() => {
+    if (isDoctorRole && myDoctorId && modal && !editingAppointment && form.doctor === 0) {
+      setForm((f) => ({ ...f, doctor: myDoctorId }));
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [doctors, modal]);
 
   function pickDoctor(doctorId: number) {
     setForm((f) => {
@@ -589,7 +608,7 @@ export function Appointments() {
         canCreate && (
           <button
             className="btn primary"
-            onClick={() => { setEditingAppointment(null); setForm(EMPTY); setSelectedPatient(null); setFormError(""); setDateTimeError(""); setModal(true); }}
+            onClick={() => { setEditingAppointment(null); setForm({ ...EMPTY, doctor: myDoctorId }); setSelectedPatient(null); setFormError(""); setDateTimeError(""); setModal(true); }}
           >
             + {t("appointments.new")}
           </button>
@@ -672,19 +691,25 @@ export function Appointments() {
             </>
           )}
           <Field label={t("appointments.doctor")}>
-            <SearchableSelect<DoctorProfile>
-              value={availableDoctors.find((d) => d.id === form.doctor) ?? null}
-              onSelect={(d) => pickDoctor(d.id)}
-              search={async (query) => {
-                const q = query.trim().toLowerCase();
-                const results = q ? availableDoctors.filter((d) => d.full_name.toLowerCase().includes(q)) : availableDoctors;
-                return { results, count: results.length };
-              }}
-              minChars={1}
-              placeholder={t("appointments.doctor")}
-              getLabel={(d) => d.full_name}
-              autoFocus={false}
-            />
+            {isDoctorRole ? (
+              <p className="receta-patient-info">
+                <strong>{doctors.find((d) => d.id === form.doctor)?.full_name ?? "—"}</strong>
+              </p>
+            ) : (
+              <SearchableSelect<DoctorProfile>
+                value={availableDoctors.find((d) => d.id === form.doctor) ?? null}
+                onSelect={(d) => pickDoctor(d.id)}
+                search={async (query) => {
+                  const q = query.trim().toLowerCase();
+                  const results = q ? availableDoctors.filter((d) => d.full_name.toLowerCase().includes(q)) : availableDoctors;
+                  return { results, count: results.length };
+                }}
+                minChars={1}
+                placeholder={t("appointments.doctor")}
+                getLabel={(d) => d.full_name}
+                autoFocus={false}
+              />
+            )}
           </Field>
           <Field label={t("appointments.service")}>
             <SearchableSelect<Service>

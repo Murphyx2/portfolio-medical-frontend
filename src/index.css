@@ -529,6 +529,23 @@ body {
   white-space: nowrap;
 }
 
+.inline-field-group {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.inline-field-group input {
+  flex: 2;
+  min-width: 0;
+}
+
+.inline-field-group select,
+.inline-field-group .searchable-select {
+  flex: 1;
+  min-width: 0;
+}
+
 .field textarea {
   min-height: 64px;
   resize: vertical;
@@ -3043,4 +3060,360 @@ input[type="radio"]:focus-visible {
 .history-theme .history-muted {
   color: var(--hist-muted);
   font-size: 13px;
+}
+
+/* ---------- Recetas (prescriptions) ---------- */
+
+/* Read-only letterhead preview at the top of the Receta composer -- a
+   printed-document box, not a card-with-shadow: same border color/radius
+   tokens as inputs (--mc-border, 8px), not the elevated .dc-card treatment. */
+.receta-letterhead {
+  border: 1px solid var(--mc-border);
+  border-radius: 8px;
+  padding: 0.75rem 1rem;
+  margin-bottom: 1rem;
+  background: var(--mc-white);
+}
+
+.receta-letterhead-name {
+  font-weight: 700;
+  color: var(--mc-text);
+}
+
+.receta-letterhead-short {
+  color: var(--mc-primary-dark);
+  font-weight: 700;
+}
+
+.receta-letterhead-line {
+  color: var(--mc-muted);
+  font-size: 0.85rem;
+  margin-top: 0.15rem;
+}
+
+.receta-patient-info {
+  display: flex;
+  gap: 0.75rem;
+  align-items: baseline;
+  color: var(--mc-muted);
+  font-size: 0.85rem;
+  margin: 0.25rem 0 0.75rem;
+}
+
+.receta-lines {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  margin: 0.5rem 0 1rem;
+}
+
+.receta-line-card {
+  border: 1px solid var(--mc-border);
+  border-radius: 12px;
+  padding: 0.75rem 1rem;
+  background: var(--mc-white);
+}
+
+.receta-line-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 0.5rem;
+  margin-bottom: 0.5rem;
+}
+
+.receta-line-head span {
+  font-weight: 700;
+  color: var(--mc-muted);
+  font-size: 0.8rem;
+  text-transform: uppercase;
+  letter-spacing: 0.02em;
+}
+
+/* The line's collapse/expand control (§2) -- a plain button reset to read
+   as the same bold label the bare <span> used to be, just clickable. */
+.receta-line-toggle {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  background: none;
+  border: none;
+  padding: 0;
+  cursor: pointer;
+  font: inherit;
+  text-align: left;
+}
+
+.receta-line-label {
+  font-weight: 700;
+  color: var(--mc-muted);
+  font-size: 0.8rem;
+  text-transform: uppercase;
+  letter-spacing: 0.02em;
+}
+
+.receta-line-summary {
+  font-weight: 400;
+  text-transform: none;
+  letter-spacing: normal;
+  color: var(--mc-text);
+  font-size: 0.85rem;
+}
+
+.receta-line-actions {
+  display: flex;
+  gap: 0.25rem;
+}
+
+.receta-line-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.5rem 0.75rem;
+}
+
+@media (max-width: 720px) {
+  .receta-line-grid { grid-template-columns: 1fr; }
+}
+
+.dose-builder {
+  border-top: 1px dashed var(--mc-border);
+  margin-top: 0.5rem;
+  padding-top: 0.5rem;
+}
+
+.dose-builder-row {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.5rem 0.75rem;
+}
+
+@media (max-width: 720px) {
+  .dose-builder-row { grid-template-columns: 1fr; }
+}
+
+/* Live preview of the printed Dosis line -- reuses the Clinical Green
+   Lightest tint (--mc-lightest/--mc-primary-dark) already established for
+   inline success/preview boxes elsewhere, not a new hue. */
+.dose-builder-preview {
+  margin-top: 0.5rem;
+  background: var(--mc-lightest);
+  color: var(--mc-primary-dark);
+  border-radius: 8px;
+  padding: 0.5rem 0.75rem;
+  font-weight: 700;
+  font-size: 0.85rem;
+}
+
+.receta-cita-fields {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.5rem 0.75rem;
+}
+
+@media (max-width: 720px) {
+  .receta-cita-fields { grid-template-columns: 1fr; }
+}
+
+/* Recetas tab inside the Expediente modal -- dense list rows, mirroring
+   RecordHistoryList's row structure rather than the full Table component. */
+.recetas-tab-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.receta-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  border: 1px solid var(--mc-border);
+  border-radius: 12px;
+  padding: 0.6rem 0.85rem;
+  flex-wrap: wrap;
+}
+
+.receta-row-info {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  flex-wrap: wrap;
+  font-size: 0.88rem;
+}
+
+.receta-row-actions {
+  display: flex;
+  gap: 0.4rem;
+  flex-wrap: wrap;
+}
+
+.recetas-tab-empty {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.recetas-tab-empty p {
+  color: var(--mc-muted);
+  font-size: 0.88rem;
+  margin: 0;
+}
+
+/* ---------- Recetas visual system (adopted direction, see DESIGN.md) ----------
+   Shipped and permanent: adopts recetas_mockup.html's own palette/materials
+   (a brighter, more saturated green than Clinical Green, a navy letterhead
+   frame, pill-style buttons, bold field labels) for the Recetas composer/tab.
+   Per DESIGN.md's "Adopted Direction" section, this is the direction the
+   whole app is moving toward -- currently rolled out here only, with the
+   rest of the app's re-theme planned as separate future work. Scoped to
+   elements inside .receta-prototype (class name kept as-is; it no longer
+   means "prototype" in the throwaway sense) so today's rollout stays
+   contained to this one surface. */
+.receta-prototype {
+  --rx-g: #1f7a3a;
+  --rx-soft: #e7f6ec;
+  --rx-line: #d7e3d9;
+  --rx-muted: #5c6b60;
+  --rx-text: #1c2a20;
+  --rx-navy: #1a3a6b;
+  color: var(--rx-text);
+}
+
+.receta-prototype h4 {
+  color: var(--rx-g);
+}
+
+.receta-prototype .receta-letterhead {
+  border: 2px solid var(--rx-navy);
+  border-radius: 4px;
+  padding: 0.75rem 1rem;
+  background: var(--mc-white);
+}
+
+.receta-prototype .receta-letterhead-name {
+  color: var(--rx-navy);
+}
+
+.receta-prototype .receta-letterhead-short {
+  color: var(--rx-navy);
+}
+
+.receta-prototype .receta-letterhead-line {
+  color: var(--rx-muted);
+}
+
+.receta-prototype .receta-patient-info {
+  color: var(--rx-muted);
+}
+
+.receta-prototype .receta-line-card {
+  border: 1px solid var(--rx-line);
+  border-radius: 10px;
+  background: #fafcfa;
+}
+
+.receta-prototype .receta-line-head span {
+  color: var(--rx-muted);
+  text-transform: none;
+  letter-spacing: normal;
+  font-weight: 700;
+}
+
+/* `Field` (components/ui.tsx) renders <label class="field"><span>...</span>
+   ...</label> -- the base `.field span` rule sets an explicit color, which
+   an inherited color from a `label` selector can't override (only a rule
+   targeting the span itself can), so this must match the span directly. */
+.receta-prototype .field span,
+.receta-prototype label {
+  color: var(--rx-muted);
+  font-weight: 700;
+}
+
+.receta-prototype input,
+.receta-prototype select,
+.receta-prototype textarea {
+  border-color: var(--rx-line);
+  border-radius: 8px;
+}
+
+.receta-prototype input:focus,
+.receta-prototype select:focus,
+.receta-prototype textarea:focus {
+  border-color: var(--rx-g);
+  outline: 2px solid var(--rx-g);
+  outline-offset: 1px;
+}
+
+.receta-prototype .dose-builder {
+  border-top: 1px dashed var(--rx-line);
+}
+
+.receta-prototype .dose-builder-preview {
+  background: var(--rx-soft);
+  color: var(--rx-g);
+  border-radius: 8px;
+  font-weight: 700;
+}
+
+.receta-prototype .btn.primary {
+  background: var(--rx-g);
+  border-color: var(--rx-g);
+  color: #fff;
+  border-radius: 8px;
+  font-weight: 700;
+}
+
+.receta-prototype .btn.primary:hover {
+  filter: brightness(0.92);
+}
+
+.receta-prototype .btn.ghost {
+  background: #fff;
+  border: 1px solid var(--rx-g);
+  color: var(--rx-g);
+  border-radius: 8px;
+  font-weight: 700;
+}
+
+.receta-prototype .btn.ghost:hover {
+  background: var(--rx-soft);
+}
+
+.receta-prototype .receta-row {
+  border: 1px solid var(--rx-line);
+  border-radius: 10px;
+  background: #fafcfa;
+}
+
+.receta-prototype .badge.status-draft {
+  background: var(--rx-muted);
+}
+
+.receta-prototype .badge.status-completed {
+  background: var(--rx-g);
+}
+
+.receta-prototype .dc-ghost-btn {
+  border-color: var(--rx-g);
+  color: var(--rx-g);
+  border-radius: 8px;
+}
+
+/* PDF-file tile in the Archivos gallery -- same .dc-thumb container as an
+   image tile, but the icon replaces <img>. */
+.clinical-theme .dc-thumb-pdf {
+  width: 128px;
+  height: 128px;
+  border-radius: 8px;
+  border: 1px solid var(--dc-line);
+  background: var(--dc-wash);
+  display: grid;
+  place-items: center;
+  color: var(--dc-green);
+}
+
+.clinical-theme .dc-upload-row-pdf {
+  width: 56px;
+  height: 56px;
+  flex-shrink: 0;
 }

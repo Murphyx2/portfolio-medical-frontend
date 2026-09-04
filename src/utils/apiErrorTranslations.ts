@@ -83,6 +83,16 @@ const EXACT: Record<string, string> = {
   // Accounts
   "Only admins can assign the ADMIN role.": "Solo los administradores pueden asignar el rol de ADMIN.",
   "Only admins can modify admin accounts.": "Solo los administradores pueden modificar cuentas de administrador.",
+
+  // Usuario <-> Médico link
+  "You must link or create a doctor profile.": "Debe vincular o crear un perfil de médico.",
+  "Select a médico to link.": "Selecciona un médico para vincular.",
+  "This médico is no longer available to link.": "Este médico ya no está disponible para vincular.",
+  "Only users with the Doctor/a role can be linked to a médico.":
+    "Solo usuarios con rol Doctor/a pueden vincularse a un médico.",
+  "Choose either an existing account to link or create a new one, not both.":
+    "Elige vincular una cuenta existente o crear una, no ambas.",
+  "A user with this username already exists.": "Ya existe un usuario con este nombre de usuario.",
 };
 
 const PATTERNS: { re: RegExp; es: (m: RegExpMatchArray) => string }[] = [

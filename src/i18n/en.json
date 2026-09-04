@@ -137,12 +137,17 @@
     "new": "New doctor",
     "code": "Code",
     "user": "User account",
-    "userRequired": "Select a doctor account.",
     "license": "Exequátur (medical license)",
     "contactPhone": "Contact phone",
     "contactEmail": "Contact email",
     "bio": "Bio",
     "fullName": "Full name",
+    "fullNameRequired": "Full name is required.",
+    "createAccount": "Create user account",
+    "accountBlockTitle": "Account (Doctor role)",
+    "editUser": "Edit user",
+    "unlinkAccount": "Unlink account",
+    "unlinkAccountConfirm": "Unlink this doctor's account? Both the doctor profile and the user stay, but they will no longer log in as this doctor.",
     "services": "Services",
     "manageServices": "Manage services",
     "noServices": "No active services available.",
@@ -327,7 +332,18 @@
     "actionUPDATE": "Update",
     "actionDELETE": "Delete",
     "actionREAD": "Read",
-    "actionEXPORT": "Export"
+    "actionEXPORT": "Export",
+    "doctorProfile": {
+      "title": "Doctor profile (required)",
+      "modeLink": "Link existing doctor",
+      "modeCreate": "Create new doctor",
+      "select": "Doctor",
+      "noneAvailable": "No unlinked doctors available. Create the profile below.",
+      "required": "You must link or create a doctor profile.",
+      "openProfile": "Open profile",
+      "roleChangeConfirm": "This user will no longer log in as a doctor. The doctor profile is kept.",
+      "nameFromProfile": "This user's name comes from the linked doctor profile. To change it, edit the profile on the Doctors page."
+    }
   },
   "appointments": {
     "title": "Appointments",

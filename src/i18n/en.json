@@ -189,6 +189,8 @@
     "addEmail": "Add email",
     "removePhone": "Remove phone",
     "additionalPhone": "Additional phone",
+    "removeEmail": "Remove email",
+    "additionalEmail": "Additional email",
     "moreCount": "+{{count}} more"
   },
   "medicines": {
@@ -270,7 +272,8 @@
     "name": "Name",
     "programs": "Programs",
     "programName": "Program name",
-    "addProgram": "Add program"
+    "addProgram": "Add program",
+    "removeProgram": "Remove program"
   },
   "services": {
     "title": "Services",

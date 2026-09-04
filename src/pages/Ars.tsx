@@ -174,6 +174,7 @@ export function Ars() {
                     <input
                       value={p.name}
                       placeholder={t("ars.programName")}
+                      aria-label={t("ars.programName")}
                       onChange={(e) => {
                         const next = [...form.programs];
                         next[idx] = { ...next[idx], name: e.target.value };
@@ -183,6 +184,7 @@ export function Ars() {
                     <button
                       type="button"
                       className="btn small danger"
+                      aria-label={t("ars.removeProgram")}
                       onClick={() =>
                         setForm({
                           ...form,

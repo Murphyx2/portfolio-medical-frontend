@@ -30,10 +30,14 @@ function EmailListField({
   values,
   onChange,
   addLabel,
+  removeLabel,
+  itemLabel,
 }: {
   values: string[];
   onChange: (next: string[]) => void;
   addLabel: string;
+  removeLabel: string;
+  itemLabel: string;
 }) {
   function updateAt(index: number, next: string) {
     onChange(values.map((v, i) => (i === index ? next : v)));
@@ -45,11 +49,11 @@ function EmailListField({
     <div className="phone-list-field">
       {values.map((value, index) => (
         <div className="phone-list-row" key={index}>
-          <input type="email" value={value} onChange={(e) => updateAt(index, e.target.value)} />
+          <input type="email" value={value} aria-label={itemLabel} onChange={(e) => updateAt(index, e.target.value)} />
           <button
             type="button"
             className="phone-list-remove-btn"
-            aria-label="Remove email"
+            aria-label={removeLabel}
             onClick={() => removeAt(index)}
           >
             ×
@@ -289,13 +293,19 @@ export function Centers() {
               value={form.phone}
               placeholder="(809) 555-1212"
               maxLength={14}
+              aria-invalid={!!phoneError}
+              aria-describedby={phoneError ? "center-phone-error" : undefined}
               onChange={(e) => {
                 setForm({ ...form, phone: formatPhoneInput(e.target.value) });
                 setPhoneError("");
               }}
               required
             />
-            {phoneError && <span className="field-error">{phoneError}</span>}
+            {phoneError && (
+              <span id="center-phone-error" className="field-error" role="alert">
+                {phoneError}
+              </span>
+            )}
           </Field>
           <Field label={t("centers.phones")}>
             <PhoneNumberListField
@@ -310,7 +320,13 @@ export function Centers() {
             <input type="email" value={form.email} onChange={(e) => setForm({ ...form, email: e.target.value })} />
           </Field>
           <Field label={t("centers.emails")}>
-            <EmailListField values={extraEmails} onChange={setExtraEmails} addLabel={t("centers.addEmail")} />
+            <EmailListField
+              values={extraEmails}
+              onChange={setExtraEmails}
+              addLabel={t("centers.addEmail")}
+              removeLabel={t("centers.removeEmail")}
+              itemLabel={t("centers.additionalEmail")}
+            />
           </Field>
           <label className="show-inactive-toggle">
             <input

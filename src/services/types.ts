@@ -98,28 +98,6 @@ export interface MedicalCenter {
   active: boolean;
 }
 
-export type ReportEngineKey = "servicios_prestados";
-export type ReportPackEngineKey = "paquete_ars";
-
-export interface ReportDefinition {
-  id: number;
-  name: string;
-  category: string;
-  description: string;
-  engine_key: ReportEngineKey;
-  active: boolean;
-  last_generated_at: string | null;
-}
-
-export interface ReportPack {
-  id: number;
-  name: string;
-  periodicity: string;
-  engine_key: ReportPackEngineKey;
-  active: boolean;
-  last_generated_at: string | null;
-}
-
 export interface ServiceLite {
   id: number;
   name: string;
@@ -205,10 +183,6 @@ export interface Patient {
   email: string;
   cedula: string;
   nss: string;
-  ars: number | null;
-  ars_name: string | null;
-  ars_program: number | null;
-  ars_program_name: string | null;
   center: number | null;
   center_name: string | null;
   center_code: string | null;
@@ -221,20 +195,6 @@ export interface Patient {
   whatsapp_opt_in_by: number | null;
   created_at: string;
   updated_at: string;
-  active: boolean;
-}
-
-export interface ARSProgram {
-  id: number;
-  name: string;
-  active: boolean;
-}
-
-export interface ARS {
-  id: number;
-  ars_id: string;
-  name: string;
-  programs: ARSProgram[];
   active: boolean;
 }
 
@@ -546,24 +506,6 @@ export interface Service {
   active: boolean;
 }
 
-// A Co-pago override for one Service under a specific ARS, or a specific
-// ARS+Program combo -- ars_program null means "applies to the whole ARS,
-// any program". No display of this price happens in the encounter flow yet
-// (no Billing/Cashier module) -- this is purely how staff maintain the
-// price list the backend resolves against when a service line is created.
-export interface ServicePrice {
-  id: number;
-  service: number;
-  service_name: string;
-  ars: number;
-  ars_name: string;
-  ars_program: number | null;
-  ars_program_name: string | null;
-  co_pago: string;
-  created_at: string;
-  active: boolean;
-}
-
 export interface APCategory {
   id: number;
   name: string;
@@ -626,243 +568,5 @@ export interface Appointment {
   created_by: number;
   created_by_name: string;
   created_at: string;
-  active: boolean;
-}
-
-export type EncounterStatus = "DRAFT" | "ACTIVE" | "COMPLETED" | "CANCELLED";
-export type EncounterPriority = "ROUTINE" | "URGENT" | "EMERGENCY";
-export type EncounterServiceStatus = "PENDING" | "COMPLETED" | "CANCELLED";
-
-export interface EncounterPatientSummary {
-  id: number;
-  full_name: string;
-  age: number | null;
-  gender: string;
-  cedula: string;
-  allergies: string;
-  critical_conditions: string;
-  ars: number | null;
-  ars_name: string | null;
-  ars_program: number | null;
-  has_guardian: boolean;
-  guardian_cedula: string;
-}
-
-export interface EncounterDiagnosis {
-  id?: number;
-  description: string;
-  is_primary: boolean;
-}
-
-export interface EncounterService {
-  id?: number;
-  service: number;
-  service_name?: string;
-  doctor: number | null;
-  doctor_name?: string | null;
-  room: number | null;
-  room_name?: string | null;
-  quantity: number;
-  notes: string;
-  status: EncounterServiceStatus;
-  ars_covered: boolean;
-  authorization_number: string | null;
-}
-
-export interface Encounter {
-  id: number;
-  encounter_number: string | null;
-  service_type: number;
-  service_type_name: string;
-  patient: number;
-  patient_info: EncounterPatientSummary;
-  referring_doctor_name: string;
-  center: number | null;
-  center_name: string | null;
-  status: EncounterStatus;
-  priority: EncounterPriority;
-  admitted_at: string | null;
-  completed_at: string | null;
-  chief_complaint: string;
-  cancel_reason: string;
-  ars: number | null;
-  ars_name: string | null;
-  ars_program: number | null;
-  ars_program_name: string | null;
-  diagnoses: EncounterDiagnosis[];
-  services: EncounterService[];
-  created_by: number;
-  created_by_name: string;
-  created_at: string;
-  updated_at: string;
-  active: boolean;
-}
-
-// --- Communications (Comunicaciones) ---
-
-export type CommunicationsChannel = "EMAIL" | "WHATSAPP";
-export type CommunicationsAudience = "STAFF" | "PATIENT";
-export type CommunicationsKind =
-  | "AVISO"
-  | "INFORMACION"
-  | "ALERTA"
-  | "CITA_CREADA"
-  | "CITA_RECORDATORIO"
-  | "CITA_REAGENDADA"
-  | "CITA_CANCELADA";
-export type CommunicationsPriority = "NORMAL" | "ALERTA";
-export type CommunicationsMessageStatus =
-  | "DRAFT"
-  | "QUEUED"
-  | "SENDING"
-  | "SENT"
-  | "PARTIAL"
-  | "FAILED"
-  | "CANCELLED";
-export type CommunicationsDeliveryStatus =
-  | "QUEUED"
-  | "SENT"
-  | "DELIVERED"
-  | "READ"
-  | "FAILED"
-  | "UNDELIVERABLE"
-  | "OPTED_OUT";
-
-export interface CommunicationsRecipientsInput {
-  all_staff: boolean;
-  roles: Role[];
-  user_ids: number[];
-}
-
-export interface CommunicationsMessage {
-  id: number;
-  channel: CommunicationsChannel;
-  audience: CommunicationsAudience;
-  kind: CommunicationsKind;
-  priority: CommunicationsPriority;
-  subject: string;
-  body: string;
-  template: number | null;
-  created_by: number | null;
-  created_by_name: string;
-  scheduled_for: string | null;
-  status: CommunicationsMessageStatus;
-  recipient_count: number;
-  appointment: number | null;
-  created_at: string;
-  skipped_no_email?: number;
-}
-
-export interface CommunicationsMessageCreate {
-  channel: CommunicationsChannel;
-  audience: "STAFF";
-  kind: CommunicationsKind;
-  priority: CommunicationsPriority;
-  subject: string;
-  body: string;
-  scheduled_for?: string | null;
-  status: "DRAFT" | "QUEUED";
-  recipients: CommunicationsRecipientsInput;
-}
-
-export interface CommunicationsDelivery {
-  id: number;
-  message: number;
-  user: number | null;
-  user_name: string | null;
-  patient: number | null;
-  patient_name: string | null;
-  appointment: number | null;
-  appointment_date: string | null;
-  address_masked: string;
-  status: CommunicationsDeliveryStatus;
-  error: string;
-  sent_at: string | null;
-  delivered_at: string | null;
-  read_at: string | null;
-  created_at: string;
-}
-
-export interface CommunicationsTemplate {
-  id: number;
-  channel: CommunicationsChannel;
-  kind: CommunicationsKind;
-  provider_name: string;
-  language: string;
-  body_email: string;
-  variables_json: string[];
-  is_active: boolean;
-  created_at: string;
-  updated_at: string;
-}
-
-export interface CommunicationsSettings {
-  from_name: string;
-  reply_to: string;
-  whatsapp_phone_number_id: string;
-  whatsapp_business_account_id: string;
-  whatsapp_access_token?: string;
-  whatsapp_access_token_last4: string;
-  whatsapp_app_secret?: string;
-  whatsapp_app_secret_last4: string;
-  whatsapp_default_country_code: string;
-  whatsapp_reminder_hours: number;
-  whatsapp_master_enabled: boolean;
-  whatsapp_configured: boolean;
-  webhook_url: string;
-  updated_at: string;
-}
-
-// --- Recetas médicas (prescriptions) ---
-
-export type RecetaEstado = "BORRADOR" | "EMITIDA" | "ANULADA";
-
-/** Dose-builder frequency kinds -- see DoseBuilder.tsx for the composer UI
- * that produces this shape and the preview-string renderer that reads it. */
-export type DosisFrecuenciaTipo = "cada_n_horas" | "n_veces_dia" | "cada_n_dias" | "una_vez_semana" | "libre";
-
-export interface DosisJson {
-  unidades_por_toma: number;
-  unidad_toma: string;
-  frecuencia_tipo: DosisFrecuenciaTipo;
-  frecuencia_n: number | null;
-  frecuencia_texto_libre: string;
-  uso_continuo: boolean;
-}
-
-export interface RecetaLinea {
-  id?: number;
-  medicamento: number | null;
-  nombre_impreso: string;
-  cantidad: number | string;
-  concentracion_valor: string;
-  unidad: string;
-  via: string;
-  forma: string;
-  fuera_de_catalogo: boolean;
-  dosis_json: DosisJson;
-  dosis_texto: string;
-  indicacion_extra: string;
-  uso_continuo: boolean;
-  orden: number;
-}
-
-export interface Receta {
-  id: number;
-  patient: number;
-  centro: number;
-  medico: number;
-  created_by: number | null;
-  fecha: string;
-  proxima_cita_at: string | null;
-  cita: number | null;
-  estado: RecetaEstado;
-  pdf: string | null;
-  /** Set once, when emitir() flipped this receta to EMITIDA -- the anchor
-   * for the 1-hour "Guardar cambios" edit window (see
-   * RecetasTab.tsx::withinEditWindow). Null for a BORRADOR/ANULADA-without-
-   * ever-having-been-emitida receta. */
-  emitida_at: string | null;
-  lineas: RecetaLinea[];
   active: boolean;
 }

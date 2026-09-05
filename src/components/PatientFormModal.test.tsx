@@ -22,8 +22,6 @@ vi.mock("../store/auth", () => ({
 
 const mockedApi = vi.mocked(api);
 
-const ARS_LIST = { count: 0, next: null, previous: null, results: [] };
-
 function existingPatient(overrides: Partial<Patient> = {}): Patient {
   return {
     id: 5,
@@ -39,13 +37,9 @@ function existingPatient(overrides: Partial<Patient> = {}): Patient {
     email: "jane@example.com",
     cedula: "00100000001",
     nss: "",
-    ars: null,
-    ars_name: null,
-    ars_program: null,
-    ars_program_name: null,
     center: 1,
-    center_name: "INCAF",
-    center_code: "INCAF",
+    center_name: "Demo Medical Center",
+    center_code: "DEMO",
     has_guardian: true,
     guardians: [],
     allergies: "Penicillin",
@@ -62,10 +56,6 @@ function existingPatient(overrides: Partial<Patient> = {}): Patient {
 
 beforeEach(() => {
   vi.clearAllMocks();
-  mockedApi.get.mockImplementation((path: string) => {
-    if (path.startsWith("/ars/")) return Promise.resolve(ARS_LIST) as never;
-    return Promise.reject(new Error(`unexpected GET ${path}`));
-  });
 });
 
 describe("PatientFormModal", () => {

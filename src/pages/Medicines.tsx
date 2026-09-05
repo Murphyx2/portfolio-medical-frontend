@@ -5,8 +5,7 @@ import { ListPage } from "../components/ListPage";
 import { Field, FormModal, Page, type Column } from "../components/ui";
 import { useListPage } from "../hooks/useListPage";
 import { api } from "../services/api";
-import { RecetaComposerModal } from "./prescriptions/RecetaComposerModal";
-import { FORMA_OPTIONS, VIA_OPTIONS } from "../services/prescriptions";
+import { FORMA_OPTIONS, VIA_OPTIONS } from "../services/medicineOptions";
 import type {
   Medicine,
   MedicineConcentracionUnidad,
@@ -45,9 +44,7 @@ export function Medicines() {
   const canWrite = can(user?.role, "edit", "medicines");
   const canDelete = can(user?.role, "delete", "medicines");
   const isAdmin = can(user?.role, "restore", "medicines");
-  const canCreateReceta = can(user?.role, "edit", "recetas");
   const [modal, setModal] = useState(false);
-  const [recetaModal, setRecetaModal] = useState(false);
   const [form, setForm] = useState(EMPTY);
   const [editId, setEditId] = useState<number | null>(null);
   const [formError, setFormError] = useState("");
@@ -138,11 +135,6 @@ export function Medicines() {
       title={t("medicines.title")}
       actions={
         <div className="page-actions-row">
-          {canCreateReceta && (
-            <button className="btn ghost" onClick={() => setRecetaModal(true)}>
-              + {t("prescriptions.newReceta")}
-            </button>
-          )}
           {canWrite && (
             <button className="btn primary" onClick={openNew}>
               + {t("medicines.new")}
@@ -242,10 +234,6 @@ export function Medicines() {
             </Field>
           )}
         </FormModal>
-      )}
-
-      {recetaModal && (
-        <RecetaComposerModal lockedPatient={null} onClose={() => setRecetaModal(false)} onSaved={() => {}} />
       )}
     </Page>
   );

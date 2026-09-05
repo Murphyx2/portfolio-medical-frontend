@@ -24,9 +24,8 @@ import { RecordHistoryList } from "./RecordHistoryList";
 import { RecordImageGallery } from "./RecordImageGallery";
 import { RecordSnapshotHeader } from "./RecordSnapshotHeader";
 import { RecordVitalsSection } from "./RecordVitalsSection";
-import { RecetasTab } from "./RecetasTab";
 
-type TabKey = "clinical" | "habits" | "antecedentes" | "conclusions" | "historial" | "recetas";
+type TabKey = "clinical" | "habits" | "antecedentes" | "conclusions" | "historial";
 type EntryTargetKind = "draft" | "completed";
 
 const NUMERIC_FIELD_KEYS = [
@@ -356,7 +355,6 @@ function LoadedRecordPhase({ record: initialRecord, focusNewEntry, canEdit, apCa
           { key: "antecedentes", label: t("records.tabAntecedentes") },
           { key: "conclusions", label: t("records.tabConclusions") },
           { key: "historial", label: t("records.tabHistorial") },
-          { key: "recetas", label: t("records.tabRecetas") },
         ]}
       />
 
@@ -480,10 +478,6 @@ function LoadedRecordPhase({ record: initialRecord, focusNewEntry, canEdit, apCa
 
       <TabPanel tabKey="historial" active={activeTab} idPrefix="record">
         <RecordHistoryList entries={historyEntries} canEditLast={canEditEntries} onEditLast={startEditLast} />
-      </TabPanel>
-
-      <TabPanel tabKey="recetas" active={activeTab} idPrefix="record">
-        <RecetasTab patient={record.patient_info} />
       </TabPanel>
 
       {saveError && <p className="form-error" role="alert">{saveError}</p>}

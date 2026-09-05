@@ -20,7 +20,6 @@ import type { Role } from "../services/types";
 
 export type Resource =
   | "patients"
-  | "encounters"
   | "records"
   | "recordApTypes"
   | "rooms"
@@ -29,17 +28,11 @@ export type Resource =
   | "doctors"
   | "appointments"
   | "users"
-  | "ars"
   | "centers"
   | "services"
   | "serviceTypes"
-  | "servicePrices"
   | "settings"
-  | "language"
-  | "communications"
-  | "communicationsSettings"
-  | "reportes"
-  | "recetas";
+  | "language";
 
 export type Action =
   | "view"
@@ -47,7 +40,6 @@ export type Action =
   | "edit"
   | "delete"
   | "restore"
-  | "manage"
   | "manageServices"
   | "manageRooms"
   | "unlinkAccount"
@@ -58,13 +50,7 @@ export type Action =
   | "assignAdminRole"
   | "unlock"
   | "changePassword"
-  | "viewActivity"
-  | "sendStaffEmail"
-  | "sendAlerta"
-  | "manageTemplates"
-  | "manageWhatsappSettings"
-  | "sendManualReminder"
-  | "toggleWhatsappOptIn";
+  | "viewActivity";
 
 const ALL_ROLES: Role[] = ["ADMIN", "DOCTOR", "RECEPTIONIST", "IT", "NURSE", "CENTER_MANAGER"];
 
@@ -87,12 +73,6 @@ const POLICY: Partial<Record<Resource, Partial<Record<Action, Role[]>>>> = {
     create: ["ADMIN", "DOCTOR", "RECEPTIONIST", "NURSE", "CENTER_MANAGER"],
     edit: ["ADMIN", "DOCTOR", "RECEPTIONIST", "NURSE", "CENTER_MANAGER"],
     delete: ["ADMIN", "DOCTOR", "CENTER_MANAGER"],
-  },
-  encounters: {
-    view: ALL_ROLES,
-    manage: ["ADMIN", "DOCTOR", "RECEPTIONIST", "NURSE", "CENTER_MANAGER"],
-    // IT stays excluded; CENTER_MANAGER (admin-equivalent) gains delete.
-    delete: ["ADMIN", "CENTER_MANAGER"],
   },
   records: {
     // CENTER_MANAGER is admin-equivalent and can now see/manage Records too
@@ -176,13 +156,6 @@ const POLICY: Partial<Record<Resource, Partial<Record<Action, Role[]>>>> = {
     assignAdminRole: ["ADMIN", "CENTER_MANAGER"],
     showInactive: ["ADMIN", "CENTER_MANAGER"],
   },
-  ars: {
-    view: ALL_ROLES,
-    create: ["ADMIN", "CENTER_MANAGER"],
-    edit: ["ADMIN", "CENTER_MANAGER"],
-    delete: ["ADMIN", "CENTER_MANAGER"],
-    restore: ["ADMIN", "CENTER_MANAGER"],
-  },
   centers: {
     // Hidden from every role except ADMIN/CENTER_MANAGER (admin-
     // equivalent) -- page, nav, and API all gate on this.
@@ -203,12 +176,6 @@ const POLICY: Partial<Record<Resource, Partial<Record<Action, Role[]>>>> = {
     edit: CENTER_MANAGER_WRITE,
     delete: CENTER_MANAGER_WRITE,
   },
-  servicePrices: {
-    view: ALL_ROLES,
-    create: CENTER_MANAGER_WRITE,
-    edit: CENTER_MANAGER_WRITE,
-    delete: CENTER_MANAGER_WRITE,
-  },
   settings: {
     // Mirrors the backend's IsAdminOrITReadOnly (apps.core.permissions):
     // ADMIN reads/writes, IT reads only. CENTER_MANAGER also reads (needed
@@ -223,46 +190,6 @@ const POLICY: Partial<Record<Resource, Partial<Record<Action, Role[]>>>> = {
     // Narrower carve-out within the Settings page: CENTER_MANAGER may edit
     // only the language picker, not the rest of settings.
     edit: ["ADMIN", "CENTER_MANAGER"],
-  },
-  communications: {
-    // Requirements/Communications/COMMUNICATIONS_MODULE_REQUIREMENTS.md §4:
-    // IT never opens Comunicaciones at all (unlike its usual masked-PII
-    // read access elsewhere); CENTER_MANAGER is admitted as admin-equivalent
-    // per this table's usual convention even though §4's literal role
-    // columns don't list it explicitly.
-    view: ["ADMIN", "DOCTOR", "NURSE", "RECEPTIONIST", "CENTER_MANAGER"],
-    sendStaffEmail: ["ADMIN", "DOCTOR"],
-    sendAlerta: ["ADMIN"],
-    sendManualReminder: ["ADMIN", "DOCTOR", "NURSE", "RECEPTIONIST", "CENTER_MANAGER"],
-    toggleWhatsappOptIn: ["ADMIN", "DOCTOR", "NURSE", "RECEPTIONIST", "CENTER_MANAGER"],
-  },
-  communicationsSettings: {
-    // Ajustes and Plantillas are Admin-only per §4 ("Configure SMTP /
-    // WhatsApp credentials" / "Edit email / WhatsApp templates" -- neither
-    // row includes IT, unlike the general Settings page).
-    view: ["ADMIN"],
-    manageTemplates: ["ADMIN"],
-    manageWhatsappSettings: ["ADMIN"],
-  },
-  recetas: {
-    // RECETAS_REQUIREMENTS.md §10: viewing an issued receta is open to
-    // anyone who can open the expediente at all (Records' own `view` policy
-    // already gates that door); creating/emitting/duplicating one is
-    // Admin/Doctor only -- Nurse and CenterManager can see recetas but not
-    // author them. `anular` is further narrowed to author-or-admin, which is
-    // an object-level check the flat table can't express (see
-    // RecetasTab.tsx's own canAnular helper).
-    view: ["ADMIN", "DOCTOR", "NURSE", "CENTER_MANAGER"],
-    edit: ["ADMIN", "DOCTOR"],
-  },
-  reportes: {
-    // Requirements/ReportPage/REPORTES_REQUIREMENTS.md §2: unlike this
-    // table's usual CENTER_MANAGER-is-admin-equivalent convention, a Gerente
-    // may view + Generar (own center only, enforced server-side) but may
-    // NOT author report/pack definitions -- that stays ADMIN/IT only, same
-    // deliberate carve-out shape as `settings.edit`.
-    view: ["ADMIN", "IT", "CENTER_MANAGER"],
-    edit: ["ADMIN", "IT"],
   },
 };
 

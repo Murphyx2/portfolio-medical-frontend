@@ -36,7 +36,6 @@ const EXACT: Record<string, string> = {
   "Birth date must be a valid date (YYYY-MM-DD).": "La fecha de nacimiento debe ser una fecha válida (AAAA-MM-DD).",
   "Birth date cannot be in the future.": "La fecha de nacimiento no puede ser una fecha futura.",
   "A patient with this NSS already exists.": "Ya existe un paciente con este NSS.",
-  "The selected program does not belong to the selected ARS.": "El programa seleccionado no pertenece a la ARS seleccionada.",
   "You are not approved to work at this center.": "No estás aprobado para trabajar en este centro.",
   "Cedula is required.": "La cédula es obligatoria.",
   "At least one guardian is required when the patient is a minor with a guardian on file.":
@@ -61,16 +60,6 @@ const EXACT: Record<string, string> = {
   "A cancellation reason is required.": "Se requiere un motivo de cancelación.",
   "Only scheduled appointments can be confirmed.": "Solo las citas programadas pueden confirmarse.",
   "Only confirmed appointments can be completed.": "Solo las citas confirmadas pueden completarse.",
-
-  // Encounters
-  "Doctors may only manage encounters for themselves.": "Los doctores solo pueden gestionar sus propios encuentros.",
-  "A doctor is required for this service type.": "Se requiere un doctor para este tipo de servicio.",
-  "At least one service is required.": "Se requiere al menos un servicio.",
-  "This encounter is already closed.": "Este encuentro ya está cerrado.",
-  "Only an active encounter can be completed.": "Solo un encuentro activo puede completarse.",
-  "Only a draft encounter can be admitted.": "Solo un encuentro en borrador puede admitirse.",
-  "A room is required to admit this encounter.": "Se requiere un consultorio para admitir este encuentro.",
-  "This patient already has an active encounter today.": "Este paciente ya tiene un encuentro activo hoy.",
 
   // Records
   "Unsupported image format.": "Formato de imagen no compatible.",

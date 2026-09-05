@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { useTranslation } from "react-i18next";
 
 import { DateField } from "./DateField";
@@ -6,7 +6,7 @@ import { GuardianListField } from "./GuardianListField";
 import { PhoneNumberListField } from "./PhoneNumberListField";
 import { Field, FormModal } from "./ui";
 import { api } from "../services/api";
-import type { ARS, ExtraPhone, Paginated, Patient, PatientGuardian } from "../services/types";
+import type { ExtraPhone, Patient, PatientGuardian } from "../services/types";
 import { calculateAge, todayLocalISO } from "../utils/date";
 import { apiErrorMessage } from "../utils/errors";
 import { formatCedula } from "../utils/cedula";
@@ -22,15 +22,10 @@ const EMPTY = {
   email: "",
   cedula: "",
   nss: "",
-  ars: "",
-  ars_program: "",
   has_guardian: true,
-  whatsapp_opt_in: false,
 };
 
-/** Reusable patient create/edit form, shared by Patients.tsx and Encounters.tsx
- * (the latter's "+ New Patient" picker action). Self-contained: fetches its
- * own ARS/center reference lists rather than requiring the parent to. */
+/** Reusable patient create/edit form, shared by Patients.tsx. */
 export function PatientFormModal({
   patient,
   onClose,
@@ -41,7 +36,6 @@ export function PatientFormModal({
   onSaved: (patient: Patient) => void;
 }) {
   const { t } = useTranslation();
-  const [arsList, setArsList] = useState<ARS[]>([]);
   const [form, setForm] = useState(() =>
     patient
       ? {
@@ -54,10 +48,7 @@ export function PatientFormModal({
           email: patient.email,
           cedula: patient.cedula,
           nss: patient.nss,
-          ars: patient.ars ? String(patient.ars) : "",
-          ars_program: patient.ars_program ? String(patient.ars_program) : "",
           has_guardian: patient.has_guardian,
-          whatsapp_opt_in: patient.whatsapp_opt_in,
         }
       : EMPTY,
   );
@@ -78,14 +69,6 @@ export function PatientFormModal({
   const [guardianPhoneErrors, setGuardianPhoneErrors] = useState<Record<number, string>>({});
   const [formError, setFormError] = useState("");
 
-  useEffect(() => {
-    api
-      .get<Paginated<ARS>>("/ars/?page_size=100")
-      .then((r) => setArsList(r.results))
-      .catch(() => {});
-  }, []);
-
-  const selectedArs = arsList.find((a) => String(a.id) === form.ars);
   const isMinor = (calculateAge(form.birth_date) ?? 99) < 18;
 
   async function submit() {
@@ -112,8 +95,6 @@ export function PatientFormModal({
         .map((p): ExtraPhone => ({ phone: p.replace(/\D/g, "") })),
       cedula: form.cedula.replace(/\D/g, ""),
       guardians: isMinor && form.has_guardian ? guardians : [],
-      ars: form.ars ? Number(form.ars) : null,
-      ars_program: form.ars_program ? Number(form.ars_program) : null,
     };
     try {
       const saved = patient
@@ -195,33 +176,6 @@ export function PatientFormModal({
               onChange={(e) => setForm({ ...form, nss: stripToDigits(e.target.value).slice(0, 11) })}
             />
           </Field>
-          <Field label={t("patients.ars")}>
-            <select
-              value={form.ars}
-              onChange={(e) => setForm({ ...form, ars: e.target.value, ars_program: "" })}
-            >
-              <option value="">—</option>
-              {arsList.map((a) => (
-                <option key={a.id} value={a.id}>
-                  {a.name}
-                </option>
-              ))}
-            </select>
-          </Field>
-          <Field label={t("patients.arsProgram")}>
-            <select
-              value={form.ars_program}
-              onChange={(e) => setForm({ ...form, ars_program: e.target.value })}
-              disabled={!form.ars}
-            >
-              <option value="">—</option>
-              {(selectedArs?.programs ?? []).map((p) => (
-                <option key={p.id} value={p.id}>
-                  {p.name}
-                </option>
-              ))}
-            </select>
-          </Field>
         </div>
       </div>
 
@@ -296,23 +250,6 @@ export function PatientFormModal({
           onChange={(e) => setForm({ ...form, address: e.target.value })}
         />
       </Field>
-
-      <div className="whatsapp-opt-in-field">
-        <label className="show-inactive-toggle">
-          {t("communications.patient.optIn")}
-          <input
-            type="checkbox"
-            checked={form.whatsapp_opt_in}
-            onChange={(e) => setForm({ ...form, whatsapp_opt_in: e.target.checked })}
-          />
-        </label>
-        <p className="settings-field-help">{t("communications.patient.optInHelp")}</p>
-        {form.phone && (
-          <p className="muted">
-            {t("communications.patient.currentPhone")}: {formatPhone(form.phone)}
-          </p>
-        )}
-      </div>
     </FormModal>
   );
 }

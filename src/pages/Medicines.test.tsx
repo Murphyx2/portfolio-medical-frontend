@@ -109,10 +109,4 @@ describe("Medicines", () => {
     expect(screen.getByRole("button", { name: /Editar/i })).toBeInTheDocument();
   });
 
-  it("hides the receta button for a role without recetas edit permission", async () => {
-    currentRole = "NURSE";
-    render(<Medicines />);
-    await screen.findByText("Tapsin");
-    expect(screen.queryByText(/Nueva receta/i)).not.toBeInTheDocument();
-  });
 });

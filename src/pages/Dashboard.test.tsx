@@ -33,7 +33,7 @@ function makeAppointment(overrides: Partial<Appointment> = {}): Appointment {
     doctor: 2,
     doctor_info: { id: 2, full_name: "Dr. Smith" },
     center: 1,
-    center_name: "INCAF",
+    center_name: "Demo Center",
     service: 3,
     service_detail: { id: 3, name: "Consultation" },
     date_time: "2026-09-04T14:30:00Z",

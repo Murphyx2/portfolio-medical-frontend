@@ -28,11 +28,11 @@ const mockedUpload = vi.mocked(upload);
 function center(overrides: Partial<MedicalCenter> = {}): MedicalCenter {
   return {
     id: 1,
-    name: "INCAF",
+    name: "Demo Center",
     code: "INC01",
     address: "Av. Principal 1",
     phone: "8095550100",
-    email: "info@incaf.com",
+    email: "info@democenter.example",
     rnc: "",
     nombre_legal: "",
     nombre_corto: "",
@@ -60,14 +60,14 @@ beforeEach(() => {
 describe("Centers", () => {
   it("renders the center list from the API", async () => {
     render(<Centers />);
-    expect(await screen.findByText("INCAF")).toBeInTheDocument();
+    expect(await screen.findByText("Demo Center")).toBeInTheDocument();
     expect(screen.getByText("Av. Principal 1")).toBeInTheDocument();
   });
 
   it("creates a new center via the modal", async () => {
     mockedApi.post.mockResolvedValue(center({ id: 2, name: "Centro Norte", code: "NORTE" }));
     render(<Centers />);
-    await screen.findByText("INCAF");
+    await screen.findByText("Demo Center");
 
     fireEvent.click(screen.getByRole("button", { name: /Nuevo centro/i }));
 
@@ -88,11 +88,11 @@ describe("Centers", () => {
   it("edits an existing center and PATCHes on submit", async () => {
     mockedApi.patch.mockResolvedValue(center());
     render(<Centers />);
-    await screen.findByText("INCAF");
+    await screen.findByText("Demo Center");
 
     fireEvent.click(screen.getByRole("button", { name: /Editar/i }));
 
-    expect(screen.getByDisplayValue("INCAF")).toBeInTheDocument();
+    expect(screen.getByDisplayValue("Demo Center")).toBeInTheDocument();
     expect(screen.getByDisplayValue("Av. Principal 1")).toBeInTheDocument();
 
     fireEvent.change(screen.getByLabelText(/^Dirección$/i), { target: { value: "Nueva Direccion 5" } });
@@ -109,7 +109,7 @@ describe("Centers", () => {
   it("hides the create button for a role without centers edit permission", async () => {
     currentRole = "NURSE";
     render(<Centers />);
-    await screen.findByText("INCAF");
+    await screen.findByText("Demo Center");
     expect(screen.queryByRole("button", { name: /Nuevo centro/i })).not.toBeInTheDocument();
     expect(screen.queryByRole("button", { name: /Editar/i })).not.toBeInTheDocument();
   });

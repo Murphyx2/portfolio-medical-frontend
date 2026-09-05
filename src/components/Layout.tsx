@@ -1,18 +1,14 @@
 import { useEffect, useState, type ComponentType, type ReactNode } from "react";
 import {
-  BarChart3,
   BriefcaseMedical,
   Bed,
   Calendar,
   ChevronLeft,
-  ClipboardList,
   Folder,
   Hospital,
   LayoutDashboard,
-  Mail,
   Pill,
   Settings,
-  Shield,
   Stethoscope,
   Users,
   type LucideProps,
@@ -40,7 +36,6 @@ export const NAV_GROUPS: { titleKey: string; items: NavItem[] }[] = [
   {
     titleKey: "nav.groups.atencion",
     items: [
-      { to: "/encounters", key: "nav.encounters", resource: "encounters", icon: ClipboardList },
       { to: "/patients", key: "nav.patients", resource: "patients", icon: Users },
       { to: "/appointments", key: "nav.appointments", resource: "appointments", icon: Calendar },
       { to: "/records", key: "nav.recordsShort", resource: "records", icon: Folder },
@@ -50,16 +45,10 @@ export const NAV_GROUPS: { titleKey: string; items: NavItem[] }[] = [
     titleKey: "nav.groups.operacion",
     items: [
       { to: "/doctors", key: "nav.doctors", resource: "doctors", icon: Stethoscope },
+      { to: "/centers", key: "nav.centers", resource: "centers", icon: Hospital },
       { to: "/rooms", key: "nav.rooms", resource: "rooms", icon: Bed },
       { to: "/services", key: "nav.services", resource: "services", icon: BriefcaseMedical },
       { to: "/medicines", key: "nav.medicines", resource: "medicines", icon: Pill },
-    ],
-  },
-  {
-    titleKey: "nav.groups.red",
-    items: [
-      { to: "/centers", key: "nav.centers", resource: "centers", icon: Hospital },
-      { to: "/ars", key: "nav.ars", resource: "ars", icon: Shield },
     ],
   },
 ];
@@ -67,8 +56,6 @@ export const NAV_GROUPS: { titleKey: string; items: NavItem[] }[] = [
 // Pie: no group title, divider above, pinned at the bottom -- Configuración
 // always lives here, never adjacent to Dashboard.
 export const NAV_FOOT: NavItem[] = [
-  { to: "/reportes", key: "nav.reportes", resource: "reportes", icon: BarChart3 },
-  { to: "/comunicaciones", key: "nav.communications", resource: "communications", icon: Mail },
   { to: "/users", key: "nav.users", resource: "users", icon: Users },
   { to: "/settings", key: "nav.settings", resource: "settings", icon: Settings },
 ];
@@ -94,7 +81,7 @@ function initialsOf(fullName: string | undefined, username: string | undefined):
   return (parts[0][0] + parts[parts.length - 1][0]).toUpperCase();
 }
 
-const COLLAPSED_KEY = "incaf.sidebar.collapsed";
+const COLLAPSED_KEY = "medicalconsultations.sidebar.collapsed";
 
 export function Layout({ children }: { children: ReactNode }) {
   const { t, i18n } = useTranslation();
@@ -117,14 +104,8 @@ export function Layout({ children }: { children: ReactNode }) {
   const appointmentsBadge = useIntervalCount(
     can(user?.role, "view", "appointments") ? "/appointments/today_remaining_count/" : null,
   );
-  const communicationsBadge = useIntervalCount(
-    can(user?.role, "view", "communications")
-      ? "/communications/messages/?status__in=DRAFT,FAILED&page_size=1"
-      : null,
-  );
   const badgeByPath = new Map<string, number>([
     ["/appointments", appointmentsBadge],
-    ["/comunicaciones", communicationsBadge],
   ]);
 
   const navLinkClass = ({ isActive }: { isActive: boolean }) => (isActive ? "nav-link active" : "nav-link");

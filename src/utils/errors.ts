@@ -4,17 +4,8 @@ import { ApiError } from "../services/api";
 
 /** Raw DRF field names -> the i18n key already used for that field's own
  * label elsewhere in the UI, so a nested validation error reads with the
- * same wording the user sees on the form instead of the Python identifier
- * (e.g. "authorization_number" -> "N.º de autorización"). */
-const FIELD_LABEL_KEYS: Record<string, string> = {
-  services: "encounters.sectionServices",
-  service: "encounters.service",
-  doctor: "encounters.doctor",
-  room: "encounters.room",
-  quantity: "encounters.quantity",
-  notes: "encounters.serviceNotes",
-  authorization_number: "encounters.authorizationNumber",
-};
+ * same wording the user sees on the form instead of the Python identifier. */
+const FIELD_LABEL_KEYS: Record<string, string> = {};
 
 function fieldLabel(key: string): string {
   const i18nKey = FIELD_LABEL_KEYS[key];

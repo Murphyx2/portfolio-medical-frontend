@@ -57,7 +57,7 @@ const SERVICES: Service[] = [
 ];
 
 const ROOMS: Room[] = [
-  { id: 1, code: "R1", name: "Room 1", room_type: 1, room_type_name: "Consultorio", center: 1, center_name: "INCAF", floor_area: "", capacity: null, notes: "", created_at: "", updated_at: "", active: true },
+  { id: 1, code: "R1", name: "Room 1", room_type: 1, room_type_name: "Consultorio", center: 1, center_name: "Demo Center", floor_area: "", capacity: null, notes: "", created_at: "", updated_at: "", active: true },
 ];
 
 function mockDoctorsGets() {

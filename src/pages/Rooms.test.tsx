@@ -37,7 +37,7 @@ function room(overrides: Partial<Room> = {}): Room {
     room_type: 1,
     room_type_name: "Consultorio",
     center: 1,
-    center_name: "INCAF",
+    center_name: "Demo Center",
     floor_area: "20",
     capacity: 2,
     notes: "",

@@ -180,8 +180,6 @@ export function Patients() {
     },
     { key: "nss", header: t("patients.nss"), sortKey: "nss", render: (r) => openDetailLink(r, <MaskedValue value={r.nss} />) },
     { key: "phone", header: t("patients.phone"), sortKey: "phone", render: (r) => <MaskedValue value={formatPhone(r.phone)} /> },
-    { key: "ars_name", header: t("patients.ars"), sortKey: "ars__name" },
-    { key: "ars_program_name", header: t("patients.arsProgram"), sortKey: "ars_program__name" },
   ];
 
   return (
@@ -259,12 +257,6 @@ export function Patients() {
               <div className="kv-grid">
                 <div>
                   <b>{t("patients.nss")}:</b> <MaskedValue value={detail.nss} />
-                </div>
-                <div>
-                  <b>{t("patients.ars")}:</b> {detail.ars_name ?? "—"}
-                </div>
-                <div>
-                  <b>{t("patients.arsProgram")}:</b> {detail.ars_program_name ?? "—"}
                 </div>
                 <div>
                   <b>{t("patients.center")}:</b> {detail.center_name ?? "—"}

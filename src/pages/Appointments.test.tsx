@@ -12,7 +12,7 @@ function makeAppointment(overrides: Partial<Appointment> = {}): Appointment {
     doctor: 2,
     doctor_info: { id: 2, full_name: "Dr. Smith" },
     center: 1,
-    center_name: "INCAF",
+    center_name: "Demo Center",
     service: 3,
     service_detail: { id: 3, name: "Consultation" },
     date_time: "2026-08-25T14:30:00Z",
@@ -35,7 +35,7 @@ describe("AppointmentDetailsDialog", () => {
     expect(screen.getByText("Jane Doe")).toBeInTheDocument();
     expect(screen.getByText("Dr. Smith")).toBeInTheDocument();
     expect(screen.getByText("Consultation")).toBeInTheDocument();
-    expect(screen.getByText("INCAF")).toBeInTheDocument();
+    expect(screen.getByText("Demo Center")).toBeInTheDocument();
     expect(screen.getByText("Follow-up visit")).toBeInTheDocument();
     expect(screen.getByText("Admin User")).toBeInTheDocument();
     expect(screen.getByText(/^(Female|Femenino)$/i)).toBeInTheDocument();

@@ -36,6 +36,11 @@ import { formatPhoneInput, isValidRequiredPhone } from "../utils/phone";
 import { roleLabel } from "../utils/roleLabel";
 
 const EMPTY = { username: "", email: "", first_name: "", last_name: "", password: "", role: "RECEPTIONIST", center: "" };
+// Roles with a real center relationship (User.center) -- see
+// apps/core/services/scoping.py::resolve_accessible_center_ids on the
+// backend. ADMIN stays platform-wide and DOCTOR uses DoctorCenterBinding
+// instead, so neither shows this field.
+const CENTER_SCOPED_ROLES = ["RECEPTIONIST", "IT", "NURSE", "CENTER_MANAGER"];
 const EMPTY_DOCTOR_CREATE = {
   license_number: "",
   contact_phone: "",
@@ -182,7 +187,8 @@ export function Users() {
   }
 
   function openNew() {
-    setForm(EMPTY);
+    const defaultCenter = centers.find((c) => c.is_default);
+    setForm({ ...EMPTY, center: defaultCenter ? String(defaultCenter.id) : "" });
     setEditId(null);
     setFormError("");
     setNewUserConfirmPassword("");
@@ -273,14 +279,14 @@ export function Users() {
           first_name,
           last_name,
           role,
-          center: role === "CENTER_MANAGER" && center ? Number(center) : null,
+          center: CENTER_SCOPED_ROLES.includes(role) && center ? Number(center) : null,
         };
         if (doctor_profile) body.doctor_profile = doctor_profile;
         await api.patch(`/auth/users/${editId}/`, body);
       } else {
         const body: Record<string, unknown> = {
           ...form,
-          center: form.role === "CENTER_MANAGER" && form.center ? Number(form.center) : null,
+          center: CENTER_SCOPED_ROLES.includes(form.role) && form.center ? Number(form.center) : null,
         };
         if (doctor_profile) body.doctor_profile = doctor_profile;
         await api.post("/auth/users/", body);
@@ -489,7 +495,7 @@ export function Users() {
                 ))}
               </select>
             </Field>
-            {form.role === "CENTER_MANAGER" && (
+            {CENTER_SCOPED_ROLES.includes(form.role) && (
               <Field label={t("users.center")}>
                 <select value={form.center} onChange={(e) => setForm({ ...form, center: e.target.value })}>
                   <option value="">—</option>

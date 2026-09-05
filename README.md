@@ -1,4 +1,4 @@
-# MedicalConsultations — Frontend
+# INCAF — Frontend
 
 React + Vite + TypeScript single-page application.
 

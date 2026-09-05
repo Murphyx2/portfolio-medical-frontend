@@ -5,12 +5,12 @@ import { useNavigate } from "react-router-dom";
 import { ListPage } from "../components/ListPage";
 import { Field, FormModal, Page, type Column } from "../components/ui";
 import { useListPage } from "../hooks/useListPage";
-import { api, ApiError } from "../services/api";
+import { api } from "../services/api";
 import type { Paginated, Service, ServiceType } from "../services/types";
 import { useAuth } from "../store/auth";
 import { can } from "../utils/can";
 import { formatCurrencyDOP } from "../utils/currency";
-import { flattenError } from "../utils/errors";
+import { apiErrorMessage } from "../utils/errors";
 
 const EMPTY = { simon: "", name: "", type: 0, co_pago: "", privado: "" };
 
@@ -72,7 +72,7 @@ export function Services() {
       setModal(false);
       load();
     } catch (err) {
-      setFormError(err instanceof ApiError ? flattenError(err.message) : String(err));
+      setFormError(apiErrorMessage(err));
     }
   }
 
@@ -102,21 +102,25 @@ export function Services() {
     { key: "simon", header: t("services.simon"), sortKey: "simon" },
     { key: "name", header: t("services.name"), sortKey: "name" },
     { key: "type_name", header: t("services.type") },
-    { key: "co_pago", header: t("services.coPago"), sortKey: "co_pago", render: (s) => formatCurrencyDOP(s.co_pago) },
-    { key: "privado", header: t("services.privado"), sortKey: "privado", render: (s) => formatCurrencyDOP(s.privado) },
+    { key: "co_pago", header: t("services.coPago"), sortKey: "co_pago", align: "right", render: (s) => formatCurrencyDOP(s.co_pago) },
+    { key: "privado", header: t("services.privado"), sortKey: "privado", align: "right", render: (s) => formatCurrencyDOP(s.privado) },
   ];
 
   return (
     <Page
+      card
       title={t("services.title")}
       actions={
         canEdit && (
-          <div className="page-actions-stack">
-            <button className="btn primary" onClick={openNew}>
-              + {t("services.new")}
-            </button>
+          <div className="page-actions-row">
             <button className="btn ghost" onClick={() => navigate("/services/types")}>
               {t("services.manageTypes")}
+            </button>
+            <button className="btn ghost" onClick={() => navigate("/services/prices")}>
+              {t("services.managePrices")}
+            </button>
+            <button className="btn primary" onClick={openNew}>
+              + {t("services.new")}
             </button>
           </div>
         )
@@ -160,7 +164,11 @@ export function Services() {
             <input value={form.simon} onChange={(e) => onSimonChange(e.target.value)} required maxLength={6} placeholder="123456" />
           </Field>
           <Field label={t("services.name")}>
-            <input value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} required />
+            <input
+              value={form.name}
+              onChange={(e) => setForm({ ...form, name: e.target.value.toUpperCase() })}
+              required
+            />
           </Field>
           <Field label={t("services.type")}>
             <select value={form.type} onChange={(e) => setForm({ ...form, type: Number(e.target.value) })} required>

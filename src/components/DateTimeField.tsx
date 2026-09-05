@@ -54,12 +54,19 @@ export function DateTimeField({
   onChange,
   required,
   ariaLabel,
+  ariaInvalid,
+  ariaDescribedBy,
   min,
 }: {
   value: string;
   onChange: (isoDateTime: string) => void;
   required?: boolean;
   ariaLabel?: string;
+  ariaInvalid?: boolean;
+  /** Id of an adjacent validation-error element (e.g. a `.field-error`
+   * span) -- lets the caller's error message be announced to and reachable
+   * by screen readers, same as a plain <input aria-describedby>. */
+  ariaDescribedBy?: string;
   min?: string;
 }) {
   const { t } = useTranslation();
@@ -92,6 +99,8 @@ export function DateTimeField({
         maxLength={16}
         value={display}
         aria-label={ariaLabel}
+        aria-invalid={ariaInvalid}
+        aria-describedby={ariaDescribedBy}
         required={required}
         onChange={(e) => setDisplay(maskDisplayInput(e.target.value))}
         onBlur={(e) => commit(e.target.value)}

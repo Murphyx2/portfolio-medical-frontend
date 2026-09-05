@@ -5,17 +5,16 @@ import { useNavigate } from "react-router-dom";
 import { ListPage } from "../components/ListPage";
 import { Field, FormModal, Page, type Column } from "../components/ui";
 import { useListPage } from "../hooks/useListPage";
-import { api, ApiError } from "../services/api";
-import type { MedicalCenter, Paginated, Room, RoomType } from "../services/types";
+import { api } from "../services/api";
+import type { Paginated, Room, RoomType } from "../services/types";
 import { useAuth } from "../store/auth";
 import { can } from "../utils/can";
-import { flattenError } from "../utils/errors";
+import { apiErrorMessage } from "../utils/errors";
 
 const EMPTY = {
   code: "",
   name: "",
   room_type: 0,
-  center: 0,
   floor_area: "",
   capacity: "",
   notes: "",
@@ -29,7 +28,6 @@ export function Rooms() {
   const canEdit = can(user?.role, "edit", "rooms");
   const canDelete = can(user?.role, "delete", "rooms");
   const isAdmin = can(user?.role, "restore", "rooms");
-  const [centers, setCenters] = useState<MedicalCenter[]>([]);
   const [types, setTypes] = useState<RoomType[]>([]);
   const [typeFilter, setTypeFilter] = useState("");
   const [modal, setModal] = useState(false);
@@ -56,14 +54,12 @@ export function Rooms() {
   } = useListPage<Room>("/rooms/", { extraParams: { room_type: typeFilter } });
 
   useEffect(() => {
-    api.get<Paginated<MedicalCenter>>("/centers/?page_size=100").then((r) => setCenters(r.results)).catch(() => {});
     // Type options: fetched once, not on every page/sort/search change.
     api.get<Paginated<RoomType>>("/room-types/?page_size=100").then((r) => setTypes(r.results)).catch(() => {});
   }, []);
 
   function openNew() {
-    const defaultCenter = centers.find((c) => c.is_default);
-    setForm({ ...EMPTY, center: defaultCenter ? defaultCenter.id : 0 });
+    setForm(EMPTY);
     setEditId(null);
     setFormError("");
     setModal(true);
@@ -74,7 +70,6 @@ export function Rooms() {
       code: r.code,
       name: r.name,
       room_type: r.room_type,
-      center: r.center,
       floor_area: r.floor_area,
       capacity: r.capacity === null ? "" : String(r.capacity),
       notes: r.notes,
@@ -91,7 +86,6 @@ export function Rooms() {
         code: form.code,
         name: form.name,
         room_type: Number(form.room_type),
-        center: Number(form.center),
         floor_area: form.floor_area,
         capacity: form.capacity === "" ? null : Number(form.capacity),
         notes: form.notes,
@@ -101,7 +95,7 @@ export function Rooms() {
       setModal(false);
       load();
     } catch (err) {
-      setFormError(err instanceof ApiError ? flattenError(err.message) : String(err));
+      setFormError(apiErrorMessage(err));
     }
   }
 
@@ -134,15 +128,16 @@ export function Rooms() {
 
   return (
     <Page
+      card
       title={t("rooms.title")}
       actions={
         canCreate && (
-          <div className="page-actions-stack">
-            <button className="btn primary" onClick={openNew}>
-              + {t("rooms.new")}
-            </button>
+          <div className="page-actions-row">
             <button className="btn ghost" onClick={() => navigate("/rooms/types")}>
               {t("rooms.manageTypes")}
+            </button>
+            <button className="btn primary" onClick={openNew}>
+              + {t("rooms.new")}
             </button>
           </div>
         )
@@ -198,7 +193,11 @@ export function Rooms() {
             />
           </Field>
           <Field label={t("rooms.name")}>
-            <input value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} required />
+            <input
+              value={form.name}
+              onChange={(e) => setForm({ ...form, name: e.target.value.toUpperCase() })}
+              required
+            />
           </Field>
           <Field label={t("rooms.type")}>
             <select

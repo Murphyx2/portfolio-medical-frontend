@@ -1,24 +1,60 @@
 import { useEffect, useState } from "react";
 import { History, KeyRound, Unlock, UserCheck, UserX } from "lucide-react";
 import { useTranslation } from "react-i18next";
+import { Link } from "react-router-dom";
 
 import { ListPage } from "../components/ListPage";
-import { ConfirmDialog, Dialog, Field, FormModal, Page, useRowConfirm, type Column } from "../components/ui";
+import { DoctorProfileFormFields } from "../components/doctors/DoctorProfileFormFields";
+import {
+  ConfirmDialog,
+  Dialog,
+  Field,
+  FormModal,
+  Page,
+  RowActionsMenu,
+  useRowConfirm,
+  type Column,
+  type RowActionsMenuItem,
+} from "../components/ui";
 import { useListPage } from "../hooks/useListPage";
-import { api, ApiError } from "../services/api";
-import type { AuditLogEntry, Paginated, User } from "../services/types";
+import { api } from "../services/api";
+import type {
+  AuditLogEntry,
+  DoctorProfile,
+  DoctorProfileLinkPayload,
+  MedicalCenter,
+  Paginated,
+  Room,
+  Service,
+  User,
+} from "../services/types";
 import { useAuth } from "../store/auth";
 import { can } from "../utils/can";
 import { formatDateTime } from "../utils/date";
-import { flattenError } from "../utils/errors";
+import { apiErrorMessage } from "../utils/errors";
+import { formatPhoneInput, isValidRequiredPhone } from "../utils/phone";
+import { roleLabel } from "../utils/roleLabel";
 
-const EMPTY = { username: "", email: "", first_name: "", last_name: "", password: "", role: "RECEPTIONIST" };
+const EMPTY = { username: "", email: "", first_name: "", last_name: "", password: "", role: "RECEPTIONIST", center: "" };
+// Roles with a real center relationship (User.center) -- see
+// apps/core/services/scoping.py::resolve_accessible_center_ids on the
+// backend. ADMIN stays platform-wide and DOCTOR uses DoctorCenterBinding
+// instead, so neither shows this field.
+const CENTER_SCOPED_ROLES = ["RECEPTIONIST", "IT", "NURSE", "CENTER_MANAGER"];
+const EMPTY_DOCTOR_CREATE = {
+  license_number: "",
+  contact_phone: "",
+  contact_email: "",
+  bio: "",
+  services: [] as number[],
+  rooms: [] as number[],
+};
 const ACTIVITY_PAGE_SIZE = 20;
 
 type ConfirmType = "deactivate" | "activate" | "unlock";
 
 export function Users() {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const { user } = useAuth();
   const isAdmin = can(user?.role, "assignAdminRole", "users");
   const canEdit = can(user?.role, "edit", "users");
@@ -26,12 +62,30 @@ export function Users() {
   const canUnlock = can(user?.role, "unlock", "users");
   const canChangePassword = can(user?.role, "changePassword", "users");
   const canViewActivity = can(user?.role, "viewActivity", "users");
+  const canEditDoctorServices = can(user?.role, "manageServices", "doctors");
+  const canEditDoctorRooms = can(user?.role, "manageRooms", "doctors");
 
   const [modal, setModal] = useState(false);
   const [form, setForm] = useState(EMPTY);
   const [editId, setEditId] = useState<number | null>(null);
   const [roles, setRoles] = useState<{ value: string; label: string }[]>([]);
+  const [centers, setCenters] = useState<MedicalCenter[]>([]);
   const [formError, setFormError] = useState("");
+
+  // Perfil de médico block (Rol=Doctor/a) -- see
+  // USUARIO_MEDICO_LINK_REQUIREMENTS.md.
+  const [linkedProfile, setLinkedProfile] = useState<DoctorProfile | null>(null);
+  const [doctorProfileMode, setDoctorProfileMode] = useState<"link" | "create">("link");
+  const [unlinkedDoctors, setUnlinkedDoctors] = useState<DoctorProfile[]>([]);
+  const [linkedDoctorProfileId, setLinkedDoctorProfileId] = useState<number | null>(null);
+  const [doctorCreate, setDoctorCreate] = useState(EMPTY_DOCTOR_CREATE);
+  const [doctorExtraPhones, setDoctorExtraPhones] = useState<string[]>([]);
+  const [doctorPhoneError, setDoctorPhoneError] = useState("");
+  const [doctorServices, setDoctorServices] = useState<Service[]>([]);
+  const [doctorRooms, setDoctorRooms] = useState<Room[]>([]);
+  const [pendingRole, setPendingRole] = useState<string | null>(null);
+  const [roleChangeConfirmOpen, setRoleChangeConfirmOpen] = useState(false);
+  const [newUserConfirmPassword, setNewUserConfirmPassword] = useState("");
 
   const [passwordTarget, setPasswordTarget] = useState<User | null>(null);
   const [newPassword, setNewPassword] = useState("");
@@ -74,7 +128,33 @@ export function Users() {
     // Role choices for the "new user" form: fetched once, not on every
     // page/sort/search change (unlike `load`, which re-runs then).
     api.get<{ value: string; label: string }[]>("/auth/users/roles/").then(setRoles).catch(() => {});
+    api
+      .get<Paginated<MedicalCenter>>("/centers/?page_size=100")
+      .then((r) => setCenters(r.results))
+      .catch(() => {});
   }, []);
+
+  useEffect(() => {
+    // Active médicos with no user yet, for the "Vincular médico existente"
+    // picker -- only fetched while the block is actually relevant (role is
+    // Doctor/a and not already linked), refetched each time it becomes
+    // relevant again so a médico linked elsewhere meanwhile doesn't show up
+    // as still available.
+    if (form.role !== "DOCTOR" || linkedProfile) return;
+    api
+      .get<Paginated<DoctorProfile>>("/doctors/profiles/?user__isnull=true&active=true&page_size=200")
+      .then((r) => {
+        setUnlinkedDoctors(r.results);
+        if (r.results.length === 0) setDoctorProfileMode("create");
+      })
+      .catch(() => {});
+  }, [form.role, linkedProfile]);
+
+  useEffect(() => {
+    if (doctorProfileMode !== "create" || (!canEditDoctorServices && !canEditDoctorRooms)) return;
+    api.get<Paginated<Service>>("/services/?page_size=200").then((r) => setDoctorServices(r.results)).catch(() => {});
+    api.get<Paginated<Room>>("/rooms/?page_size=100").then((r) => setDoctorRooms(r.results)).catch(() => {});
+  }, [doctorProfileMode, canEditDoctorServices, canEditDoctorRooms]);
 
   useEffect(() => {
     if (!activityTarget) return;
@@ -96,33 +176,125 @@ export function Users() {
     };
   }, [activityTarget, activityPage]);
 
+  function resetDoctorProfileState() {
+    setLinkedProfile(null);
+    setDoctorProfileMode("link");
+    setUnlinkedDoctors([]);
+    setLinkedDoctorProfileId(null);
+    setDoctorCreate(EMPTY_DOCTOR_CREATE);
+    setDoctorExtraPhones([]);
+    setDoctorPhoneError("");
+  }
+
   function openNew() {
-    setForm(EMPTY);
+    const defaultCenter = centers.find((c) => c.is_default);
+    setForm({ ...EMPTY, center: defaultCenter ? String(defaultCenter.id) : "" });
     setEditId(null);
     setFormError("");
+    setNewUserConfirmPassword("");
+    resetDoctorProfileState();
     setModal(true);
   }
 
   function openEdit(u: User) {
-    setForm({ username: u.username, email: u.email, first_name: u.first_name, last_name: u.last_name, password: "", role: u.role });
+    setForm({
+      username: u.username,
+      email: u.email,
+      first_name: u.first_name,
+      last_name: u.last_name,
+      password: "",
+      role: u.role,
+      center: u.center ? String(u.center) : "",
+    });
     setEditId(u.id);
     setFormError("");
+    setNewUserConfirmPassword("");
+    resetDoctorProfileState();
+    if (u.role === "DOCTOR") {
+      api
+        .get<Paginated<DoctorProfile>>(`/doctors/profiles/?user=${u.id}`)
+        .then((r) => setLinkedProfile(r.results[0] ?? null))
+        .catch(() => {});
+    }
     setModal(true);
+  }
+
+  function onRoleChange(newRole: string) {
+    // Leaving Doctor/a on an already-linked user unlinks the médico
+    // server-side regardless -- this confirm is UX only, so cancelling
+    // just leaves `form.role` (and therefore the controlled <select>)
+    // unchanged.
+    if (editId && form.role === "DOCTOR" && linkedProfile && newRole !== "DOCTOR") {
+      setPendingRole(newRole);
+      setRoleChangeConfirmOpen(true);
+      return;
+    }
+    setForm({ ...form, role: newRole });
+  }
+
+  function confirmRoleChange() {
+    if (pendingRole) setForm({ ...form, role: pendingRole });
+    setPendingRole(null);
+    setRoleChangeConfirmOpen(false);
   }
 
   async function submit() {
     setFormError("");
+    if (!editId && form.password !== newUserConfirmPassword) {
+      setFormError(t("users.passwordMismatch"));
+      return;
+    }
+    const needsDoctorProfile = form.role === "DOCTOR" && !(editId && linkedProfile);
+    let doctor_profile: DoctorProfileLinkPayload | undefined;
+    if (needsDoctorProfile) {
+      if (doctorProfileMode === "link") {
+        if (!linkedDoctorProfileId) {
+          setFormError(t("users.doctorProfile.required"));
+          return;
+        }
+        doctor_profile = { mode: "link", doctor_profile_id: linkedDoctorProfileId };
+      } else {
+        if (!isValidRequiredPhone(doctorCreate.contact_phone)) {
+          setDoctorPhoneError(t("common.phoneInvalid"));
+          return;
+        }
+        doctor_profile = {
+          mode: "create",
+          license_number: doctorCreate.license_number,
+          contact_phone: doctorCreate.contact_phone.replace(/\D/g, ""),
+          extra_phones: doctorExtraPhones.filter((p) => p.trim() !== "").map((p) => p.replace(/\D/g, "")),
+          contact_email: doctorCreate.contact_email,
+          bio: doctorCreate.bio,
+          services: doctorCreate.services,
+          rooms: doctorCreate.rooms,
+        };
+      }
+    }
     try {
       if (editId) {
-        const { username, email, first_name, last_name, role } = form;
-        await api.patch(`/auth/users/${editId}/`, { username, email, first_name, last_name, role });
+        const { username, email, first_name, last_name, role, center } = form;
+        const body: Record<string, unknown> = {
+          username,
+          email,
+          first_name,
+          last_name,
+          role,
+          center: CENTER_SCOPED_ROLES.includes(role) && center ? Number(center) : null,
+        };
+        if (doctor_profile) body.doctor_profile = doctor_profile;
+        await api.patch(`/auth/users/${editId}/`, body);
       } else {
-        await api.post("/auth/users/", form);
+        const body: Record<string, unknown> = {
+          ...form,
+          center: CENTER_SCOPED_ROLES.includes(form.role) && form.center ? Number(form.center) : null,
+        };
+        if (doctor_profile) body.doctor_profile = doctor_profile;
+        await api.post("/auth/users/", body);
       }
       setModal(false);
       load();
     } catch (err) {
-      setFormError(err instanceof ApiError ? flattenError(err.message) : String(err));
+      setFormError(apiErrorMessage(err));
     }
   }
 
@@ -144,7 +316,7 @@ export function Users() {
       await api.post(`/auth/users/${passwordTarget.id}/set_password/`, { password: newPassword });
       setPasswordTarget(null);
     } catch (err) {
-      setPasswordError(err instanceof ApiError ? flattenError(err.message) : String(err));
+      setPasswordError(apiErrorMessage(err));
     }
   }
 
@@ -183,7 +355,7 @@ export function Users() {
     { key: "username", header: t("users.username"), sortKey: "username" },
     { key: "full_name", header: t("common.name"), sortKey: "first_name" },
     { key: "email", header: t("users.email"), sortKey: "email" },
-    { key: "role", header: t("users.role"), sortKey: "role" },
+    { key: "role", header: t("users.role"), sortKey: "role", render: (r) => roleLabel(r.role, i18n.language) },
     {
       key: "status",
       header: t("common.status"),
@@ -198,45 +370,45 @@ export function Users() {
       key: "actions",
       header: t("common.actions"),
       align: "center",
-      render: (r) => (
-        <div className="row-actions">
-          {canEdit && r.is_active && (
-            <button className="btn small ghost" onClick={() => openEdit(r)} aria-label={`${t("common.edit")} ${r.full_name || r.username}`}>
-              {t("common.edit")}
-            </button>
-          )}
-          {canUnlock && r.is_active && r.is_locked && (
-            <button className="btn small" onClick={() => confirm.open("unlock", r)} aria-label={`${t("users.unlock")} ${r.full_name || r.username}`}>
-              <Unlock size={14} aria-hidden="true" /> {t("users.unlock")}
-            </button>
-          )}
-          {canChangePassword && r.is_active && (
-            <button className="btn small ghost" onClick={() => openPasswordReset(r)} aria-label={`${t("users.changePassword")} ${r.full_name || r.username}`}>
-              <KeyRound size={14} aria-hidden="true" /> {t("users.changePassword")}
-            </button>
-          )}
-          {canViewActivity && (
-            <button className="btn small ghost" onClick={() => openActivity(r)} aria-label={`${t("users.activity")} ${r.full_name || r.username}`}>
-              <History size={14} aria-hidden="true" /> {t("users.activity")}
-            </button>
-          )}
-          {canDeactivate && r.is_active && (
-            <button className="btn small danger" onClick={() => confirm.open("deactivate", r)} aria-label={`${t("users.deactivate")} ${r.full_name || r.username}`}>
-              <UserX size={14} aria-hidden="true" /> {t("users.deactivate")}
-            </button>
-          )}
-          {isAdmin && !r.is_active && (
-            <button className="btn small" onClick={() => confirm.open("activate", r)} aria-label={`${t("users.activate")} ${r.full_name || r.username}`}>
-              <UserCheck size={14} aria-hidden="true" /> {t("users.activate")}
-            </button>
-          )}
-        </div>
-      ),
+      render: (r) => {
+        const name = r.full_name || r.username;
+        const items: RowActionsMenuItem[] = [
+          ...(canUnlock && r.is_active && r.is_locked
+            ? [{ key: "unlock", label: t("users.unlock"), icon: <Unlock size={14} aria-hidden="true" />, onClick: () => confirm.open("unlock", r) }]
+            : []),
+          ...(canChangePassword && r.is_active
+            ? [{ key: "changePassword", label: t("users.changePassword"), icon: <KeyRound size={14} aria-hidden="true" />, onClick: () => openPasswordReset(r) }]
+            : []),
+          ...(canViewActivity
+            ? [{ key: "activity", label: t("users.activity"), icon: <History size={14} aria-hidden="true" />, onClick: () => openActivity(r) }]
+            : []),
+          ...(canDeactivate && r.is_active
+            ? [{ key: "deactivate", label: t("users.deactivate"), danger: true, icon: <UserX size={14} aria-hidden="true" />, onClick: () => confirm.open("deactivate", r) }]
+            : []),
+          ...(isAdmin && !r.is_active
+            ? [{ key: "activate", label: t("users.activate"), icon: <UserCheck size={14} aria-hidden="true" />, onClick: () => confirm.open("activate", r) }]
+            : []),
+        ];
+        return (
+          <RowActionsMenu
+            ariaLabel={name}
+            primary={
+              canEdit && r.is_active && (
+                <button className="btn small ghost" onClick={() => openEdit(r)} aria-label={`${t("common.edit")} ${name}`}>
+                  {t("common.edit")}
+                </button>
+              )
+            }
+            items={items}
+          />
+        );
+      },
     },
   ];
 
   return (
       <Page
+        card
         title={t("users.title")}
         actions={
           can(user?.role, "create", "users") && (
@@ -274,6 +446,7 @@ export function Users() {
             onSubmit={submit}
             submitLabel={t("common.save")}
             error={formError}
+            wide={form.role === "DOCTOR"}
           >
             <Field label={t("users.username")}>
               <input value={form.username} onChange={(e) => setForm({ ...form, username: e.target.value })} required />
@@ -283,25 +456,159 @@ export function Users() {
                 <input type="password" value={form.password} onChange={(e) => setForm({ ...form, password: e.target.value })} required />
               </Field>
             )}
+            {!editId && (
+              <Field label={t("users.confirmPassword")}>
+                <input
+                  type="password"
+                  value={newUserConfirmPassword}
+                  onChange={(e) => setNewUserConfirmPassword(e.target.value)}
+                  required
+                />
+              </Field>
+            )}
             <Field label={t("users.firstName")}>
-              <input value={form.first_name} onChange={(e) => setForm({ ...form, first_name: e.target.value })} />
+              <input
+                value={form.first_name}
+                onChange={(e) => setForm({ ...form, first_name: e.target.value })}
+                disabled={Boolean(editId && form.role === "DOCTOR" && linkedProfile)}
+              />
             </Field>
             <Field label={t("users.lastName")}>
-              <input value={form.last_name} onChange={(e) => setForm({ ...form, last_name: e.target.value })} />
+              <input
+                value={form.last_name}
+                onChange={(e) => setForm({ ...form, last_name: e.target.value })}
+                disabled={Boolean(editId && form.role === "DOCTOR" && linkedProfile)}
+              />
             </Field>
+            {editId && form.role === "DOCTOR" && linkedProfile && (
+              <p className="muted">{t("users.doctorProfile.nameFromProfile")}</p>
+            )}
             <Field label={t("users.email")}>
               <input type="email" value={form.email} onChange={(e) => setForm({ ...form, email: e.target.value })} />
             </Field>
             <Field label={t("users.role")}>
-              <select value={form.role} onChange={(e) => setForm({ ...form, role: e.target.value })}>
+              <select value={form.role} onChange={(e) => onRoleChange(e.target.value)}>
                 {availableRoles.map((r) => (
                   <option key={r.value} value={r.value}>
-                    {r.label}
+                    {roleLabel(r.value, i18n.language, r.label)}
                   </option>
                 ))}
               </select>
             </Field>
+            {CENTER_SCOPED_ROLES.includes(form.role) && (
+              <Field label={t("users.center")}>
+                <select value={form.center} onChange={(e) => setForm({ ...form, center: e.target.value })}>
+                  <option value="">—</option>
+                  {centers.map((c) => (
+                    <option key={c.id} value={c.id}>
+                      {c.name}
+                    </option>
+                  ))}
+                </select>
+              </Field>
+            )}
+
+            {form.role === "DOCTOR" &&
+              (editId && linkedProfile ? (
+                <div className="form-section required">
+                  <h3>{t("users.doctorProfile.title")}</h3>
+                  <p>
+                    {linkedProfile.full_name} · {linkedProfile.code}
+                  </p>
+                  <div className="field-action-row">
+                    <Link className="btn ghost small" to="/doctors">
+                      {t("users.doctorProfile.openProfile")}
+                    </Link>
+                  </div>
+                </div>
+              ) : (
+                <fieldset className="form-section required">
+                  <legend>{t("users.doctorProfile.title")}</legend>
+                  <div className="radio-group">
+                    <label>
+                      <input
+                        type="radio"
+                        name="doctorProfileMode"
+                        checked={doctorProfileMode === "link"}
+                        onChange={() => setDoctorProfileMode("link")}
+                      />
+                      {t("users.doctorProfile.modeLink")}
+                    </label>
+                    <label>
+                      <input
+                        type="radio"
+                        name="doctorProfileMode"
+                        checked={doctorProfileMode === "create"}
+                        onChange={() => setDoctorProfileMode("create")}
+                      />
+                      {t("users.doctorProfile.modeCreate")}
+                    </label>
+                  </div>
+
+                  {doctorProfileMode === "link" &&
+                    (unlinkedDoctors.length === 0 ? (
+                      <p className="muted">{t("users.doctorProfile.noneAvailable")}</p>
+                    ) : (
+                      <Field label={t("users.doctorProfile.select")}>
+                        <select
+                          value={linkedDoctorProfileId ?? 0}
+                          onChange={(e) => setLinkedDoctorProfileId(Number(e.target.value) || null)}
+                          required
+                        >
+                          <option value={0} disabled>
+                            —
+                          </option>
+                          {unlinkedDoctors.map((d) => (
+                            <option key={d.id} value={d.id}>
+                              {d.full_name} · {d.code} · {t("doctors.license")} {d.license_number || "—"}
+                            </option>
+                          ))}
+                        </select>
+                      </Field>
+                    ))}
+
+                  {doctorProfileMode === "create" && (
+                    <DoctorProfileFormFields
+                      licenseNumber={doctorCreate.license_number}
+                      onLicenseNumberChange={(v) => setDoctorCreate({ ...doctorCreate, license_number: v })}
+                      contactPhone={doctorCreate.contact_phone}
+                      onContactPhoneChange={(v) => {
+                        setDoctorCreate({ ...doctorCreate, contact_phone: formatPhoneInput(v) });
+                        setDoctorPhoneError("");
+                      }}
+                      contactPhoneError={doctorPhoneError}
+                      extraPhones={doctorExtraPhones}
+                      onExtraPhonesChange={setDoctorExtraPhones}
+                      contactEmail={doctorCreate.contact_email || form.email}
+                      onContactEmailChange={(v) => setDoctorCreate({ ...doctorCreate, contact_email: v })}
+                      bio={doctorCreate.bio}
+                      onBioChange={(v) => setDoctorCreate({ ...doctorCreate, bio: v })}
+                      services={doctorCreate.services}
+                      onServicesChange={(ids) => setDoctorCreate({ ...doctorCreate, services: ids })}
+                      rooms={doctorCreate.rooms}
+                      onRoomsChange={(ids) => setDoctorCreate({ ...doctorCreate, rooms: ids })}
+                      serviceOptions={doctorServices}
+                      roomOptions={doctorRooms}
+                      canEditServices={canEditDoctorServices}
+                      canEditRooms={canEditDoctorRooms}
+                    />
+                  )}
+                </fieldset>
+              ))}
           </FormModal>
+        )}
+
+        {roleChangeConfirmOpen && (
+          <ConfirmDialog
+            title={t("users.role")}
+            message={t("users.doctorProfile.roleChangeConfirm")}
+            confirmLabel={t("common.save")}
+            onConfirm={confirmRoleChange}
+            onCancel={() => {
+              setPendingRole(null);
+              setRoleChangeConfirmOpen(false);
+            }}
+          />
         )}
 
         {passwordTarget && (

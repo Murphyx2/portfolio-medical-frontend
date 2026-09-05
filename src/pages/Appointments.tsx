@@ -6,11 +6,24 @@ import { DateNavigator } from "../components/DateNavigator";
 import { DateTimeField } from "../components/DateTimeField";
 import { ListPage } from "../components/ListPage";
 import { PatientFormModal } from "../components/PatientFormModal";
-import { ConfirmDialog, Dialog, Field, FormModal, MaskedValue, SearchableSelect, SearchBar, useRowConfirm, Page, type Column } from "../components/ui";
+import {
+  ConfirmDialog,
+  Dialog,
+  Field,
+  FormModal,
+  MaskedValue,
+  RowActionsMenu,
+  SearchableSelect,
+  SearchBar,
+  useRowConfirm,
+  Page,
+  type Column,
+  type RowActionsMenuItem,
+} from "../components/ui";
 import { useCalendarAppointments } from "../hooks/useCalendarAppointments";
 import { useDoctorServiceFilter } from "../hooks/useDoctorServiceFilter";
 import { useListPage } from "../hooks/useListPage";
-import { api, ApiError } from "../services/api";
+import { api } from "../services/api";
 import { formatPhone } from "../utils/phone";
 import { searchPatients } from "../services/patients";
 import type {
@@ -26,7 +39,7 @@ import { useAuth } from "../store/auth";
 import { can, canEditAppointment } from "../utils/can";
 import { formatCedula } from "../utils/cedula";
 import { formatDateTime, nextLocalISO, todayLocalISO } from "../utils/date";
-import { flattenError } from "../utils/errors";
+import { apiErrorMessage } from "../utils/errors";
 import { toSentenceCase } from "../utils/text";
 
 const EMPTY = { patient: 0, doctor: 0, service: 0, date_time: "", notes: "" };
@@ -52,6 +65,39 @@ const genderLabelKeys: Record<string, string> = {
   MALE: "patients.genderMale",
   FEMALE: "patients.genderFemale",
 };
+
+/** "Enviar recordatorio WhatsApp" (Requirements/Communications §7.3 manual
+ * resend). Disabled with a tooltip when the patient has no phone/opt-in
+ * (`patient_info.whatsapp_opt_in` -- backend nested serializer field, may be
+ * absent on older cached responses, treated as false when missing). */
+function WhatsappReminderButton({ appointment }: { appointment: Appointment }) {
+  const { t } = useTranslation();
+  const [sending, setSending] = useState(false);
+  const [message, setMessage] = useState("");
+  const eligible = Boolean(appointment.patient_info.whatsapp_opt_in && appointment.patient_info.phone);
+
+  async function send() {
+    setSending(true);
+    setMessage("");
+    try {
+      await api.post(`/appointments/${appointment.id}/send_whatsapp_reminder/`, {});
+      setMessage(t("communications.appointmentReminder.queued"));
+    } catch (err) {
+      setMessage(apiErrorMessage(err));
+    } finally {
+      setSending(false);
+    }
+  }
+
+  return (
+    <span title={eligible ? undefined : t("communications.appointmentReminder.disabled")}>
+      <button className="btn small ghost" disabled={!eligible || sending} onClick={send}>
+        {t("communications.appointmentReminder.send")}
+      </button>
+      {message && <span className="muted"> {message}</span>}
+    </span>
+  );
+}
 
 /** Read-only "appointment details" dialog opened by clicking a row's
  * patient name or date/time cell — mirrors the click-to-detail pattern in
@@ -167,6 +213,10 @@ export function AppointmentDetailsDialog({
             {canCancel && (appointment.status === "SCHEDULED" || appointment.status === "CONFIRMED") && (
               <button className="btn small danger" onClick={() => onCancel?.(appointment)}>{t("appointments.cancel")}</button>
             )}
+            {can(role, "sendManualReminder", "communications") &&
+              (appointment.status === "SCHEDULED" || appointment.status === "CONFIRMED") && (
+                <WhatsappReminderButton appointment={appointment} />
+              )}
             {canDelete && appointment.active && (
               <button className="btn small danger" onClick={() => onDelete?.(appointment)}>{t("common.delete")}</button>
             )}
@@ -184,6 +234,11 @@ export function AppointmentDetailsDialog({
 export function Appointments() {
   const { t } = useTranslation();
   const { user } = useAuth();
+  // Locks the Doctor field to the logged-in doctor's own profile (mirrors
+  // RecetaComposerModal's isDoctorRole handling) so useDoctorServiceFilter
+  // has a doctor to narrow against from the very first render, instead of
+  // showing every service until the doctor manually re-picks themselves.
+  const isDoctorRole = user?.role === "DOCTOR";
   const canCreate = can(user?.role, "create", "appointments");
   const canEdit = can(user?.role, "edit", "appointments");
   const canConfirm = can(user?.role, "confirm", "appointments");
@@ -270,6 +325,8 @@ export function Appointments() {
     currentDoctorId: form.doctor,
   });
 
+  const myDoctorId = isDoctorRole ? (doctors.find((d) => d.user_id === user?.id)?.id ?? 0) : 0;
+
   useEffect(() => {
     // Form-picker options: fetched once, not on every page/sort/search
     // change (unlike `load`, which re-runs then). Patients are looked up
@@ -278,6 +335,18 @@ export function Appointments() {
     api.get<Paginated<Service>>("/services/?page_size=200").then((r) => setServices(r.results)).catch(() => {});
     api.get<Paginated<ServiceType>>("/service-types/?page_size=100").then((r) => setServiceTypes(r.results)).catch(() => {});
   }, []);
+
+  // Doctor profiles load asynchronously and the "+ New appointment" button
+  // may already have opened the form before that resolves -- catch up here
+  // once `doctors` arrives, same "only while still unset" guard the
+  // composer's own auto-resolve relies on so this never clobbers an
+  // in-progress edit.
+  useEffect(() => {
+    if (isDoctorRole && myDoctorId && modal && !editingAppointment && form.doctor === 0) {
+      setForm((f) => ({ ...f, doctor: myDoctorId }));
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [doctors, modal]);
 
   function pickDoctor(doctorId: number) {
     setForm((f) => {
@@ -340,7 +409,7 @@ export function Appointments() {
       load();
       reloadCalendar();
     } catch (err) {
-      setFormError(err instanceof ApiError ? flattenError(err.message) : String(err));
+      setFormError(apiErrorMessage(err));
     }
   }
 
@@ -367,7 +436,7 @@ export function Appointments() {
       load();
       reloadCalendar();
     } catch (err) {
-      setRescheduleError(err instanceof ApiError ? flattenError(err.message) : String(err));
+      setRescheduleError(apiErrorMessage(err));
     }
   }
 
@@ -390,7 +459,7 @@ export function Appointments() {
       load();
       reloadCalendar();
     } catch (err) {
-      setCancelError(err instanceof ApiError ? flattenError(err.message) : String(err));
+      setCancelError(apiErrorMessage(err));
     }
   }
 
@@ -472,77 +541,87 @@ export function Appointments() {
       key: "actions",
       header: t("common.actions"),
       align: "center",
-      render: (r) => (
-        <div className="row-actions">
-          {canEditAppointment(user?.role, r.status) && r.active && (
-            <button className="btn small ghost" onClick={() => openEdit(r)}>{t("common.edit")}</button>
-          )}
-          {canEdit && (r.status === "SCHEDULED" || r.status === "CONFIRMED") && (
-            <button className="btn small ghost" onClick={() => openReschedule(r)}>{t("appointments.reschedule")}</button>
-          )}
-          {canConfirm && r.status === "SCHEDULED" && (
-            <button className="btn small" onClick={() => confirm.open("confirm", r)}>{t("appointments.confirm")}</button>
-          )}
-          {canComplete && r.status === "CONFIRMED" && (
-            <button className="btn small" onClick={() => confirm.open("complete", r)}>{t("appointments.complete")}</button>
-          )}
-          {canCancel && (r.status === "SCHEDULED" || r.status === "CONFIRMED") && (
-            <button className="btn small danger" onClick={() => openCancel(r)}>{t("appointments.cancel")}</button>
-          )}
-          {canDelete && r.active && (
-            <button className="btn small danger" onClick={() => confirm.open("delete", r)}>{t("common.delete")}</button>
-          )}
-          {isAdmin && !r.active && (
-            <button className="btn small" onClick={() => confirm.open("restore", r)}>
-              {t("common.restore")}
-            </button>
-          )}
-        </div>
-      ),
+      render: (r) => {
+        const items: RowActionsMenuItem[] = [
+          ...(canEdit && (r.status === "SCHEDULED" || r.status === "CONFIRMED")
+            ? [{ key: "reschedule", label: t("appointments.reschedule"), onClick: () => openReschedule(r) }]
+            : []),
+          ...(canConfirm && r.status === "SCHEDULED"
+            ? [{ key: "confirm", label: t("appointments.confirm"), onClick: () => confirm.open("confirm", r) }]
+            : []),
+          ...(canComplete && r.status === "CONFIRMED"
+            ? [{ key: "complete", label: t("appointments.complete"), onClick: () => confirm.open("complete", r) }]
+            : []),
+          ...(canCancel && (r.status === "SCHEDULED" || r.status === "CONFIRMED")
+            ? [{ key: "cancel", label: t("appointments.cancel"), danger: true, onClick: () => openCancel(r) }]
+            : []),
+          ...(canDelete && r.active
+            ? [{ key: "delete", label: t("common.delete"), danger: true, onClick: () => confirm.open("delete", r) }]
+            : []),
+          ...(isAdmin && !r.active
+            ? [{ key: "restore", label: t("common.restore"), onClick: () => confirm.open("restore", r) }]
+            : []),
+        ];
+        return (
+          <RowActionsMenu
+            ariaLabel={r.patient_info.full_name}
+            primary={
+              canEditAppointment(user?.role, r.status) && r.active && (
+                <button className="btn small ghost" onClick={() => openEdit(r)}>{t("common.edit")}</button>
+              )
+            }
+            items={items}
+          />
+        );
+      },
     },
   ];
 
+  const viewToggle = (
+    <div className="view-toggle" role="tablist" aria-label={t("appointments.viewToggle")}>
+      <button
+        type="button"
+        role="tab"
+        aria-selected={viewMode === "calendar"}
+        className={viewMode === "calendar" ? "view-toggle-btn active" : "view-toggle-btn"}
+        onClick={() => setViewMode("calendar")}
+      >
+        {t("appointments.viewCalendar")}
+      </button>
+      <button
+        type="button"
+        role="tab"
+        aria-selected={viewMode === "list"}
+        className={viewMode === "list" ? "view-toggle-btn active" : "view-toggle-btn"}
+        onClick={() => setViewMode("list")}
+      >
+        {t("appointments.viewList")}
+      </button>
+    </div>
+  );
+
   return (
     <Page
+      card
       title={t("appointments.title")}
       actions={
         canCreate && (
           <button
             className="btn primary"
-            onClick={() => { setEditingAppointment(null); setForm(EMPTY); setSelectedPatient(null); setFormError(""); setDateTimeError(""); setModal(true); }}
+            onClick={() => { setEditingAppointment(null); setForm({ ...EMPTY, doctor: myDoctorId }); setSelectedPatient(null); setFormError(""); setDateTimeError(""); setModal(true); }}
           >
             + {t("appointments.new")}
           </button>
         )
       }
     >
-      <div className="view-toggle" role="tablist" aria-label={t("appointments.viewToggle")}>
-        <button
-          type="button"
-          role="tab"
-          aria-selected={viewMode === "calendar"}
-          className={viewMode === "calendar" ? "view-toggle-btn active" : "view-toggle-btn"}
-          onClick={() => setViewMode("calendar")}
-        >
-          {t("appointments.viewCalendar")}
-        </button>
-        <button
-          type="button"
-          role="tab"
-          aria-selected={viewMode === "list"}
-          className={viewMode === "list" ? "view-toggle-btn active" : "view-toggle-btn"}
-          onClick={() => setViewMode("list")}
-        >
-          {t("appointments.viewList")}
-        </button>
-      </div>
-
       {viewMode === "list" ? (
         <ListPage<Appointment>
           initialLoading={initialLoading}
           search={search}
           setSearch={setSearch}
           searchSubmit={searchSubmit}
+          toolbarStart={viewToggle}
           toolbarBefore={
             <DateNavigator
               value={dateFilter}
@@ -567,6 +646,7 @@ export function Appointments() {
       ) : (
         <>
           <div className="list-toolbar">
+            {viewToggle}
             <SearchBar
               value={calendarSearch}
               onChange={setCalendarSearch}
@@ -611,19 +691,25 @@ export function Appointments() {
             </>
           )}
           <Field label={t("appointments.doctor")}>
-            <SearchableSelect<DoctorProfile>
-              value={availableDoctors.find((d) => d.id === form.doctor) ?? null}
-              onSelect={(d) => pickDoctor(d.id)}
-              search={async (query) => {
-                const q = query.trim().toLowerCase();
-                const results = q ? availableDoctors.filter((d) => d.full_name.toLowerCase().includes(q)) : availableDoctors;
-                return { results, count: results.length };
-              }}
-              minChars={1}
-              placeholder={t("appointments.doctor")}
-              getLabel={(d) => d.full_name}
-              autoFocus={false}
-            />
+            {isDoctorRole ? (
+              <p className="receta-patient-info">
+                <strong>{doctors.find((d) => d.id === form.doctor)?.full_name ?? "—"}</strong>
+              </p>
+            ) : (
+              <SearchableSelect<DoctorProfile>
+                value={availableDoctors.find((d) => d.id === form.doctor) ?? null}
+                onSelect={(d) => pickDoctor(d.id)}
+                search={async (query) => {
+                  const q = query.trim().toLowerCase();
+                  const results = q ? availableDoctors.filter((d) => d.full_name.toLowerCase().includes(q)) : availableDoctors;
+                  return { results, count: results.length };
+                }}
+                minChars={1}
+                placeholder={t("appointments.doctor")}
+                getLabel={(d) => d.full_name}
+                autoFocus={false}
+              />
+            )}
           </Field>
           <Field label={t("appointments.service")}>
             <SearchableSelect<Service>
@@ -646,10 +732,16 @@ export function Appointments() {
               value={form.date_time}
               onChange={(v) => { setForm({ ...form, date_time: v }); setDateTimeError(""); }}
               ariaLabel={t("appointments.dateTime")}
+              ariaInvalid={!!dateTimeError}
+              ariaDescribedBy={dateTimeError ? "appointment-datetime-error" : undefined}
               min={editingAppointment ? undefined : new Date().toISOString().slice(0, 16)}
               required
             />
-            {dateTimeError && <span className="field-error">{dateTimeError}</span>}
+            {dateTimeError && (
+              <span id="appointment-datetime-error" className="field-error" role="alert">
+                {dateTimeError}
+              </span>
+            )}
           </Field>
           <Field label={t("appointments.notes")}>
             <textarea value={form.notes} onChange={(e) => setForm({ ...form, notes: e.target.value })} />
@@ -677,10 +769,16 @@ export function Appointments() {
               value={rescheduleDateTime}
               onChange={(v) => { setRescheduleDateTime(v); setRescheduleDateTimeError(""); }}
               ariaLabel={t("appointments.dateTime")}
+              ariaInvalid={!!rescheduleDateTimeError}
+              ariaDescribedBy={rescheduleDateTimeError ? "appointment-reschedule-datetime-error" : undefined}
               min={new Date().toISOString().slice(0, 16)}
               required
             />
-            {rescheduleDateTimeError && <span className="field-error">{rescheduleDateTimeError}</span>}
+            {rescheduleDateTimeError && (
+              <span id="appointment-reschedule-datetime-error" className="field-error" role="alert">
+                {rescheduleDateTimeError}
+              </span>
+            )}
           </Field>
         </FormModal>
       )}

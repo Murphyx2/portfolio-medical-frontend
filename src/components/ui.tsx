@@ -1,15 +1,16 @@
 import { useEffect, useId, useRef, useState } from "react";
-import type { FormEvent, ReactNode } from "react";
+import { createPortal } from "react-dom";
+import type { FormEvent, KeyboardEvent as ReactKeyboardEvent, ReactNode } from "react";
 import { useTranslation } from "react-i18next";
 
 import { MIN_SEARCH_CHARS } from "../hooks/useListControls";
 import type { SortDir } from "../hooks/useListControls";
 export type { SortDir };
-import { ApiError, onMutationSuccess } from "../services/api";
-import { flattenError } from "../utils/errors";
+import { onMutationSuccess } from "../services/api";
+import { apiErrorMessage } from "../utils/errors";
 
 function actionErrorMessage(err: unknown): string {
-  return err instanceof ApiError ? flattenError(err.message) : String(err);
+  return apiErrorMessage(err);
 }
 
 /** Shared "confirm before running a row action" state machine -- extracted
@@ -50,17 +51,34 @@ export function useRowConfirm<K extends string, T>() {
   return { confirming, error, pending, open, close, run };
 }
 
-export function Page({ title, actions, children }: {
+export function Page({ title, actions, children, card }: {
   title: ReactNode;
   actions?: ReactNode;
   children: ReactNode;
+  /** Wraps the head + children in the shared list-page card surface
+   * (white, bordered, radius) used by every list module. Dashboard and
+   * other non-list pages omit this and keep the plain bare layout. */
+  card?: boolean;
 }) {
+  const head = (
+    <div className="page-head">
+      <h2>{title}</h2>
+      {actions}
+    </div>
+  );
+  if (card) {
+    return (
+      <section>
+        <div className="list-page-card">
+          {head}
+          {children}
+        </div>
+      </section>
+    );
+  }
   return (
     <section>
-      <div className="page-head">
-        <h2>{title}</h2>
-        {actions}
-      </div>
+      {head}
       {children}
     </section>
   );
@@ -149,7 +167,7 @@ export function Dialog({ title, onClose, children, wide, xwide, preventClose, co
     >
       <div
         ref={modalRef}
-        className={xwide ? "modal xwide" : wide ? "modal wide" : "modal"}
+        className={`mc-form ${xwide ? "modal xwide" : wide ? "modal wide" : "modal"}`}
         role="dialog"
         aria-modal="true"
         aria-labelledby={titleId}
@@ -293,12 +311,100 @@ export function Field({ label, children }: { label: string; children: ReactNode 
   );
 }
 
+export interface TabItem {
+  key: string;
+  label: string;
+}
+
+/**
+ * WAI-ARIA tabs pattern (roving tabindex: only the active tab is in the tab
+ * order, Left/Right/Home/End move focus+selection together) -- no existing
+ * precedent in this codebase, first used by the Expediente modal. Renders
+ * only the tablist strip; pair each tab with a `TabPanel` of the same
+ * `idPrefix`/key rendered by the caller so panel content can be conditional
+ * (e.g. only mounting the active tab's fields).
+ */
+export function Tabs({ items, active, onChange, idPrefix = "tab" }: {
+  items: TabItem[];
+  active: string;
+  onChange: (key: string) => void;
+  idPrefix?: string;
+}) {
+  const buttonRefs = useRef<Record<string, HTMLButtonElement | null>>({});
+
+  function selectAndFocus(key: string) {
+    onChange(key);
+    buttonRefs.current[key]?.focus();
+  }
+
+  function onKeyDown(e: ReactKeyboardEvent<HTMLButtonElement>, index: number) {
+    let nextIndex: number | null = null;
+    if (e.key === "ArrowRight") nextIndex = (index + 1) % items.length;
+    else if (e.key === "ArrowLeft") nextIndex = (index - 1 + items.length) % items.length;
+    else if (e.key === "Home") nextIndex = 0;
+    else if (e.key === "End") nextIndex = items.length - 1;
+    if (nextIndex === null) return;
+    e.preventDefault();
+    selectAndFocus(items[nextIndex].key);
+  }
+
+  return (
+    <div className="tabs" role="tablist">
+      {items.map((item, i) => {
+        const isActive = active === item.key;
+        return (
+          <button
+            key={item.key}
+            ref={(el) => {
+              buttonRefs.current[item.key] = el;
+            }}
+            type="button"
+            role="tab"
+            id={`${idPrefix}-tab-${item.key}`}
+            aria-selected={isActive}
+            aria-controls={`${idPrefix}-panel-${item.key}`}
+            tabIndex={isActive ? 0 : -1}
+            className={`tab${isActive ? " active" : ""}`}
+            onClick={() => onChange(item.key)}
+            onKeyDown={(e) => onKeyDown(e, i)}
+          >
+            {item.label}
+          </button>
+        );
+      })}
+    </div>
+  );
+}
+
+/** Content panel paired with one `Tabs` tab -- unmounts (rather than just
+ * hiding) inactive panels, since the Expediente modal's tabs hold live form
+ * state that lives in the parent regardless of which panel is mounted. */
+export function TabPanel({ tabKey, active, idPrefix = "tab", children }: {
+  tabKey: string;
+  active: string;
+  idPrefix?: string;
+  children: ReactNode;
+}) {
+  if (active !== tabKey) return null;
+  return (
+    <div
+      role="tabpanel"
+      id={`${idPrefix}-panel-${tabKey}`}
+      aria-labelledby={`${idPrefix}-tab-${tabKey}`}
+      tabIndex={0}
+      className="tab-panel"
+    >
+      {children}
+    </div>
+  );
+}
+
 export interface Column<T> {
   key: string;
   header: ReactNode;
   render?: (row: T) => ReactNode;
   sortKey?: string;
-  align?: "center";
+  align?: "center" | "right";
 }
 
 export function Table<T extends { id: number }>({
@@ -307,6 +413,7 @@ export function Table<T extends { id: number }>({
   onEdit,
   onDelete,
   onRestore,
+  extraActions,
   isInactive,
   getRowLabel,
   emptyLabel,
@@ -319,6 +426,10 @@ export function Table<T extends { id: number }>({
   onEdit?: (row: T) => void;
   onDelete?: (row: T) => void | Promise<void>;
   onRestore?: (row: T) => void | Promise<void>;
+  /** Extra row-action content rendered ahead of Edit/Delete/Restore inside
+   * the same Acciones cell (e.g. Records' "Nueva entrada" button), instead
+   * of forcing callers to add their own standalone column. */
+  extraActions?: (row: T) => ReactNode;
   isInactive?: (row: T) => boolean;
   /** Human-readable label for a row, interpolated into the delete/restore confirm message. Falls back to the row id. */
   getRowLabel?: (row: T) => string;
@@ -328,7 +439,7 @@ export function Table<T extends { id: number }>({
   onSort?: (key: string) => void;
 }) {
   const { t } = useTranslation();
-  const hasActions = Boolean(onEdit || onDelete || onRestore);
+  const hasActions = Boolean(onEdit || onDelete || onRestore || extraActions);
   const [confirming, setConfirming] = useState<{ type: "delete" | "restore"; row: T } | null>(null);
   const [actionError, setActionError] = useState("");
   const [actionPending, setActionPending] = useState(false);
@@ -366,7 +477,7 @@ export function Table<T extends { id: number }>({
                 <th
                   key={c.key}
                   scope="col"
-                  className={c.align === "center" ? "col-center" : undefined}
+                  className={c.align === "center" ? "col-center" : c.align === "right" ? "col-align-right" : undefined}
                   aria-sort={
                     sortable
                       ? active
@@ -394,7 +505,7 @@ export function Table<T extends { id: number }>({
                 </th>
               );
             })}
-            {hasActions && <th scope="col" className="col-center">{t("common.actions")}</th>}
+            {hasActions && <th scope="col" className="col-center col-actions">{t("common.actions")}</th>}
           </tr>
         </thead>
         <tbody>
@@ -413,36 +524,45 @@ export function Table<T extends { id: number }>({
                 </td>
               ))}
               {hasActions && (
-                <td className="col-center">
-                  <div className="row-actions">
-                    {onEdit && (
-                      <button
-                        className="btn small"
-                        onClick={() => onEdit(row)}
-                        aria-label={`${t("common.edit")} ${getRowLabel?.(row) ?? row.id}`}
-                      >
-                        {t("common.edit")}
-                      </button>
-                    )}
-                    {onDelete && (
-                      <button
-                        className="btn small danger"
-                        onClick={() => setConfirming({ type: "delete", row })}
-                        aria-label={`${t("common.delete")} ${getRowLabel?.(row) ?? row.id}`}
-                      >
-                        {t("common.delete")}
-                      </button>
-                    )}
-                    {onRestore && isInactive?.(row) && (
-                      <button
-                        className="btn small"
-                        onClick={() => setConfirming({ type: "restore", row })}
-                        aria-label={`${t("common.restore")} ${getRowLabel?.(row) ?? row.id}`}
-                      >
-                        {t("common.restore")}
-                      </button>
-                    )}
-                  </div>
+                <td className="col-center col-actions">
+                  <RowActionsMenu
+                    ariaLabel={getRowLabel?.(row) ?? String(row.id)}
+                    primary={
+                      <>
+                        {extraActions?.(row)}
+                        {onEdit && (
+                          <button
+                            className="btn small"
+                            onClick={() => onEdit(row)}
+                            aria-label={`${t("common.edit")} ${getRowLabel?.(row) ?? row.id}`}
+                          >
+                            {t("common.edit")}
+                          </button>
+                        )}
+                      </>
+                    }
+                    items={[
+                      ...(onDelete
+                        ? [
+                            {
+                              key: "delete",
+                              label: t("common.delete"),
+                              danger: true,
+                              onClick: () => setConfirming({ type: "delete", row }),
+                            },
+                          ]
+                        : []),
+                      ...(onRestore && isInactive?.(row)
+                        ? [
+                            {
+                              key: "restore",
+                              label: t("common.restore"),
+                              onClick: () => setConfirming({ type: "restore", row }),
+                            },
+                          ]
+                        : []),
+                    ]}
+                  />
                 </td>
               )}
             </tr>
@@ -555,6 +675,7 @@ export function SearchBar({ value, onChange, placeholder, label, onSubmit }: {
 export function SearchableSelect<T extends { id: number }>({
   value,
   onSelect,
+  onClear,
   search,
   placeholder,
   getLabel,
@@ -564,6 +685,9 @@ export function SearchableSelect<T extends { id: number }>({
 }: {
   value: T | null;
   onSelect: (item: T) => void;
+  /** When provided, a "×" clear button renders next to a filled value so
+   * the selection can be reset to null without picking a replacement. */
+  onClear?: () => void;
   search: (query: string) => Promise<{ results: T[]; count: number }>;
   placeholder: string;
   getLabel: (item: T) => string;
@@ -653,17 +777,32 @@ export function SearchableSelect<T extends { id: number }>({
   return (
     <div className="searchable-select" ref={wrapRef}>
       {!editing && value ? (
-        <button type="button" className="searchable-select-trigger" onClick={startEdit}>
-          <span className="searchable-select-value">
-            <span className="searchable-select-label">{getLabel(value)}</span>
-            {getSublabel && (
-              <span className="searchable-select-sublabel">{getSublabel(value)}</span>
-            )}
-          </span>
-          <span className="searchable-select-caret" aria-hidden="true">
-            ▾
-          </span>
-        </button>
+        <div className="searchable-select-filled">
+          <button type="button" className="searchable-select-trigger" onClick={startEdit}>
+            <span className="searchable-select-value">
+              <span className="searchable-select-label">{getLabel(value)}</span>
+              {getSublabel && (
+                <span className="searchable-select-sublabel">{getSublabel(value)}</span>
+              )}
+            </span>
+            <span className="searchable-select-caret" aria-hidden="true">
+              ▾
+            </span>
+          </button>
+          {onClear && (
+            <button
+              type="button"
+              className="searchable-select-clear"
+              aria-label={t("common.clear")}
+              onClick={(e) => {
+                e.stopPropagation();
+                onClear();
+              }}
+            >
+              ×
+            </button>
+          )}
+        </div>
       ) : (
         <div className="searchable-select-input-wrap">
           <input
@@ -721,7 +860,126 @@ export function SearchableSelect<T extends { id: number }>({
   );
 }
 
-const PAGE_SIZE_OPTIONS = [50, 75, 100];
+export interface RowActionsMenuItem {
+  key: string;
+  label: string;
+  onClick: () => void;
+  /** Renders in red -- for Eliminar/Desactivar/Cancelar/etc. */
+  danger?: boolean;
+  icon?: ReactNode;
+}
+
+/**
+ * Shared "Editar + ⋯ Más" row-actions pattern: up to two always-visible
+ * `primary` buttons, everything else collapsed into an overflow menu so a
+ * row never grows past two buttons wide (list-pages redesign). Callers own
+ * all permission logic -- this renders exactly the items it's given, it
+ * never itself decides what's allowed. Outside-click/Escape-close mirrors
+ * `SearchableSelect`'s existing pattern above.
+ */
+export function RowActionsMenu({ primary, items, ariaLabel }: {
+  primary?: ReactNode;
+  items: RowActionsMenuItem[];
+  ariaLabel: string;
+}) {
+  const { t } = useTranslation();
+  const wrapRef = useRef<HTMLDivElement>(null);
+  const triggerRef = useRef<HTMLButtonElement>(null);
+  const panelRef = useRef<HTMLDivElement>(null);
+  const [open, setOpen] = useState(false);
+  const [panelPos, setPanelPos] = useState<{ top: number; right: number } | null>(null);
+
+  function openMenu() {
+    const rect = triggerRef.current?.getBoundingClientRect();
+    if (rect) {
+      setPanelPos({ top: rect.bottom + 4, right: window.innerWidth - rect.right });
+    }
+    setOpen(true);
+  }
+
+  useEffect(() => {
+    if (!open) return;
+    function onDoc(e: MouseEvent) {
+      const target = e.target as Node;
+      if (
+        wrapRef.current &&
+        !wrapRef.current.contains(target) &&
+        !(panelRef.current && panelRef.current.contains(target))
+      ) {
+        setOpen(false);
+      }
+    }
+    function onKey(e: KeyboardEvent) {
+      if (e.key === "Escape") setOpen(false);
+    }
+    function onScroll() {
+      // A scroll anywhere (the table's own horizontal/vertical scroll
+      // included) can leave the portaled panel's fixed position stale --
+      // simplest correct behavior is to just close it, matching common
+      // dropdown UX elsewhere. `capture: true` so this fires for scroll on
+      // any scrollable ancestor, not just window itself.
+      setOpen(false);
+    }
+    document.addEventListener("mousedown", onDoc);
+    document.addEventListener("keydown", onKey);
+    window.addEventListener("scroll", onScroll, true);
+    return () => {
+      document.removeEventListener("mousedown", onDoc);
+      document.removeEventListener("keydown", onKey);
+      window.removeEventListener("scroll", onScroll, true);
+    };
+  }, [open]);
+
+  return (
+    <div className="row-actions">
+      {primary}
+      {items.length > 0 && (
+        <div className="row-actions-menu" ref={wrapRef}>
+          <button
+            ref={triggerRef}
+            type="button"
+            className="row-actions-menu-trigger"
+            aria-haspopup="menu"
+            aria-expanded={open}
+            aria-label={t("common.more") + " " + ariaLabel}
+            onClick={() => (open ? setOpen(false) : openMenu())}
+          >
+            ⋯
+          </button>
+          {open &&
+            panelPos &&
+            createPortal(
+              <div
+                ref={panelRef}
+                className="row-actions-menu-panel"
+                role="menu"
+                style={{ top: panelPos.top, right: panelPos.right }}
+              >
+                {items.map((item) => (
+                  <button
+                    key={item.key}
+                    type="button"
+                    role="menuitem"
+                    className={`row-actions-menu-item${item.danger ? " danger" : ""}`}
+                    onClick={() => {
+                      setOpen(false);
+                      item.onClick();
+                    }}
+                  >
+                    {item.icon}
+                    {item.label}
+                  </button>
+                ))}
+              </div>,
+              document.body,
+            )}
+        </div>
+      )}
+    </div>
+  );
+}
+
+export const PAGE_SIZE_OPTIONS = [50, 75, 100];
 
 function pageItems(current: number, total: number): (number | "...")[] {
   if (total <= 7) {
@@ -741,12 +999,18 @@ function pageItems(current: number, total: number): (number | "...")[] {
   return items;
 }
 
-export function Pagination({ page, count, pageSize, onChange, onPageSizeChange }: {
+export function Pagination({ page, count, pageSize, onChange, onPageSizeChange, layout = "full" }: {
   page: number;
   count: number;
   pageSize: number;
   onChange: (page: number) => void;
   onPageSizeChange?: (pageSize: number) => void;
+  /** "full" (default) renders nav + page-size select + info text, used
+   * anywhere Pagination is the only pagination UI on the page. "nav-only"
+   * renders just the prev/next/page-number nav -- used at the bottom of
+   * ListPage, where the page-size select and result count already live in
+   * the toolbar row so they aren't duplicated. */
+  layout?: "full" | "nav-only";
 }) {
   const { t } = useTranslation();
   const total = Math.ceil(count / pageSize);
@@ -790,21 +1054,25 @@ export function Pagination({ page, count, pageSize, onChange, onPageSizeChange }
           </button>
         </nav>
       )}
-      <select
-        className="pagination-size"
-        aria-label={t("pagination.perPageLabel")}
-        value={pageSize}
-        onChange={(e) => onPageSizeChange?.(Number(e.target.value))}
-      >
-        {PAGE_SIZE_OPTIONS.map((n) => (
-          <option key={n} value={n}>
-            {t("pagination.perPage", { size: n })}
-          </option>
-        ))}
-      </select>
+      {layout === "full" && (
+        <select
+          className="pagination-size"
+          aria-label={t("pagination.perPageLabel")}
+          value={pageSize}
+          onChange={(e) => onPageSizeChange?.(Number(e.target.value))}
+        >
+          {PAGE_SIZE_OPTIONS.map((n) => (
+            <option key={n} value={n}>
+              {t("pagination.perPage", { size: n })}
+            </option>
+          ))}
+        </select>
+      )}
       {multi && (
         <span className="pagination-info">
-          {t("pagination.pageOf", { page, total })} · {t("pagination.records", { count })}
+          {layout === "full"
+            ? `${t("pagination.pageOf", { page, total })} · ${t("pagination.records", { count })}`
+            : t("pagination.pageOf", { page, total })}
         </span>
       )}
     </div>

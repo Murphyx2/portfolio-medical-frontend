@@ -4,11 +4,11 @@ import { useTranslation } from "react-i18next";
 import { ListPage } from "../components/ListPage";
 import { FormModal, Page, type Column } from "../components/ui";
 import { useListPage } from "../hooks/useListPage";
-import { api, ApiError } from "../services/api";
+import { api } from "../services/api";
 import type { ARS, ARSProgram } from "../services/types";
 import { useAuth } from "../store/auth";
 import { can } from "../utils/can";
-import { flattenError } from "../utils/errors";
+import { apiErrorMessage } from "../utils/errors";
 
 interface ProgramDraft {
   id?: number;
@@ -80,7 +80,7 @@ export function Ars() {
       setModal(false);
       load();
     } catch (err) {
-      setFormError(err instanceof ApiError ? flattenError(err.message) : String(err));
+      setFormError(apiErrorMessage(err));
     }
   }
 
@@ -106,6 +106,7 @@ export function Ars() {
 
   return (
       <Page
+        card
         title={t("ars.title")}
         actions={
           canWrite && (
@@ -173,6 +174,7 @@ export function Ars() {
                     <input
                       value={p.name}
                       placeholder={t("ars.programName")}
+                      aria-label={t("ars.programName")}
                       onChange={(e) => {
                         const next = [...form.programs];
                         next[idx] = { ...next[idx], name: e.target.value };
@@ -182,6 +184,7 @@ export function Ars() {
                     <button
                       type="button"
                       className="btn small danger"
+                      aria-label={t("ars.removeProgram")}
                       onClick={() =>
                         setForm({
                           ...form,

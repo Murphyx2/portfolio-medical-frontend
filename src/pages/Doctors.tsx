@@ -1,21 +1,24 @@
 import { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
+import { Link } from "react-router-dom";
 
 import { ListPage } from "../components/ListPage";
-import { PhoneNumberListField } from "../components/PhoneNumberListField";
-import { Field, FormModal, MaskedValue, Page, type Column } from "../components/ui";
+import { DoctorProfileFormFields } from "../components/doctors/DoctorProfileFormFields";
+import { ConfirmDialog, Field, FormModal, MaskedValue, Page, type Column } from "../components/ui";
 import { ServiceChipList, ServiceCheckboxList } from "./doctors/ServicePickers";
 import { RoomChipList, RoomCheckboxList } from "./doctors/RoomPickers";
 import { useListPage } from "../hooks/useListPage";
-import { api, ApiError } from "../services/api";
+import { api } from "../services/api";
 import type { DoctorProfile, ExtraPhone, Paginated, Room, Service, User } from "../services/types";
 import { useAuth } from "../store/auth";
 import { can } from "../utils/can";
-import { flattenError } from "../utils/errors";
+import { apiErrorMessage } from "../utils/errors";
 import { formatPhone, formatPhoneInput, isValidRequiredPhone } from "../utils/phone";
 
 const EMPTY = {
   user: 0,
+  first_name: "",
+  last_name: "",
   license_number: "",
   contact_phone: "",
   contact_email: "",
@@ -24,6 +27,8 @@ const EMPTY = {
   rooms: [] as number[],
 };
 
+const EMPTY_ACCOUNT = { username: "", password: "", confirm_password: "", email: "" };
+
 export function Doctors() {
   const { t } = useTranslation();
   const { user } = useAuth();
@@ -31,16 +36,20 @@ export function Doctors() {
   const canEditServices = can(user?.role, "manageServices", "doctors");
   const canEditRooms = can(user?.role, "manageRooms", "doctors");
   const isAdmin = can(user?.role, "restore", "doctors");
+  const canUnlinkAccount = can(user?.role, "unlinkAccount", "doctors");
   const [userOptions, setUserOptions] = useState<User[]>([]);
+  const [linkedUserIds, setLinkedUserIds] = useState<Set<number>>(new Set());
   const [services, setServices] = useState<Service[]>([]);
   const [rooms, setRooms] = useState<Room[]>([]);
   const [modal, setModal] = useState(false);
   const [form, setForm] = useState(EMPTY);
   const [extraPhones, setExtraPhones] = useState<string[]>([]);
   const [editId, setEditId] = useState<number | null>(null);
+  const [createAccount, setCreateAccount] = useState(false);
+  const [newAccount, setNewAccount] = useState(EMPTY_ACCOUNT);
   const [phoneError, setPhoneError] = useState("");
-  const [userError, setUserError] = useState("");
   const [formError, setFormError] = useState("");
+  const [confirmUnlink, setConfirmUnlink] = useState(false);
   const [servicesModalDoctor, setServicesModalDoctor] = useState<DoctorProfile | null>(null);
   const [servicesSelected, setServicesSelected] = useState<number[]>([]);
   const [servicesError, setServicesError] = useState("");
@@ -70,6 +79,13 @@ export function Doctors() {
     // User options for the "assign profile" picker: fetched once, not on
     // every page/sort/search change (unlike `load`, which re-runs then).
     api.get<Paginated<User>>("/auth/users/?page_size=200").then((r) => setUserOptions(r.results)).catch(() => {});
+    // Doctor/a users already linked to *some* médico -- excluded from the
+    // picker below (except the one being edited) so two médicos can't be
+    // pointed at the same login.
+    api
+      .get<Paginated<DoctorProfile>>("/doctors/profiles/?user__isnull=false&page_size=500")
+      .then((r) => setLinkedUserIds(new Set(r.results.map((d) => d.user_id!))))
+      .catch(() => {});
   }, []);
 
   useEffect(() => {
@@ -89,15 +105,18 @@ export function Doctors() {
     setForm(EMPTY);
     setExtraPhones([]);
     setEditId(null);
+    setCreateAccount(false);
+    setNewAccount(EMPTY_ACCOUNT);
     setPhoneError("");
-    setUserError("");
     setFormError("");
     setModal(true);
   }
 
   function openEdit(d: DoctorProfile) {
     setForm({
-      user: d.user_id,
+      user: d.user_id ?? 0,
+      first_name: d.first_name,
+      last_name: d.last_name,
       license_number: d.license_number,
       contact_phone: formatPhone(d.contact_phone),
       contact_email: d.contact_email,
@@ -107,23 +126,40 @@ export function Doctors() {
     });
     setExtraPhones(d.extra_phones.map((p) => formatPhone(p.phone)));
     setEditId(d.id);
+    setCreateAccount(false);
+    setNewAccount(EMPTY_ACCOUNT);
     setPhoneError("");
-    setUserError("");
     setFormError("");
     setModal(true);
   }
 
+  async function unlinkAccount() {
+    if (!editId) return;
+    try {
+      await api.post(`/doctors/profiles/${editId}/unlink_account/`, {});
+      setForm({ ...form, user: 0 });
+      setConfirmUnlink(false);
+      load();
+    } catch (err) {
+      setFormError(apiErrorMessage(err));
+    }
+  }
+
   async function submit() {
-    if (!form.user) {
-      setUserError(t("doctors.userRequired"));
+    if (!form.first_name.trim()) {
+      setFormError(t("doctors.fullNameRequired"));
       return;
     }
     if (!isValidRequiredPhone(form.contact_phone)) {
       setPhoneError(t("common.phoneInvalid"));
       return;
     }
+    if (createAccount && newAccount.password !== newAccount.confirm_password) {
+      setFormError(t("users.passwordMismatch"));
+      return;
+    }
     setFormError("");
-    const { services: formServices, rooms: formRooms, ...rest } = form;
+    const { services: formServices, rooms: formRooms, user: formUser, ...rest } = form;
     const body: Record<string, unknown> = {
       ...rest,
       contact_phone: form.contact_phone.replace(/\D/g, ""),
@@ -131,6 +167,12 @@ export function Doctors() {
         .filter((p) => p.trim() !== "")
         .map((p): ExtraPhone => ({ phone: p.replace(/\D/g, "") })),
     };
+    if (createAccount) {
+      const { confirm_password: _confirmPassword, ...account } = newAccount;
+      body.create_account = { ...account, email: account.email || form.contact_email };
+    } else {
+      body.user = formUser || null;
+    }
     // Only ADMIN sees the services field in this form (IT has canEdit but
     // not canEditServices) -- omit the key entirely for IT rather than
     // sending an empty list, since the backend treats key-presence itself
@@ -143,7 +185,7 @@ export function Doctors() {
       setModal(false);
       load();
     } catch (err) {
-      setFormError(err instanceof ApiError ? flattenError(err.message) : String(err));
+      setFormError(apiErrorMessage(err));
     }
   }
 
@@ -160,7 +202,7 @@ export function Doctors() {
       setServicesModalDoctor(null);
       load();
     } catch (err) {
-      setServicesError(err instanceof ApiError ? flattenError(err.message) : String(err));
+      setServicesError(apiErrorMessage(err));
     }
   }
 
@@ -177,7 +219,7 @@ export function Doctors() {
       setRoomsModalDoctor(null);
       load();
     } catch (err) {
-      setRoomsError(err instanceof ApiError ? flattenError(err.message) : String(err));
+      setRoomsError(apiErrorMessage(err));
     }
   }
 
@@ -191,18 +233,18 @@ export function Doctors() {
     load();
   }
 
-  // Only DOCTOR-role accounts are eligible for a new profile; if the
-  // profile being edited is somehow linked to a non-DOCTOR account (role
-  // changed after assignment), keep it selectable so the form doesn't
+  // Only DOCTOR-role accounts not already linked to a *different* médico
+  // are eligible; if the profile being edited is somehow linked to a
+  // non-DOCTOR account (role changed after assignment) or to a user this
+  // filter would otherwise exclude, keep it selectable so the form doesn't
   // silently drop it.
-  const eligibleUsers =
-    editId && form.user && !userOptions.some((u) => u.id === form.user && u.role === "DOCTOR")
-      ? userOptions.filter((u) => u.role === "DOCTOR" || u.id === form.user)
-      : userOptions.filter((u) => u.role === "DOCTOR");
+  const eligibleUsers = userOptions.filter(
+    (u) => u.id === form.user || (u.role === "DOCTOR" && !linkedUserIds.has(u.id))
+  );
 
   const columns: Column<DoctorProfile>[] = [
     { key: "code", header: t("doctors.code"), sortKey: "code" },
-    { key: "full_name", header: t("doctors.fullName"), sortKey: "user__last_name" },
+    { key: "full_name", header: t("doctors.fullName"), sortKey: "last_name" },
     {
       key: "services",
       header: t("doctors.services"),
@@ -238,6 +280,7 @@ export function Doctors() {
 
   return (
     <Page
+      card
       title={t("doctors.title")}
       actions={
         canEdit && (
@@ -282,89 +325,123 @@ export function Doctors() {
           error={formError}
           wide
         >
-          <Field label={t("doctors.user")}>
-            <select
-              value={form.user}
-              onChange={(e) => {
-                setForm({ ...form, user: Number(e.target.value) });
-                setUserError("");
-              }}
-            >
-              <option value={0} disabled>
-                —
-              </option>
-              {eligibleUsers.map((u) => (
-                <option key={u.id} value={u.id}>
-                  {u.full_name || u.username} ({u.username})
-                </option>
-              ))}
-            </select>
-            {userError && <span className="field-error">{userError}</span>}
-          </Field>
-          <Field label={t("doctors.license")}>
+          <Field label={t("users.firstName")}>
             <input
-              value={form.license_number}
-              onChange={(e) => setForm({ ...form, license_number: e.target.value })}
+              value={form.first_name}
+              onChange={(e) => setForm({ ...form, first_name: e.target.value })}
               required
             />
           </Field>
-          <Field label={t("doctors.contactPhone")}>
+          <Field label={t("users.lastName")}>
             <input
-              type="tel"
-              inputMode="tel"
-              value={form.contact_phone}
-              placeholder="(809) 555-1212"
-              maxLength={14}
-              onChange={(e) => {
-                setForm({ ...form, contact_phone: formatPhoneInput(e.target.value) });
-                setPhoneError("");
-              }}
-              required
-            />
-            {phoneError && <span className="field-error">{phoneError}</span>}
-            <PhoneNumberListField
-              values={extraPhones}
-              onChange={setExtraPhones}
-              addLabel={t("patients.addPhone")}
+              value={form.last_name}
+              onChange={(e) => setForm({ ...form, last_name: e.target.value })}
             />
           </Field>
-          <Field label={t("doctors.contactEmail")}>
-            <input
-              type="email"
-              value={form.contact_email}
-              onChange={(e) => setForm({ ...form, contact_email: e.target.value })}
-            />
-          </Field>
-          <Field label={t("doctors.bio")}>
-            <textarea
-              value={form.bio}
-              onChange={(e) => setForm({ ...form, bio: e.target.value })}
-            />
-          </Field>
-          {canEditServices && (
-            // Plain .field-styled div, not the Field/<label> wrapper -- this
-            // widget nests its own interactive controls (search input,
-            // type select, many checkboxes), which is invalid inside a
-            // single <label>, unlike Field's usual one-input case.
+
+          {editId && form.user ? (
             <div className="field">
-              <span>{t("doctors.services")}</span>
-              <ServiceCheckboxList
-                services={services}
-                selected={form.services}
-                onChange={(ids) => setForm({ ...form, services: ids })}
-              />
+              <span>{t("doctors.user")}</span>
+              <p>{userOptions.find((u) => u.id === form.user)?.username ?? "—"}</p>
+              <div className="field-action-row">
+                <Link className="btn ghost small" to="/users">
+                  {t("doctors.editUser")}
+                </Link>
+                {canUnlinkAccount && (
+                  <button type="button" className="btn ghost small" onClick={() => setConfirmUnlink(true)}>
+                    {t("doctors.unlinkAccount")}
+                  </button>
+                )}
+              </div>
             </div>
+          ) : (
+            <>
+              {!createAccount && (
+                <Field label={t("doctors.user")}>
+                  <select value={form.user} onChange={(e) => setForm({ ...form, user: Number(e.target.value) })}>
+                    <option value={0}>—</option>
+                    {eligibleUsers.map((u) => (
+                      <option key={u.id} value={u.id}>
+                        {u.full_name || u.username} ({u.username})
+                      </option>
+                    ))}
+                  </select>
+                </Field>
+              )}
+              <label className="muted touch-label">
+                <input
+                  type="checkbox"
+                  checked={createAccount}
+                  onChange={(e) => {
+                    setCreateAccount(e.target.checked);
+                    if (e.target.checked) setForm({ ...form, user: 0 });
+                  }}
+                />{" "}
+                {t("doctors.createAccount")}
+              </label>
+              {createAccount && (
+                <div className="form-section">
+                  <h4>{t("doctors.accountBlockTitle")}</h4>
+                  <Field label={t("users.username")}>
+                    <input
+                      value={newAccount.username}
+                      onChange={(e) => setNewAccount({ ...newAccount, username: e.target.value })}
+                      required
+                    />
+                  </Field>
+                  <Field label={t("users.password")}>
+                    <input
+                      type="password"
+                      value={newAccount.password}
+                      onChange={(e) => setNewAccount({ ...newAccount, password: e.target.value })}
+                      required
+                    />
+                  </Field>
+                  <Field label={t("users.confirmPassword")}>
+                    <input
+                      type="password"
+                      value={newAccount.confirm_password}
+                      onChange={(e) => setNewAccount({ ...newAccount, confirm_password: e.target.value })}
+                      required
+                    />
+                  </Field>
+                  <Field label={t("users.email")}>
+                    <input
+                      type="email"
+                      value={newAccount.email}
+                      placeholder={form.contact_email}
+                      onChange={(e) => setNewAccount({ ...newAccount, email: e.target.value })}
+                    />
+                  </Field>
+                </div>
+              )}
+            </>
           )}
-          {canEditRooms && (
-            <div className="field">
-              <span>{t("doctors.rooms")}</span>
-              <RoomCheckboxList
-                rooms={rooms}
-                selected={form.rooms}
-                onChange={(ids) => setForm({ ...form, rooms: ids })}
-              />
-            </div>
-          )}
+
+          <DoctorProfileFormFields
+            licenseNumber={form.license_number}
+            onLicenseNumberChange={(v) => setForm({ ...form, license_number: v })}
+            contactPhone={form.contact_phone}
+            onContactPhoneChange={(v) => {
+              setForm({ ...form, contact_phone: formatPhoneInput(v) });
+              setPhoneError("");
+            }}
+            contactPhoneError={phoneError}
+            extraPhones={extraPhones}
+            onExtraPhonesChange={setExtraPhones}
+            contactEmail={form.contact_email}
+            onContactEmailChange={(v) => setForm({ ...form, contact_email: v })}
+            bio={form.bio}
+            onBioChange={(v) => setForm({ ...form, bio: v })}
+            services={form.services}
+            onServicesChange={(ids) => setForm({ ...form, services: ids })}
+            rooms={form.rooms}
+            onRoomsChange={(ids) => setForm({ ...form, rooms: ids })}
+            serviceOptions={services}
+            roomOptions={rooms}
+            canEditServices={canEditServices}
+            canEditRooms={canEditRooms}
+          />
         </FormModal>
       )}
 
@@ -398,6 +475,17 @@ export function Doctors() {
             <RoomCheckboxList rooms={rooms} selected={roomsSelected} onChange={setRoomsSelected} />
           </div>
         </FormModal>
+      )}
+
+      {confirmUnlink && (
+        <ConfirmDialog
+          title={t("doctors.unlinkAccount")}
+          message={t("doctors.unlinkAccountConfirm")}
+          confirmLabel={t("doctors.unlinkAccount")}
+          danger
+          onConfirm={unlinkAccount}
+          onCancel={() => setConfirmUnlink(false)}
+        />
       )}
     </Page>
   );

@@ -5,13 +5,13 @@ import { useNavigate } from "react-router-dom";
 import { ListPage } from "../components/ListPage";
 import { Field, FormModal, Page, type Column } from "../components/ui";
 import { useListPage } from "../hooks/useListPage";
-import { api, ApiError } from "../services/api";
+import { api } from "../services/api";
 import type { ServiceType } from "../services/types";
 import { useAuth } from "../store/auth";
 import { can } from "../utils/can";
-import { flattenError } from "../utils/errors";
+import { apiErrorMessage } from "../utils/errors";
 
-const EMPTY = { name: "", requires_doctor: false, requires_diagnosis: true };
+const EMPTY = { name: "", requires_doctor: false };
 
 export function ServiceTypes() {
   const { t } = useTranslation();
@@ -50,11 +50,7 @@ export function ServiceTypes() {
   }
 
   function openEdit(t: ServiceType) {
-    setForm({
-      name: t.name,
-      requires_doctor: t.requires_doctor,
-      requires_diagnosis: t.requires_diagnosis,
-    });
+    setForm({ name: t.name, requires_doctor: t.requires_doctor });
     setEditId(t.id);
     setFormError("");
     setModal(true);
@@ -68,7 +64,7 @@ export function ServiceTypes() {
       setModal(false);
       load();
     } catch (err) {
-      setFormError(err instanceof ApiError ? flattenError(err.message) : String(err));
+      setFormError(apiErrorMessage(err));
     }
   }
 
@@ -93,30 +89,22 @@ export function ServiceTypes() {
         </span>
       ),
     },
-    {
-      key: "requires_diagnosis",
-      header: t("serviceTypes.requiresDiagnosis"),
-      render: (row) => (
-        <span className={`badge status-${row.requires_diagnosis ? "active" : "inactive"}`}>
-          {row.requires_diagnosis ? t("common.yes") : t("common.no")}
-        </span>
-      ),
-    },
   ];
 
   return (
     <Page
+      card
       title={t("serviceTypes.title")}
       actions={
-        <div className="page-actions-stack">
+        <div className="page-actions-row">
+          <button className="btn ghost" onClick={() => navigate("/services")}>
+            {t("serviceTypes.back")}
+          </button>
           {canEdit && (
             <button className="btn primary" onClick={openNew}>
               + {t("serviceTypes.new")}
             </button>
           )}
-          <button className="btn ghost" onClick={() => navigate("/services")}>
-            {t("serviceTypes.back")}
-          </button>
         </div>
       }
     >
@@ -155,7 +143,11 @@ export function ServiceTypes() {
           error={formError}
         >
           <Field label={t("serviceTypes.name")}>
-            <input value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} required />
+            <input
+              value={form.name}
+              onChange={(e) => setForm({ ...form, name: e.target.value.toUpperCase() })}
+              required
+            />
           </Field>
           <label className="show-inactive-toggle">
             <input
@@ -164,14 +156,6 @@ export function ServiceTypes() {
               onChange={(e) => setForm({ ...form, requires_doctor: e.target.checked })}
             />
             {t("serviceTypes.requiresDoctor")}
-          </label>
-          <label className="show-inactive-toggle">
-            <input
-              type="checkbox"
-              checked={form.requires_diagnosis}
-              onChange={(e) => setForm({ ...form, requires_diagnosis: e.target.checked })}
-            />
-            {t("serviceTypes.requiresDiagnosis")}
           </label>
         </FormModal>
       )}

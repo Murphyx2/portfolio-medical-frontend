@@ -5,11 +5,11 @@ import { useNavigate } from "react-router-dom";
 import { ListPage } from "../components/ListPage";
 import { Field, FormModal, Page, type Column } from "../components/ui";
 import { useListPage } from "../hooks/useListPage";
-import { api, ApiError } from "../services/api";
+import { api } from "../services/api";
 import type { RoomType } from "../services/types";
 import { useAuth } from "../store/auth";
 import { can } from "../utils/can";
-import { flattenError } from "../utils/errors";
+import { apiErrorMessage } from "../utils/errors";
 
 const EMPTY = { name: "" };
 
@@ -66,7 +66,7 @@ export function RoomTypes() {
       setModal(false);
       load();
     } catch (err) {
-      setFormError(err instanceof ApiError ? flattenError(err.message) : String(err));
+      setFormError(apiErrorMessage(err));
     }
   }
 
@@ -86,17 +86,18 @@ export function RoomTypes() {
 
   return (
     <Page
+      card
       title={t("roomTypes.title")}
       actions={
-        <div className="page-actions-stack">
+        <div className="page-actions-row">
+          <button className="btn ghost" onClick={() => navigate("/rooms")}>
+            {t("roomTypes.back")}
+          </button>
           {canCreate && (
             <button className="btn primary" onClick={openNew}>
               + {t("roomTypes.new")}
             </button>
           )}
-          <button className="btn ghost" onClick={() => navigate("/rooms")}>
-            {t("roomTypes.back")}
-          </button>
         </div>
       }
     >
@@ -135,7 +136,11 @@ export function RoomTypes() {
           error={formError}
         >
           <Field label={t("roomTypes.name")}>
-            <input value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} required />
+            <input
+              value={form.name}
+              onChange={(e) => setForm({ ...form, name: e.target.value.toUpperCase() })}
+              required
+            />
           </Field>
         </FormModal>
       )}

@@ -100,8 +100,13 @@ describe("FormModal backdrop close", () => {
     // "Editar Luis" instead of hearing two identical unlabeled buttons.
     expect(screen.getByRole("button", { name: "Editar Ana" })).toBeInTheDocument();
     expect(screen.getByRole("button", { name: "Editar Luis" })).toBeInTheDocument();
-    expect(screen.getByRole("button", { name: "Eliminar Ana" })).toBeInTheDocument();
-    expect(screen.getByRole("button", { name: "Eliminar Luis" })).toBeInTheDocument();
+    // Eliminar lives in the "⋯ Más" overflow menu, not as a standalone
+    // inline button (list-pages redesign) -- open each row's menu first.
+    fireEvent.click(screen.getByRole("button", { name: "Más Ana" }));
+    expect(screen.getByRole("menuitem", { name: "Eliminar" })).toBeInTheDocument();
+    fireEvent.mouseDown(document.body);
+    fireEvent.click(screen.getByRole("button", { name: "Más Luis" }));
+    expect(screen.getByRole("menuitem", { name: "Eliminar" })).toBeInTheDocument();
   });
 
   it("renders an alert banner when an error is passed to the form", () => {

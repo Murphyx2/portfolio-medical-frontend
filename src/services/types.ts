@@ -14,6 +14,8 @@ export interface User {
   last_name: string;
   full_name: string;
   role: Role;
+  center: number | null;
+  center_name: string | null;
   is_active: boolean;
   is_locked: boolean;
   locked_until: string | null;
@@ -68,6 +70,16 @@ export interface Paginated<T> {
   results: T[];
 }
 
+export interface CenterPhone {
+  id?: number;
+  number: string;
+}
+
+export interface CenterEmail {
+  id?: number;
+  email: string;
+}
+
 export interface MedicalCenter {
   id: number;
   name: string;
@@ -75,9 +87,37 @@ export interface MedicalCenter {
   address: string;
   phone: string;
   email: string;
+  rnc: string;
+  nombre_legal: string;
+  nombre_corto: string;
+  logo: string | null;
+  phones: CenterPhone[];
+  emails: CenterEmail[];
   is_default: boolean;
   doctor_count: number;
   active: boolean;
+}
+
+export type ReportEngineKey = "servicios_prestados";
+export type ReportPackEngineKey = "paquete_ars";
+
+export interface ReportDefinition {
+  id: number;
+  name: string;
+  category: string;
+  description: string;
+  engine_key: ReportEngineKey;
+  active: boolean;
+  last_generated_at: string | null;
+}
+
+export interface ReportPack {
+  id: number;
+  name: string;
+  periodicity: string;
+  engine_key: ReportPackEngineKey;
+  active: boolean;
+  last_generated_at: string | null;
 }
 
 export interface ServiceLite {
@@ -95,11 +135,22 @@ export interface ExtraPhone {
   phone: string;
 }
 
+export interface PatientGuardian {
+  id?: number;
+  first_name: string;
+  last_name: string;
+  cedula: string;
+  nss: string;
+  phone: string;
+}
+
 export interface DoctorProfile {
   id: number;
   code: string;
-  user_id: number;
+  user_id: number | null;
   username: string;
+  first_name: string;
+  last_name: string;
   full_name: string;
   license_number: string;
   contact_phone: string;
@@ -114,6 +165,31 @@ export interface DoctorProfile {
   rooms_detail: RoomLite[];
   active: boolean;
 }
+
+/** Write-only nested payload accepted by POST/PATCH /doctors/profiles/ when
+ * "Crear cuenta de usuario" is checked -- creates the linked Doctor/a user
+ * in the same request instead of picking an existing one. */
+export interface DoctorAccountCreatePayload {
+  username: string;
+  password: string;
+  email?: string;
+}
+
+/** Write-only nested payload accepted by POST/PATCH /auth/users/ when
+ * role=DOCTOR -- required unless the user being edited already has a
+ * médico linked. */
+export type DoctorProfileLinkPayload =
+  | { mode: "link"; doctor_profile_id: number }
+  | {
+      mode: "create";
+      license_number?: string;
+      contact_phone?: string;
+      extra_phones?: string[];
+      contact_email?: string;
+      bio?: string;
+      services?: number[];
+      rooms?: number[];
+    };
 
 export interface Patient {
   id: number;
@@ -137,13 +213,12 @@ export interface Patient {
   center_name: string | null;
   center_code: string | null;
   has_guardian: boolean;
-  guardian_first_name: string;
-  guardian_last_name: string;
-  guardian_cedula: string;
-  guardian_nss: string;
-  guardian_phone: string;
+  guardians: PatientGuardian[];
   allergies: string;
   critical_conditions: string;
+  whatsapp_opt_in: boolean;
+  whatsapp_opt_in_at: string | null;
+  whatsapp_opt_in_by: number | null;
   created_at: string;
   updated_at: string;
   active: boolean;
@@ -163,13 +238,63 @@ export interface ARS {
   active: boolean;
 }
 
+export type MedicineForma =
+  | ""
+  | "TABLETA"
+  | "CAPSULA"
+  | "JARABE"
+  | "GOTAS"
+  | "CREMA"
+  | "UNGUENTO"
+  | "AMPOLLA"
+  | "VIAL"
+  | "INHALADOR"
+  | "PARCHE"
+  | "SUSPENSION"
+  | "SUPOSITORIO"
+  | "OTRO";
+
+export type MedicineViaAdministracion =
+  | ""
+  | "ORAL"
+  | "SUBLINGUAL"
+  | "SC"
+  | "IM"
+  | "IV"
+  | "TOPICA"
+  | "OFTALMICA"
+  | "OTICA"
+  | "NASAL"
+  | "INHALATORIA"
+  | "RECTAL"
+  | "OTRO";
+
+export type MedicineConcentracionUnidad =
+  | ""
+  | "mg"
+  | "mcg"
+  | "g"
+  | "ml"
+  | "UI"
+  | "UI/ml"
+  | "%"
+  | "mg/ml"
+  | "OTRO";
+
 export interface Medicine {
   id: number;
   generic_name: string;
   commercial_name: string;
   concentration: string;
+  forma: MedicineForma;
+  via_pred: MedicineViaAdministracion;
+  concentracion_valor: string;
+  concentracion_unidad: MedicineConcentracionUnidad;
+  concentracion_unidad_otro: string;
   active: boolean;
 }
+
+export type RecordImageKind = "image" | "pdf";
 
 export interface RecordImage {
   id: number;
@@ -178,7 +303,9 @@ export interface RecordImage {
   image_url: string | null;
   caption: string;
   uploaded_by: number | null;
+  kind: RecordImageKind;
   active: boolean;
+  created_at: string;
 }
 
 export interface PatientLite {
@@ -187,6 +314,179 @@ export interface PatientLite {
   gender: string;
   cedula: string;
   nss: string;
+  birth_date: string | null;
+  has_guardian: boolean;
+  guardians: PatientGuardian[];
+}
+
+export type RecordEntryStatus = "DRAFT" | "COMPLETED";
+
+export type FamilyRelationship =
+  | "MADRE"
+  | "PADRE"
+  | "HERMANA"
+  | "HERMANO"
+  | "HIJA"
+  | "HIJO"
+  | "ABUELA"
+  | "ABUELO"
+  | "TIA"
+  | "TIO"
+  | "OTRO";
+
+export interface RecordPersonalCondition {
+  id: number;
+  record: number;
+  ap_type: number | null;
+  custom_label: string;
+  is_custom: boolean;
+  label: string;
+}
+
+export interface RecordFamilyCondition {
+  id: number;
+  record: number;
+  related_patient: number | null;
+  relationship: FamilyRelationship;
+  relationship_other: string;
+  relative_name: string;
+  ap_type: number | null;
+  custom_label: string;
+  is_custom: boolean;
+  label: string;
+}
+
+export interface ApSnapshotItem {
+  ap_type_id: number | null;
+  label: string;
+  is_custom: boolean;
+}
+
+export interface FamilyApSnapshotItem extends ApSnapshotItem {
+  related_patient_id: number | null;
+  relationship: FamilyRelationship;
+  relationship_other: string;
+  relative_name: string;
+}
+
+export type SubstanceHabitStatus = "no_registrado" | "nunca" | "ex" | "ocasional" | "activo";
+export type ActividadFisicaStatus = "no_registrado" | "sedentario" | "insuficiente" | "adecuado" | "intenso";
+export type SuenoStatus = "no_registrado" | "reparador" | "irregular" | "insomnio";
+
+export interface TabacoHabit {
+  status: SubstanceHabitStatus;
+  tipo?: string[];
+  cantidad_dia?: number | null;
+  tiempo_anios?: number | null;
+  dejo_fecha?: string | null;
+  humo_ajeno?: boolean;
+}
+export interface VapeoHabit {
+  status: SubstanceHabitStatus;
+  frecuencia_tipo?: "veces_dia" | "dias_semana";
+  frecuencia_valor?: number | null;
+  nicotina_mg?: number | null;
+  nicotina?: string[];
+  tiempo_anios?: number | null;
+  dejo_fecha?: string | null;
+}
+export interface AlcoholHabit {
+  status: SubstanceHabitStatus;
+  ud_semana?: number | null;
+  bebida?: string[];
+  tiempo_anios?: number | null;
+  dejo_fecha?: string | null;
+}
+export interface CafeHabit {
+  status: SubstanceHabitStatus;
+  tazas_dia?: number | null;
+  tipo?: string[];
+}
+export interface PsicoactivasHabit {
+  status: SubstanceHabitStatus;
+  tipo?: string[];
+  tipo_otro?: string;
+  frecuencia?: string;
+  via?: string;
+  tiempo_anios?: number | null;
+  dejo_fecha?: string | null;
+}
+export interface ActividadFisicaHabit {
+  status: ActividadFisicaStatus;
+  dias_semana?: number | null;
+  minutos_sesion?: number | null;
+  tipo?: string;
+}
+export interface SuenoHabit {
+  status: SuenoStatus;
+  horas_noche?: number | null;
+  duerme_mal?: boolean;
+  somnolencia_diurna?: boolean;
+}
+export interface PatronAlimentarioHabit {
+  tags: string[];
+}
+export interface OtroHabitItem {
+  name: string;
+  note?: string;
+}
+
+export interface HabitsDraft {
+  tabaco?: TabacoHabit;
+  alcohol?: AlcoholHabit;
+  cafe?: CafeHabit;
+  vapeo?: VapeoHabit;
+  psicoactivas?: PsicoactivasHabit;
+  actividad_fisica?: ActividadFisicaHabit;
+  sueno?: SuenoHabit;
+  patron_alimentario?: PatronAlimentarioHabit;
+  otros?: OtroHabitItem[];
+}
+
+export interface HabitsSnapshotEntry {
+  status: string;
+  at: string;
+  pack_years?: string;
+}
+export interface HabitsSnapshot {
+  tabaco?: HabitsSnapshotEntry;
+  alcohol?: HabitsSnapshotEntry;
+  cafe?: HabitsSnapshotEntry;
+  vapeo?: HabitsSnapshotEntry;
+  psicoactivas?: HabitsSnapshotEntry;
+  actividad_fisica?: HabitsSnapshotEntry;
+  sueno?: HabitsSnapshotEntry;
+  patron_alimentario?: { tags: string[]; at: string };
+  otros?: { items: OtroHabitItem[]; at: string };
+}
+
+export interface RecordEntry {
+  id: number;
+  record: number;
+  author: number;
+  author_name: string;
+  status: RecordEntryStatus;
+  ta_systolic: number | null;
+  ta_diastolic: number | null;
+  fc: number | null;
+  fr: number | null;
+  weight_lb: string | null;
+  height_cm: string | null;
+  talla_cm: string | null;
+  temperature_c: string | null;
+  glucose: number | null;
+  vitals_notes: string;
+  imc: string | null;
+  dx: string;
+  tx: string;
+  observaciones: string;
+  habits: HabitsDraft | null;
+  habits_notes: string;
+  personal_ap_snapshot: ApSnapshotItem[];
+  family_ap_snapshot: FamilyApSnapshotItem[];
+  completed_at: string | null;
+  created_at: string;
+  updated_at: string;
 }
 
 export interface MedicalRecord {
@@ -197,30 +497,26 @@ export interface MedicalRecord {
   created_by_name: string;
   center: number | null;
   center_name: string | null;
-  title: string;
-  date: string;
-  diagnosis: string;
-  treatment: string;
-  medicine_and_doses: string;
-  notes: string;
+  last_visit_at: string | null;
+  last_height_cm: string | null;
+  last_height_at: string | null;
+  last_weight_lb: string | null;
+  last_weight_at: string | null;
+  last_imc: string | null;
+  last_imc_at: string | null;
+  last_ta_systolic: number | null;
+  last_ta_diastolic: number | null;
+  last_ta_at: string | null;
+  last_fc: number | null;
+  last_fc_at: string | null;
+  last_fr: number | null;
+  last_fr_at: string | null;
+  last_glucose: number | null;
+  last_glucose_at: string | null;
+  habits_snapshot: HabitsSnapshot;
   images: RecordImage[];
-  active: boolean;
-}
-
-export interface ConsultationLog {
-  id: number;
-  patient: number;
-  patient_info: PatientLite;
-  doctor: number;
-  doctor_name: string;
-  center: number | null;
-  center_name: string | null;
-  date: string;
-  subjective: string;
-  objective: string;
-  assessment: string;
-  plan: string;
-  notes: string;
+  personal_conditions: RecordPersonalCondition[];
+  family_conditions: RecordFamilyCondition[];
   active: boolean;
 }
 
@@ -235,7 +531,6 @@ export interface ServiceType {
   id: number;
   name: string;
   requires_doctor: boolean;
-  requires_diagnosis: boolean;
   active: boolean;
 }
 
@@ -248,6 +543,40 @@ export interface Service {
   co_pago: string;
   privado: string;
   created_at: string;
+  active: boolean;
+}
+
+// A Co-pago override for one Service under a specific ARS, or a specific
+// ARS+Program combo -- ars_program null means "applies to the whole ARS,
+// any program". No display of this price happens in the encounter flow yet
+// (no Billing/Cashier module) -- this is purely how staff maintain the
+// price list the backend resolves against when a service line is created.
+export interface ServicePrice {
+  id: number;
+  service: number;
+  service_name: string;
+  ars: number;
+  ars_name: string;
+  ars_program: number | null;
+  ars_program_name: string | null;
+  co_pago: string;
+  created_at: string;
+  active: boolean;
+}
+
+export interface APCategory {
+  id: number;
+  name: string;
+  sort_order: number;
+  active: boolean;
+}
+
+export interface APType {
+  id: number;
+  category: number;
+  category_name: string;
+  name: string;
+  sort_order: number;
   active: boolean;
 }
 
@@ -276,7 +605,13 @@ export interface Room {
 export interface Appointment {
   id: number;
   patient: number;
-  patient_info: { id: number; full_name: string; gender: string; phone: string };
+  patient_info: {
+    id: number;
+    full_name: string;
+    gender: string;
+    phone: string;
+    whatsapp_opt_in?: boolean;
+  };
   doctor: number;
   doctor_info: { id: number; full_name: string };
   center: number | null;
@@ -325,9 +660,13 @@ export interface EncounterService {
   service_name?: string;
   doctor: number | null;
   doctor_name?: string | null;
+  room: number | null;
+  room_name?: string | null;
   quantity: number;
   notes: string;
   status: EncounterServiceStatus;
+  ars_covered: boolean;
+  authorization_number: string | null;
 }
 
 export interface Encounter {
@@ -337,11 +676,7 @@ export interface Encounter {
   service_type_name: string;
   patient: number;
   patient_info: EncounterPatientSummary;
-  doctor: number | null;
-  doctor_info: { id: number; code: string; full_name: string } | null;
   referring_doctor_name: string;
-  room: number | null;
-  room_name: string | null;
   center: number | null;
   center_name: string | null;
   status: EncounterStatus;
@@ -354,12 +689,180 @@ export interface Encounter {
   ars_name: string | null;
   ars_program: number | null;
   ars_program_name: string | null;
-  authorization_number: string;
   diagnoses: EncounterDiagnosis[];
   services: EncounterService[];
   created_by: number;
   created_by_name: string;
   created_at: string;
   updated_at: string;
+  active: boolean;
+}
+
+// --- Communications (Comunicaciones) ---
+
+export type CommunicationsChannel = "EMAIL" | "WHATSAPP";
+export type CommunicationsAudience = "STAFF" | "PATIENT";
+export type CommunicationsKind =
+  | "AVISO"
+  | "INFORMACION"
+  | "ALERTA"
+  | "CITA_CREADA"
+  | "CITA_RECORDATORIO"
+  | "CITA_REAGENDADA"
+  | "CITA_CANCELADA";
+export type CommunicationsPriority = "NORMAL" | "ALERTA";
+export type CommunicationsMessageStatus =
+  | "DRAFT"
+  | "QUEUED"
+  | "SENDING"
+  | "SENT"
+  | "PARTIAL"
+  | "FAILED"
+  | "CANCELLED";
+export type CommunicationsDeliveryStatus =
+  | "QUEUED"
+  | "SENT"
+  | "DELIVERED"
+  | "READ"
+  | "FAILED"
+  | "UNDELIVERABLE"
+  | "OPTED_OUT";
+
+export interface CommunicationsRecipientsInput {
+  all_staff: boolean;
+  roles: Role[];
+  user_ids: number[];
+}
+
+export interface CommunicationsMessage {
+  id: number;
+  channel: CommunicationsChannel;
+  audience: CommunicationsAudience;
+  kind: CommunicationsKind;
+  priority: CommunicationsPriority;
+  subject: string;
+  body: string;
+  template: number | null;
+  created_by: number | null;
+  created_by_name: string;
+  scheduled_for: string | null;
+  status: CommunicationsMessageStatus;
+  recipient_count: number;
+  appointment: number | null;
+  created_at: string;
+  skipped_no_email?: number;
+}
+
+export interface CommunicationsMessageCreate {
+  channel: CommunicationsChannel;
+  audience: "STAFF";
+  kind: CommunicationsKind;
+  priority: CommunicationsPriority;
+  subject: string;
+  body: string;
+  scheduled_for?: string | null;
+  status: "DRAFT" | "QUEUED";
+  recipients: CommunicationsRecipientsInput;
+}
+
+export interface CommunicationsDelivery {
+  id: number;
+  message: number;
+  user: number | null;
+  user_name: string | null;
+  patient: number | null;
+  patient_name: string | null;
+  appointment: number | null;
+  appointment_date: string | null;
+  address_masked: string;
+  status: CommunicationsDeliveryStatus;
+  error: string;
+  sent_at: string | null;
+  delivered_at: string | null;
+  read_at: string | null;
+  created_at: string;
+}
+
+export interface CommunicationsTemplate {
+  id: number;
+  channel: CommunicationsChannel;
+  kind: CommunicationsKind;
+  provider_name: string;
+  language: string;
+  body_email: string;
+  variables_json: string[];
+  is_active: boolean;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface CommunicationsSettings {
+  from_name: string;
+  reply_to: string;
+  whatsapp_phone_number_id: string;
+  whatsapp_business_account_id: string;
+  whatsapp_access_token?: string;
+  whatsapp_access_token_last4: string;
+  whatsapp_app_secret?: string;
+  whatsapp_app_secret_last4: string;
+  whatsapp_default_country_code: string;
+  whatsapp_reminder_hours: number;
+  whatsapp_master_enabled: boolean;
+  whatsapp_configured: boolean;
+  webhook_url: string;
+  updated_at: string;
+}
+
+// --- Recetas médicas (prescriptions) ---
+
+export type RecetaEstado = "BORRADOR" | "EMITIDA" | "ANULADA";
+
+/** Dose-builder frequency kinds -- see DoseBuilder.tsx for the composer UI
+ * that produces this shape and the preview-string renderer that reads it. */
+export type DosisFrecuenciaTipo = "cada_n_horas" | "n_veces_dia" | "cada_n_dias" | "una_vez_semana" | "libre";
+
+export interface DosisJson {
+  unidades_por_toma: number;
+  unidad_toma: string;
+  frecuencia_tipo: DosisFrecuenciaTipo;
+  frecuencia_n: number | null;
+  frecuencia_texto_libre: string;
+  uso_continuo: boolean;
+}
+
+export interface RecetaLinea {
+  id?: number;
+  medicamento: number | null;
+  nombre_impreso: string;
+  cantidad: number | string;
+  concentracion_valor: string;
+  unidad: string;
+  via: string;
+  forma: string;
+  fuera_de_catalogo: boolean;
+  dosis_json: DosisJson;
+  dosis_texto: string;
+  indicacion_extra: string;
+  uso_continuo: boolean;
+  orden: number;
+}
+
+export interface Receta {
+  id: number;
+  patient: number;
+  centro: number;
+  medico: number;
+  created_by: number | null;
+  fecha: string;
+  proxima_cita_at: string | null;
+  cita: number | null;
+  estado: RecetaEstado;
+  pdf: string | null;
+  /** Set once, when emitir() flipped this receta to EMITIDA -- the anchor
+   * for the 1-hour "Guardar cambios" edit window (see
+   * RecetasTab.tsx::withinEditWindow). Null for a BORRADOR/ANULADA-without-
+   * ever-having-been-emitida receta. */
+  emitida_at: string | null;
+  lineas: RecetaLinea[];
   active: boolean;
 }

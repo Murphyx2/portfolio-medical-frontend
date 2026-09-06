@@ -1,0 +1,3588 @@
+:root {
+  --mc-primary: #2e7d32;
+  --mc-primary-dark: #1b5e20;
+  --mc-light: #a5d6a7;
+  --mc-lightest: #e8f5e9;
+  --mc-text: #0d2137;
+  --mc-muted: #4f6f92;
+  --mc-border: #d3e4f7;
+  --mc-danger: #d32f2f;
+  --mc-warning: #ef6c00;
+  --mc-warning-bg: #fff4e5;
+  --mc-warning-text: #7a3e00;
+  --mc-white: #ffffff;
+  --mc-topbar-height: 3.25rem;
+  /* Appointment status palette: COMPLETED (--mc-primary) and CANCELLED
+     (--mc-danger) reuse the base tokens above; SCHEDULED and NO_SHOW get
+     their own tokens here so they read as distinct hues (blue "upcoming" /
+     neutral grey "no signal") instead of near-duplicating the green. */
+  --mc-status-scheduled: #1565c0;
+  --mc-status-no-show: #757575;
+
+  /* Sidebar-only tokens (Requirements/Sidebar mockup's --green family),
+     kept separate from the --mc-* tokens above so this redesign can't leak
+     into buttons/pages elsewhere in the app. */
+  --sb-green: #1f7a3a;
+  --sb-green-deep: #176430;
+  --sb-green-hover: #248a44;
+  --sb-active-bg: #ffffff;
+  --sb-active-text: #176430;
+  --sb-text: #ecf8ef;
+  --sb-muted: #b7ddc0;
+  --sb-line: rgba(255, 255, 255, 0.12);
+  --sb-badge-bg: #e8f7ec;
+  --sb-badge-text: #176430;
+  --sb-width: 248px;
+  --sb-width-collapsed: 72px;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+button,
+input,
+select,
+textarea {
+  font-family: inherit;
+}
+
+body {
+  margin: 0;
+  font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  color: var(--mc-text);
+  background-color: var(--mc-lightest);
+}
+
+/* ---------- layout ---------- */
+.app-shell {
+  min-height: 100vh;
+  display: flex;
+  flex-direction: row;
+  align-items: stretch;
+}
+
+.sidebar {
+  width: var(--sb-width);
+  flex-shrink: 0;
+  background: var(--sb-green);
+  color: var(--sb-text);
+  padding: 12px 10px 10px;
+  display: flex;
+  flex-direction: column;
+  position: sticky;
+  top: 0;
+  align-self: flex-start;
+  height: 100vh;
+  overflow-y: auto;
+  overflow-x: hidden;
+  transition: width 0.2s ease;
+}
+
+.sidebar.collapsed {
+  width: var(--sb-width-collapsed);
+}
+
+.brand {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-weight: 700;
+  font-size: 1.1rem;
+  color: #fff;
+  padding: 0 0.5rem 14px;
+  text-decoration: none;
+}
+
+.brand-label {
+  font-size: 1.1rem;
+}
+
+.sidebar.collapsed .brand-label {
+  display: none;
+}
+
+.nav-groups {
+  flex: 1;
+  overflow-y: auto;
+  overflow-x: hidden;
+  padding: 0 2px;
+}
+
+.nav-group {
+  margin: 0 0 2px;
+}
+
+.nav-group-title {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  font-size: 10px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--sb-muted);
+  padding: 10px 10px 4px;
+  font-weight: 700;
+}
+
+.sidebar.collapsed .nav-group-title {
+  display: none;
+}
+
+.nav-link {
+  color: var(--sb-text);
+  text-decoration: none;
+  padding: 8px 10px;
+  margin: 2px 0;
+  border-radius: 8px;
+  font-size: 0.9rem;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.nav-link svg {
+  flex-shrink: 0;
+}
+
+.nav-link:hover {
+  background: var(--sb-green-hover);
+  color: #fff;
+}
+
+.nav-link.active {
+  background: var(--sb-active-bg);
+  color: var(--sb-active-text);
+  font-weight: 700;
+}
+
+.nav-label {
+  flex: 1;
+}
+
+.sidebar.collapsed .nav-label {
+  display: none;
+}
+
+.sidebar.collapsed .nav-link {
+  justify-content: center;
+  padding: 10px 0;
+}
+
+.nav-badge {
+  background: var(--sb-badge-bg);
+  color: var(--sb-badge-text);
+  border-radius: 999px;
+  font-size: 11px;
+  font-weight: 700;
+  padding: 1px 6px;
+  min-width: 18px;
+  text-align: center;
+}
+
+.nav-link.active .nav-badge {
+  background: var(--sb-green-deep);
+  color: #fff;
+}
+
+.sidebar.collapsed .nav-badge {
+  display: none;
+}
+
+.nav-foot {
+  border-top: 1px solid var(--sb-line);
+  margin-top: 8px;
+  padding-top: 8px;
+}
+
+.sidebar-collapse-btn {
+  margin-top: 6px;
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  background: transparent;
+  border: 1px solid var(--sb-line);
+  color: var(--sb-muted);
+  border-radius: 8px;
+  padding: 6px;
+  cursor: pointer;
+  font: inherit;
+  font-size: 0.8rem;
+}
+
+.sidebar-collapse-btn:hover {
+  border-color: var(--sb-muted);
+  color: #fff;
+}
+
+.sidebar-collapse-btn svg.flip {
+  transform: rotate(180deg);
+}
+
+.main {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+.topbar {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 1.5rem;
+  min-height: var(--mc-topbar-height);
+  padding: 0.6rem 1.5rem;
+  background: var(--mc-white);
+  color: var(--mc-text);
+  border-bottom: 1px solid var(--mc-border);
+  position: sticky;
+  top: 0;
+  z-index: 5;
+}
+
+.topbar-right {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.user-stack {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.user-avatar {
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  background: var(--mc-primary);
+  color: #fff;
+  display: grid;
+  place-items: center;
+  font-size: 11px;
+  font-weight: 800;
+  flex: 0 0 28px;
+}
+
+.user-text {
+  display: flex;
+  flex-direction: column;
+  line-height: 1.2;
+}
+
+.user-name {
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: var(--mc-text);
+}
+
+.user-role {
+  font-size: 0.72rem;
+  color: var(--mc-muted);
+}
+
+.topbar-right .btn.ghost {
+  border: 1px solid var(--mc-border);
+  background: var(--mc-white);
+  border-radius: 8px;
+  padding: 0.4rem 0.7rem;
+  font-weight: 700;
+  color: var(--mc-primary);
+}
+
+.topbar-right .btn.ghost:hover {
+  background: #f4faf4;
+}
+
+.lang-switch {
+  border-radius: 6px;
+  border: 1px solid var(--mc-border);
+  padding: 0.3rem 0.5rem;
+  background: var(--mc-white);
+  color: var(--mc-text);
+}
+
+.content {
+  max-width: 1600px;
+  width: 100%;
+  margin: 0 auto;
+  padding: 1.5rem;
+}
+
+@media (max-width: 900px) {
+  .app-shell {
+    flex-direction: column;
+  }
+  .sidebar,
+  .sidebar.collapsed {
+    width: 100%;
+    height: auto;
+    position: static;
+    flex-direction: row;
+    flex-wrap: wrap;
+    align-items: center;
+  }
+  .nav-groups {
+    flex-direction: row;
+    flex-wrap: wrap;
+    overflow: visible;
+  }
+  .nav-group {
+    display: flex;
+    flex-wrap: wrap;
+  }
+  .brand {
+    padding: 0;
+  }
+  .brand img {
+    height: 22px;
+    width: 22px;
+  }
+  /* Icon-rail collapse is a desktop-only affordance -- the existing mobile
+     layout above already handles small screens, so force labels/groups
+     visible and hide the toggle regardless of stored collapsed state. */
+  .nav-group-title,
+  .sidebar-collapse-btn {
+    display: none;
+  }
+  .nav-label {
+    display: inline;
+  }
+}
+
+/* ---------- page ---------- */
+.list-page-card {
+  background: var(--mc-white);
+  border: 1px solid var(--mc-border);
+  border-radius: 12px;
+  padding: 1rem 1.15rem 1.15rem;
+}
+
+.page-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 1rem;
+}
+
+.page-head h2 {
+  margin: 0;
+  color: var(--mc-primary-dark);
+}
+
+.page-actions-stack {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 0.5rem;
+}
+
+/* Secondary (outline) action sits left of the primary "+ Nuevo" button,
+   not stacked above/below it -- list pages redesign. Render the secondary
+   button first in markup. */
+.page-actions-row {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+/* ---------- buttons ---------- */
+.btn {
+  border: none;
+  border-radius: 8px;
+  padding: 0.5rem 1rem;
+  cursor: pointer;
+  font-family: inherit;
+  font-size: 0.9rem;
+  background: var(--mc-light);
+  color: var(--mc-text);
+}
+
+.btn:hover {
+  filter: brightness(0.96);
+}
+
+.btn.primary {
+  background: var(--mc-primary);
+  color: #fff;
+}
+
+.btn.primary:hover {
+  background: var(--mc-primary-dark);
+}
+
+.btn.ghost {
+  background: transparent;
+  color: var(--mc-primary-dark);
+  border: 1px solid var(--mc-light);
+}
+
+.btn.danger {
+  background: var(--mc-danger);
+  color: #fff;
+}
+
+.btn.small {
+  padding: 0.25rem 0.6rem;
+  font-size: 0.8rem;
+}
+
+.btn.block {
+  width: 100%;
+}
+
+/* ---------- login ---------- */
+.login-wrap {
+  min-height: 100vh;
+  display: grid;
+  place-items: center;
+  background: linear-gradient(160deg, var(--mc-lightest), var(--mc-light));
+}
+
+.login-card {
+  background: var(--mc-white);
+  border-radius: 16px;
+  padding: 2rem;
+  width: min(380px, 90vw);
+  box-shadow: 0 12px 30px rgba(27, 94, 32, 0.15);
+}
+
+.login-logo {
+  display: block;
+  height: 150px;
+  width: 150px;
+  margin: 0 auto 0.75rem;
+  object-fit: contain;
+}
+
+.login-card h1 {
+  margin: 0 0 0.25rem;
+  color: var(--mc-primary-dark);
+  font-size: 1.5rem;
+  text-align: center;
+}
+
+.login-card h2 {
+  margin: 0 0 1.25rem;
+  color: var(--mc-muted);
+  font-size: 1rem;
+  font-weight: 400;
+  text-align: center;
+}
+
+.error-text {
+  color: var(--mc-danger);
+  font-size: 0.85rem;
+}
+
+/* ---------- forms ---------- */
+.field {
+  display: block;
+  margin-bottom: 0.9rem;
+}
+
+.field span {
+  display: block;
+  font-size: 0.8rem;
+  color: var(--mc-muted);
+  margin-bottom: 0.25rem;
+}
+
+.field input,
+.field select,
+.field textarea {
+  width: 100%;
+  padding: 0.5rem 0.65rem;
+  border: 1px solid var(--mc-border);
+  border-radius: 8px;
+  font-size: 0.9rem;
+  font-family: inherit;
+  background: var(--mc-white);
+  color: var(--mc-text);
+}
+
+.field input:disabled,
+.field select:disabled,
+.field textarea:disabled {
+  background: var(--mc-lightest);
+  color: var(--mc-muted);
+  cursor: not-allowed;
+}
+
+/* A checkbox/radio nested inside a Field-labeled block (e.g. a Field whose
+   children are a set of option rows) would otherwise inherit the text-input
+   width:100%/border/padding rule above, stretching the control across the
+   row and shoving its label text away from it. */
+.field input[type="checkbox"],
+.field input[type="radio"] {
+  width: auto;
+  padding: 0;
+  border: none;
+  border-radius: 0;
+}
+
+.inline-field-with-action {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.inline-field-with-action select {
+  flex: 1;
+  min-width: 0;
+}
+
+.inline-field-with-action .btn {
+  flex-shrink: 0;
+  white-space: nowrap;
+}
+
+.inline-field-group {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.inline-field-group input {
+  flex: 2;
+  min-width: 0;
+}
+
+.inline-field-group select,
+.inline-field-group .searchable-select {
+  flex: 1;
+  min-width: 0;
+}
+
+.field textarea {
+  min-height: 64px;
+  resize: vertical;
+}
+
+.field input:focus,
+.field select:focus,
+.field textarea:focus {
+  outline: 2px solid var(--mc-primary);
+  outline-offset: 1px;
+  border-color: var(--mc-primary);
+}
+
+/* Grouped sub-form inside a modal (Usuarios' "Perfil de médico", Doctors'
+   "Cuenta (rol Doctor/a)") -- plain shell by default, matching an opt-in
+   supplemental block; `.required` adds the tinted/accented treatment for a
+   block that's mandatory once its trigger condition is met. */
+.form-section {
+  border: 1px solid var(--mc-border);
+  border-radius: 10px;
+  padding: 0.9rem 1rem;
+  margin: 0.75rem 0;
+  min-width: 0;
+}
+
+.form-section h3,
+.form-section h4,
+.form-section legend {
+  margin: 0 0 0.5rem;
+  padding: 0;
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: var(--mc-primary);
+}
+
+.form-section.required {
+  background: var(--mc-lightest);
+  border-left: 3px solid var(--mc-primary);
+}
+
+.form-section .radio-group {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  margin-bottom: 0.75rem;
+  font-size: 0.9rem;
+}
+
+.form-section .radio-group label {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  min-height: 44px;
+  font-weight: 400;
+  color: var(--mc-text);
+}
+
+.field-action-row {
+  display: flex;
+  gap: 0.5rem;
+  margin-top: 0.4rem;
+}
+
+/* ---------- modal ---------- */
+.modal-backdrop {
+  position: fixed;
+  inset: 0;
+  background: rgba(13, 33, 55, 0.45);
+  display: grid;
+  place-items: center;
+  z-index: 50;
+}
+
+.modal {
+  background: var(--mc-white);
+  border-radius: 14px;
+  padding: 1.5rem;
+  width: min(520px, 92vw);
+  max-height: 88vh;
+  overflow: auto;
+  box-shadow: 0 20px 50px rgba(0, 0, 0, 0.25);
+}
+
+.modal.wide {
+  width: min(860px, 94vw);
+}
+
+.modal.xwide {
+  width: min(1100px, 96vw);
+}
+
+.form-columns {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0 2rem;
+}
+
+@media (max-width: 640px) {
+  .form-columns {
+    grid-template-columns: 1fr;
+  }
+}
+
+.modal h3 {
+  margin: 0 0 1rem;
+  color: var(--mc-primary-dark);
+}
+
+.record-subtitle {
+  margin: -0.5rem 0 1rem;
+}
+
+.modal h4 {
+  margin: 1.25rem 0 0.5rem;
+  color: var(--mc-primary-dark);
+}
+
+.modal-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 0.5rem;
+  margin-top: 1.25rem;
+}
+
+/* ---------- table ---------- */
+.table-scroll {
+  overflow-x: auto;
+}
+
+.data-table {
+  width: 100%;
+  border-collapse: separate;
+  border-spacing: 0;
+  background: var(--mc-white);
+  border-radius: 12px;
+  overflow: hidden;
+  box-shadow: 0 2px 10px rgba(27, 94, 32, 0.08);
+}
+
+.data-table th {
+  text-align: left;
+  background: var(--mc-lightest);
+  color: var(--mc-primary-dark);
+  font-size: 0.8rem;
+  white-space: nowrap;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  padding: 0.65rem 0.9rem;
+}
+
+.data-table td {
+  padding: 0.6rem 0.9rem;
+  border-top: 1px solid var(--mc-border);
+  font-size: 0.9rem;
+  vertical-align: middle;
+  white-space: nowrap;
+}
+
+.data-table tr:hover td {
+  background: #f4faf4;
+}
+
+.row-actions {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.4rem;
+  position: relative;
+}
+
+.col-center {
+  text-align: center;
+}
+
+.col-align-right {
+  text-align: right;
+}
+
+/* ---------- row actions overflow menu ("⋯ Más") ---------- */
+.row-actions-menu {
+  position: relative;
+}
+
+.row-actions-menu-trigger {
+  border: 1px solid var(--mc-border);
+  background: var(--mc-white);
+  border-radius: 8px;
+  padding: 0.3rem 0.55rem;
+  font-weight: 700;
+  font-size: 0.85rem;
+  color: var(--mc-text);
+  cursor: pointer;
+  line-height: 1;
+}
+
+.row-actions-menu-trigger:hover {
+  background: #f4faf4;
+}
+
+.row-actions-menu-panel {
+  /* Portaled into document.body (RowActionsMenu in ui.tsx) so it escapes
+     .table-scroll's overflow clipping and the sticky Acciones column's
+     stacking context -- top/right are set inline per-instance from the
+     trigger's getBoundingClientRect(). */
+  position: fixed;
+  background: var(--mc-white);
+  border: 1px solid var(--mc-border);
+  border-radius: 8px;
+  min-width: 180px;
+  box-shadow: 0 8px 20px rgba(28, 42, 32, 0.15);
+  z-index: 1000;
+  overflow: hidden;
+}
+
+.row-actions-menu-item {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  width: 100%;
+  text-align: left;
+  border: 0;
+  background: none;
+  padding: 0.5rem 0.75rem;
+  font: inherit;
+  font-size: 0.85rem;
+  color: var(--mc-text);
+  cursor: pointer;
+}
+
+.row-actions-menu-item:hover {
+  background: #f4faf4;
+}
+
+.row-actions-menu-item.danger {
+  color: var(--mc-danger);
+  font-weight: 700;
+}
+
+/* Sticky Acciones column so it never scrolls off the right edge of a wide
+   table (Admisiones/Citas/Usuarios). Acciones is always the last column
+   (Table's own built-in actions cell, or a page's custom "actions" Column
+   defined last), so targeting :last-child covers every module without a
+   dedicated per-page flag. Harmless on narrower tables. */
+.data-table th:last-child,
+.data-table td:last-child {
+  position: sticky;
+  right: 0;
+  background: var(--mc-white);
+  box-shadow: -6px 0 6px -6px rgba(0, 0, 0, 0.15);
+}
+
+.data-table tr:hover td:last-child {
+  background: #f4faf4;
+}
+
+.row-link {
+  background: none;
+  border: none;
+  padding: 0;
+  font: inherit;
+  color: var(--mc-primary);
+  cursor: pointer;
+}
+
+.row-link:hover {
+  text-decoration: underline;
+}
+
+.row-link:focus-visible {
+  outline: 2px solid var(--mc-primary);
+  outline-offset: 1px;
+  border-radius: 2px;
+}
+
+.th-sort {
+  background: none;
+  border: none;
+  padding: 0;
+  font: inherit;
+  color: inherit;
+  text-transform: uppercase;
+  letter-spacing: inherit;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+}
+
+.th-sort:hover {
+  color: var(--mc-primary-dark);
+  text-decoration: underline;
+}
+
+.th-sort .sort-arrow {
+  font-size: 0.7rem;
+  color: var(--mc-muted);
+  opacity: 0.6;
+}
+
+.th-sort.active .sort-arrow {
+  opacity: 1;
+  color: var(--mc-primary-dark);
+}
+
+/* ---------- search bar ---------- */
+.search-bar input {
+  width: 100%;
+  min-width: 260px;
+  max-width: 420px;
+  padding: 0.5rem 0.85rem;
+  border: 1px solid var(--mc-border);
+  border-radius: 8px;
+  font-size: 0.9rem;
+  background: var(--mc-white);
+}
+
+.list-toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.75rem;
+  margin-bottom: 0.75rem;
+}
+
+.list-toolbar-spacer {
+  flex: 1 1 auto;
+}
+
+.list-toolbar-count {
+  color: var(--mc-muted);
+  font-size: 0.85rem;
+  white-space: nowrap;
+}
+
+.date-filter {
+  padding: 0.5rem 0.65rem;
+  border: 1px solid var(--mc-border);
+  border-radius: 8px;
+  font-size: 0.9rem;
+  font-family: inherit;
+  background: var(--mc-white);
+  color: var(--mc-text);
+}
+
+.date-filter:focus {
+  outline: 2px solid var(--mc-primary);
+  outline-offset: 1px;
+  border-color: var(--mc-primary);
+}
+
+/* ---------- DateField: DD/MM/YYYY masked text input + hidden native picker ---------- */
+
+.date-field {
+  position: relative;
+  display: flex;
+  align-items: center;
+}
+
+.date-field input[type="text"] {
+  width: 100%;
+  padding: 0.5rem 2.25rem 0.5rem 0.65rem;
+  border: 1px solid var(--mc-border);
+  border-radius: 8px;
+  font-size: 0.9rem;
+  font-family: inherit;
+  background: var(--mc-white);
+  color: var(--mc-text);
+}
+
+.date-field input[type="text"]:focus {
+  outline: 2px solid var(--mc-primary);
+  outline-offset: 1px;
+  border-color: var(--mc-primary);
+}
+
+.date-field-picker-btn {
+  position: absolute;
+  right: 0.4rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: none;
+  border: none;
+  padding: 0.2rem;
+  cursor: pointer;
+  color: var(--mc-muted);
+}
+
+.date-field-picker-btn:hover {
+  color: var(--mc-primary);
+}
+
+.date-field-picker-btn:focus-visible {
+  outline: 2px solid var(--mc-primary);
+  outline-offset: 1px;
+}
+
+.date-field-native {
+  position: absolute;
+  right: 0.4rem;
+  width: 1.5rem;
+  height: 1.5rem;
+  opacity: 0;
+  pointer-events: none;
+}
+
+.datetime-field input[type="text"] {
+  min-width: 11.5rem;
+}
+
+/* ---------- PhoneNumberListField: growable list of extra phone rows ---------- */
+
+.phone-list-field {
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+  margin-bottom: 0.9rem;
+}
+
+.phone-list-row {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+}
+
+.phone-list-row input {
+  flex: 1;
+  padding: 0.5rem 0.65rem;
+  border: 1px solid var(--mc-border);
+  border-radius: 8px;
+  font-size: 0.9rem;
+  font-family: inherit;
+  background: var(--mc-white);
+  color: var(--mc-text);
+}
+
+.phone-list-remove-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 2rem;
+  height: 2rem;
+  border: 1px solid var(--mc-border);
+  border-radius: 8px;
+  background: var(--mc-white);
+  color: var(--mc-muted);
+  cursor: pointer;
+  flex-shrink: 0;
+}
+
+.phone-list-remove-btn:hover {
+  color: #fff;
+  background: var(--mc-danger, #c0392b);
+  border-color: var(--mc-danger, #c0392b);
+}
+
+/* ---------- GuardianListField: growable list of guardian field groups ---------- */
+
+.guardian-list-field {
+  display: flex;
+  flex-direction: column;
+  gap: 0.9rem;
+  margin-bottom: 0.9rem;
+}
+
+.guardian-list-row {
+  display: flex;
+  flex-direction: column;
+  gap: 0.6rem;
+  padding: 0.75rem;
+  border: 1px solid var(--mc-border);
+  border-radius: 10px;
+  background: var(--mc-surface, var(--mc-white));
+}
+
+.guardian-list-remove {
+  display: flex;
+  align-items: flex-end;
+  padding-bottom: 0.5rem;
+}
+
+/* ---------- view toggle: segmented List/Calendar switch (Appointments) --------- */
+
+.view-toggle {
+  display: inline-flex;
+  gap: 0.25rem;
+  padding: 0.25rem;
+  background: var(--mc-lightest);
+  border: 1px solid var(--mc-border);
+  border-radius: 10px;
+  margin-bottom: 1rem;
+}
+
+/* Nested inside .list-toolbar (Appointments): the toolbar row already
+   supplies its own gap/margin-bottom, so the standalone-row margin above
+   would just add unwanted extra space inside the row. */
+.list-toolbar .view-toggle {
+  margin-bottom: 0;
+}
+
+.view-toggle-btn {
+  border: none;
+  background: transparent;
+  color: var(--mc-muted);
+  font-family: inherit;
+  font-size: 0.85rem;
+  font-weight: 600;
+  padding: 0.4rem 1rem;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: background-color 0.15s, color 0.15s, box-shadow 0.15s;
+}
+
+.view-toggle-btn:hover {
+  color: var(--mc-primary-dark);
+}
+
+.view-toggle-btn.active {
+  background: var(--mc-white);
+  color: var(--mc-primary-dark);
+  box-shadow: 0 1px 3px rgba(13, 33, 55, 0.12);
+}
+
+.view-toggle-btn:focus-visible {
+  outline: 2px solid var(--mc-primary);
+  outline-offset: 1px;
+}
+
+.calendar-loading {
+  color: var(--mc-muted);
+  font-size: 0.85rem;
+  align-self: center;
+}
+
+/* ---------- DateNavigator: prev/next-day-stepped DateField ---------- */
+
+.date-navigator {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+}
+
+.date-navigator .date-field {
+  width: 10rem;
+}
+
+.date-navigator-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 2rem;
+  height: 2rem;
+  border: 1px solid var(--mc-border);
+  border-radius: 8px;
+  background: var(--mc-white);
+  color: var(--mc-text);
+  cursor: pointer;
+  flex-shrink: 0;
+}
+
+.date-navigator-btn:hover {
+  background: var(--mc-primary);
+  color: #fff;
+  border-color: var(--mc-primary);
+}
+
+.date-navigator-btn:focus-visible {
+  outline: 2px solid var(--mc-primary);
+  outline-offset: 1px;
+}
+
+input[type="checkbox"]:focus-visible,
+input[type="radio"]:focus-visible {
+  outline: 2px solid var(--mc-primary);
+  outline-offset: 1px;
+}
+
+/* ---------- searchable select ---------- */
+.searchable-select {
+  position: relative;
+  width: 100%;
+}
+
+.searchable-select-trigger {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+  padding: 0.55rem 0.85rem;
+  border: 1px solid var(--mc-border);
+  border-radius: 8px;
+  background: var(--mc-white);
+  font-size: 0.9rem;
+  color: var(--mc-text);
+  cursor: pointer;
+  text-align: left;
+}
+
+.searchable-select-filled {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+}
+
+.searchable-select-filled .searchable-select-trigger {
+  flex: 1;
+  min-width: 0;
+}
+
+.searchable-select-clear {
+  flex-shrink: 0;
+  width: 1.9rem;
+  height: 1.9rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid var(--mc-border);
+  border-radius: 8px;
+  background: var(--mc-white);
+  color: var(--mc-muted);
+  font-size: 1.1rem;
+  line-height: 1;
+  cursor: pointer;
+}
+
+.searchable-select-clear:hover {
+  color: var(--mc-danger, #c0392b);
+  border-color: var(--mc-danger, #c0392b);
+}
+
+.searchable-select-value {
+  display: flex;
+  flex-direction: column;
+  gap: 0.1rem;
+  min-width: 0;
+}
+
+.searchable-select-label {
+  font-weight: 600;
+}
+
+.searchable-select-sublabel {
+  font-size: 0.78rem;
+  color: var(--mc-muted);
+}
+
+/* Reuses the searchable-select label/sublabel pattern inside a data-table
+   cell, per DESIGN.md's own note that this pattern is meant to disambiguate
+   a person in the table itself, not just in pickers. */
+.cell-sublabel {
+  display: block;
+  font-size: 0.78rem;
+  color: var(--mc-muted);
+  margin-top: 0.1rem;
+}
+
+.searchable-select-caret {
+  color: var(--mc-muted);
+}
+
+.searchable-select-input-wrap {
+  position: relative;
+}
+
+.searchable-select-input {
+  width: 100%;
+  padding: 0.55rem 0.85rem;
+  border: 1px solid var(--mc-border);
+  border-radius: 8px;
+  font-size: 0.9rem;
+  background: var(--mc-white);
+}
+
+.searchable-select-list {
+  position: absolute;
+  top: calc(100% + 4px);
+  left: 0;
+  right: 0;
+  z-index: 40;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  max-height: 240px;
+  overflow-y: auto;
+  background: var(--mc-white);
+  border: 1px solid var(--mc-border);
+  border-radius: 8px;
+  box-shadow: 0 4px 14px rgba(13, 33, 55, 0.12);
+}
+
+.searchable-select-list li {
+  padding: 0;
+}
+
+.searchable-select-list li.muted {
+  padding: 0.55rem 0.85rem;
+  font-size: 0.85rem;
+}
+
+.searchable-select-option {
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  gap: 0.1rem;
+  padding: 0.55rem 0.85rem;
+  border: none;
+  background: none;
+  text-align: left;
+  cursor: pointer;
+  font-size: 0.9rem;
+  color: var(--mc-text);
+}
+
+.searchable-select-option:hover {
+  background: var(--mc-lightest);
+}
+
+.searchable-select-option-sublabel {
+  font-size: 0.78rem;
+  color: var(--mc-muted);
+}
+
+
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+.masked-value {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+  color: var(--mc-muted);
+  cursor: help;
+}
+
+.masked-value-icon {
+  flex-shrink: 0;
+}
+
+.services-cell {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 0.3rem;
+}
+
+.service-chip-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.3rem;
+}
+
+.service-chip {
+  display: inline-block;
+  border-radius: 999px;
+  padding: 0.15rem 0.6rem;
+  font-size: 0.75rem;
+  background: var(--mc-lightest);
+  color: var(--mc-text);
+  white-space: nowrap;
+}
+
+.service-chip-toggle {
+  appearance: none;
+  background: transparent;
+  border: 1px dashed var(--mc-border);
+  color: var(--mc-primary-dark);
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.2rem;
+  font-family: inherit;
+}
+
+.service-chip-toggle:hover {
+  background: var(--mc-lightest);
+  border-color: var(--mc-primary);
+}
+
+.service-chip-toggle:focus-visible {
+  outline: 2px solid var(--mc-primary-dark);
+  outline-offset: 1px;
+}
+
+.service-chip-toggle-caret {
+  font-size: 0.65rem;
+}
+
+.service-chip-list-overflow {
+  width: 100%;
+  animation: chip-list-reveal 150ms ease-out;
+}
+
+@keyframes chip-list-reveal {
+  from {
+    opacity: 0;
+    transform: translateY(-2px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* Nested inside .field (unlike Rooms.tsx's own page-level .list-toolbar
+   select), so .field select's width:100% must be reset here or the type
+   filter fights the flex row for space against the search bar. */
+.service-picker-toolbar select {
+  width: auto;
+  flex-shrink: 0;
+}
+
+.service-checkbox-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+  max-height: 220px;
+  overflow-y: auto;
+  border: 1px solid var(--mc-border);
+  border-radius: 8px;
+  padding: 0.65rem 0.75rem;
+}
+
+.service-checkbox-row {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.5rem;
+  padding: 0.2rem 0;
+  min-height: 44px;
+  font-size: 0.9rem;
+}
+
+.service-checkbox-row input[type="checkbox"] {
+  width: auto;
+  padding: 0;
+  border: none;
+  border-radius: 0;
+  flex-shrink: 0;
+  margin-top: 0.15rem;
+}
+
+.service-checkbox-info {
+  display: flex;
+  flex-direction: column;
+  gap: 0.05rem;
+}
+
+.service-checkbox-simon {
+  color: var(--mc-muted);
+  font-size: 0.8rem;
+  font-variant-numeric: tabular-nums;
+}
+
+.field-error {
+  display: block;
+  color: var(--mc-danger);
+  font-size: 0.78rem;
+  margin-top: 0.25rem;
+}
+
+.form-error {
+  color: var(--mc-danger);
+  font-size: 0.85rem;
+  margin: 0.75rem 0 0;
+  border: 1px solid var(--mc-danger);
+  border-radius: 6px;
+  padding: 0.5rem 0.6rem;
+  white-space: pre-line;
+}
+
+.pagination {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.35rem;
+  margin: 0.75rem 0;
+}
+
+.pagination-nav {
+  display: contents;
+}
+
+.pagination-size {
+  padding: 0.25rem 0.4rem;
+  border: 1px solid var(--mc-border);
+  border-radius: 6px;
+  font-size: 0.8rem;
+  background: var(--mc-white);
+  color: var(--mc-text);
+}
+
+.pagination .btn {
+  min-width: 2.3rem;
+}
+
+.pagination-ellipsis {
+  color: var(--mc-muted);
+  padding: 0 0.15rem;
+}
+
+.pagination-info {
+  margin-left: auto;
+  color: var(--mc-muted);
+  font-size: 0.85rem;
+}
+
+/* ---------- misc ---------- */
+.muted {
+  color: var(--mc-muted);
+}
+
+.text-muted {
+  color: var(--mc-muted);
+}
+
+.page-center {
+  display: grid;
+  place-items: center;
+  min-height: 40vh;
+}
+
+.stat-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 1rem;
+}
+
+.stat-card {
+  background: var(--mc-white);
+  border: none;
+  border-radius: 12px;
+  padding: 1.25rem;
+  box-shadow: 0 2px 10px rgba(27, 94, 32, 0.08);
+  width: 100%;
+  text-align: left;
+  font: inherit;
+  cursor: pointer;
+}
+
+.stat-card:hover {
+  box-shadow: 0 4px 14px rgba(13, 33, 55, 0.12);
+}
+
+.stat-card:focus-visible {
+  outline: 2px solid var(--mc-primary);
+  outline-offset: 2px;
+}
+
+.stat-card strong {
+  display: block;
+  font-size: 2rem;
+  color: var(--mc-primary-dark);
+}
+
+.stat-card span {
+  color: var(--mc-muted);
+  font-size: 0.85rem;
+}
+
+.dashboard-date {
+  font-size: 0.85rem;
+  text-transform: capitalize;
+}
+
+.dashboard-overview-heading {
+  margin: 0 0 0.75rem;
+  font-size: 1rem;
+  color: var(--mc-primary-dark);
+}
+
+.dashboard-today {
+  background: var(--mc-white);
+  border-radius: 12px;
+  padding: 1.25rem;
+  box-shadow: 0 2px 10px rgba(27, 94, 32, 0.08);
+  margin-top: 1rem;
+}
+
+.dashboard-today h3 {
+  margin: 0 0 0.75rem;
+  font-size: 1rem;
+  color: var(--mc-primary-dark);
+}
+
+.dashboard-today-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.dashboard-today-item {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.5rem 0;
+  border-bottom: 1px solid var(--mc-border);
+}
+
+.dashboard-today-item:last-child {
+  border-bottom: none;
+}
+
+.dashboard-today-time {
+  font-variant-numeric: tabular-nums;
+  color: var(--mc-muted);
+  min-width: 3.5rem;
+}
+
+.dashboard-today-details {
+  flex: 1;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.25rem 1rem;
+}
+
+.dashboard-today-field {
+  display: flex;
+  align-items: baseline;
+  gap: 0.35rem;
+  font-size: 0.9rem;
+}
+
+.dashboard-today-label {
+  font-size: 0.72rem;
+  text-transform: uppercase;
+  letter-spacing: 0.02em;
+  color: var(--mc-muted);
+}
+
+.badge {
+  border-radius: 999px;
+  padding: 0.15rem 0.6rem;
+  font-size: 0.75rem;
+  color: #fff;
+}
+
+.status-scheduled { background: var(--mc-status-scheduled); }
+.status-confirmed { background: #00897b; }
+.status-completed { background: var(--mc-primary); }
+.status-cancelled { background: var(--mc-danger); }
+.status-no_show { background: var(--mc-status-no-show); }
+.status-active { background: var(--mc-primary-dark); }
+.status-inactive { background: var(--mc-muted); }
+.status-locked { background: #ef6c00; }
+.status-draft { background: var(--mc-muted); }
+.status-pending { background: var(--mc-primary); }
+.status-routine { background: var(--mc-muted); }
+.status-urgent { background: #ef6c00; }
+.status-emergency { background: var(--mc-danger); }
+
+.show-inactive-toggle {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  min-height: 44px;
+  font-size: 0.9rem;
+  color: var(--mc-muted);
+  white-space: nowrap;
+}
+
+/* Not `.field` -- that class's `input { width: 100% }` rule stretches a
+   checkbox input just as much as a text input, which shoves this row's
+   label text far to the right of the (now huge) checkbox. */
+.whatsapp-opt-in-field {
+  margin-bottom: 0.9rem;
+}
+
+/* ---------- touch-label: generic checkbox/radio hit-area fix ---------- */
+/* Native checkbox/radio boxes render ~13px, well under the 44px touch
+   target guideline (WCAG 2.5.5). Clicking anywhere in a <label> activates
+   its wrapped input, so growing the label's own box is a real fix, not
+   just visual spacing -- the checkbox/radio itself keeps its normal
+   visual size. Applied to every bare (unstyled) checkbox/radio label in
+   the app; named wrapper classes (.show-inactive-toggle, .habit-switch,
+   .service-checkbox-row, .line-coverage-toggle, .form-section
+   .radio-group label) get the same min-height added directly instead. */
+.touch-label {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  min-height: 44px;
+}
+
+.kv-grid {
+  display: grid;
+  gap: 0.5rem;
+  margin-bottom: 0.5rem;
+}
+
+.encounter-summary-card {
+  background: var(--mc-surface-alt, #f4f7f5);
+  border: 1px solid var(--mc-border);
+  border-radius: 8px;
+  padding: 0.75rem 1rem;
+  margin-bottom: 1rem;
+}
+
+.encounter-alert {
+  color: var(--mc-danger);
+  font-weight: 600;
+}
+
+.under-construction-banner {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.6rem;
+  color: var(--mc-warning-text);
+  background: var(--mc-warning-bg);
+  border: 1px solid var(--mc-warning);
+  border-radius: 8px;
+  padding: 0.65rem 0.9rem;
+  margin: 0 0 1.25rem;
+  font-size: 0.85rem;
+  line-height: 1.45;
+}
+
+.under-construction-banner svg {
+  flex-shrink: 0;
+  color: var(--mc-warning);
+  margin-top: 0.1rem;
+}
+
+.encounter-alert-warning {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.4rem;
+  color: var(--mc-warning-text);
+  background: var(--mc-warning-bg);
+  border: 1px solid var(--mc-warning);
+  border-radius: 6px;
+  padding: 0.5rem 0.6rem;
+  margin: 0 0 0.75rem;
+  font-size: 0.85rem;
+  font-weight: 500;
+}
+
+.encounter-alert-warning::before {
+  content: "⚠";
+  line-height: 1.3;
+  color: var(--mc-warning);
+}
+
+.patient-confirm-card {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+  border: 1px solid var(--mc-border);
+  border-radius: 10px;
+  padding: 0.75rem 0.9rem;
+  margin: 0.6rem 0 0.9rem;
+  background: var(--mc-lightest);
+}
+
+.patient-confirm-name {
+  font-weight: 700;
+  color: var(--mc-primary-dark);
+}
+
+.patient-confirm-meta {
+  font-size: 0.85rem;
+  color: var(--mc-muted);
+}
+
+.patient-confirm-badges {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+}
+
+.patient-confirm-badge {
+  font-size: 0.75rem;
+  font-weight: 700;
+  padding: 0.15rem 0.55rem;
+  border-radius: 999px;
+  background: var(--mc-white);
+  color: var(--mc-primary-dark);
+  border: 1px solid var(--mc-border);
+}
+
+.patient-confirm-badge-alert {
+  font-size: 0.75rem;
+  font-weight: 700;
+  padding: 0.15rem 0.55rem;
+  border-radius: 999px;
+  background: var(--mc-warning-bg);
+  color: var(--mc-warning-text);
+  border: 1px solid var(--mc-warning);
+}
+
+.encounter-line-card {
+  border: 1px solid var(--mc-border);
+  border-radius: 10px;
+  padding: 0.9rem 1rem 0.6rem;
+  margin-bottom: 0.75rem;
+  background: var(--mc-white);
+}
+
+.encounter-line-card-header {
+  display: flex;
+  align-items: flex-end;
+  gap: 0.65rem;
+  margin-bottom: 0.6rem;
+}
+
+.encounter-line-card-header .field {
+  flex: 1;
+  min-width: 0;
+  margin-bottom: 0;
+}
+
+.encounter-line-card-header .btn {
+  flex-shrink: 0;
+}
+
+.encounter-line-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr 1fr;
+  gap: 0 1rem;
+}
+
+.encounter-line-grid .field {
+  margin-bottom: 0.6rem;
+}
+
+.encounter-line-footer {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 0.75rem 1.25rem;
+  padding-top: 0.15rem;
+  border-top: 1px dashed var(--mc-border);
+  margin-top: 0.15rem;
+}
+
+.encounter-line-footer .field {
+  flex: 1;
+  min-width: 160px;
+  margin-bottom: 0.6rem;
+}
+
+@media (max-width: 640px) {
+  .encounter-line-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+.line-coverage-toggle {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  min-height: 44px;
+  font-size: 0.85rem;
+  color: var(--mc-text);
+  font-weight: 600;
+  white-space: nowrap;
+  padding-top: 0.55rem;
+}
+
+.line-coverage-toggle input {
+  accent-color: var(--mc-primary);
+}
+
+.encounter-detail-badges {
+  display: flex;
+  gap: 0.5rem;
+  margin-bottom: 1rem;
+}
+
+.encounter-inline-badge {
+  margin-left: 0.5rem;
+  vertical-align: middle;
+}
+
+.program-editor {
+  width: 100%;
+}
+
+.program-row {
+  display: flex;
+  gap: 0.5rem;
+  margin-bottom: 0.5rem;
+}
+
+.program-row input {
+  flex: 1;
+}
+
+.log-list {
+  display: grid;
+  gap: 0.75rem;
+  margin: 0.5rem 0;
+}
+
+.log-entry {
+  background: var(--mc-lightest);
+  border-radius: 8px;
+  padding: 0.6rem 0.9rem;
+  font-size: 0.85rem;
+}
+
+.log-form {
+  margin-top: 0.5rem;
+  border-top: 1px dashed var(--mc-border);
+  padding-top: 0.75rem;
+}
+
+/* ---------- toast ---------- */
+.toast-host {
+  position: fixed;
+  right: 1.25rem;
+  bottom: 1.25rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  z-index: 1000;
+}
+
+.toast {
+  background: var(--mc-primary-dark);
+  color: #fff;
+  padding: 0.6rem 1rem;
+  border-radius: 8px;
+  font-size: 0.85rem;
+  box-shadow: 0 4px 14px rgba(13, 33, 55, 0.25);
+  animation: toast-in 150ms ease-out;
+}
+
+/* ---------- settings page ---------- */
+.settings-title {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.6rem;
+}
+
+.settings-readonly-badge {
+  background: var(--mc-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+  font-size: 0.65rem;
+}
+
+.settings-readonly-notice {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.5rem;
+  background: var(--mc-white);
+  border: 1px solid var(--mc-border);
+  color: var(--mc-muted);
+  border-radius: 8px;
+  padding: 0.65rem 0.9rem;
+  font-size: 0.85rem;
+  line-height: 1.45;
+  margin: 0 0 1.25rem;
+}
+
+.settings-readonly-notice svg {
+  flex-shrink: 0;
+  margin-top: 0.15rem;
+}
+
+.settings-section {
+  background: var(--mc-white);
+  border: 1px solid var(--mc-border);
+  border-radius: 12px;
+  padding: 1.25rem 1.35rem 1.5rem;
+  margin-bottom: 1.1rem;
+}
+
+.settings-section-title {
+  margin: 0 0 1.1rem;
+  font-size: 0.95rem;
+  font-weight: 700;
+  letter-spacing: 0.01em;
+  color: var(--mc-text);
+  padding-bottom: 0.6rem;
+  border-bottom: 1px solid var(--mc-border);
+}
+
+.settings-field-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 1.35rem 1.75rem;
+}
+
+.settings-field label.settings-field-label {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: var(--mc-text);
+  margin-bottom: 0.4rem;
+}
+
+.settings-field-changed-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--mc-warning);
+  flex-shrink: 0;
+}
+
+.settings-field input {
+  width: 9rem;
+  padding: 0.5rem 0.65rem;
+  border: 1px solid var(--mc-border);
+  border-radius: 8px;
+  font-size: 0.9rem;
+  font-variant-numeric: tabular-nums;
+  background: var(--mc-white);
+  color: var(--mc-text);
+  transition: border-color 120ms ease, box-shadow 120ms ease;
+}
+
+.settings-field input:disabled {
+  background: var(--mc-lightest);
+  color: var(--mc-muted);
+  cursor: not-allowed;
+}
+
+.settings-field input:focus-visible {
+  outline: none;
+  border-color: var(--mc-primary);
+  box-shadow: 0 0 0 3px rgba(46, 125, 50, 0.18);
+}
+
+.settings-field input[aria-invalid="true"] {
+  border-color: var(--mc-danger);
+}
+
+.settings-field .lang-switch {
+  width: 9rem;
+  padding: 0.5rem 0.65rem;
+  border: 1px solid var(--mc-border);
+  border-radius: 8px;
+  font-size: 0.9rem;
+  transition: border-color 120ms ease, box-shadow 120ms ease;
+}
+
+.settings-field .lang-switch:disabled {
+  background: var(--mc-lightest);
+  color: var(--mc-muted);
+  cursor: not-allowed;
+}
+
+.settings-field .lang-switch:focus-visible {
+  outline: none;
+  border-color: var(--mc-primary);
+  box-shadow: 0 0 0 3px rgba(46, 125, 50, 0.18);
+}
+
+.settings-field-help {
+  font-size: 0.78rem;
+  color: var(--mc-muted);
+  margin: 0.45rem 0 0;
+  line-height: 1.45;
+  max-width: 42ch;
+}
+
+.settings-field-range {
+  white-space: nowrap;
+}
+
+.settings-field-warning {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.4rem;
+  font-size: 0.78rem;
+  color: var(--mc-warning-text);
+  background: var(--mc-warning-bg);
+  border-radius: 6px;
+  padding: 0.4rem 0.6rem;
+  margin: 0.5rem 0 0;
+  line-height: 1.45;
+  max-width: 42ch;
+}
+
+.settings-field-warning svg {
+  flex-shrink: 0;
+  color: var(--mc-warning);
+  margin-top: 0.15rem;
+}
+
+.settings-field-error {
+  font-size: 0.78rem;
+  color: var(--mc-danger);
+  margin: 0.4rem 0 0;
+}
+
+.settings-footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  flex-wrap: wrap;
+  position: sticky;
+  bottom: 0;
+  z-index: 5;
+  background: var(--mc-lightest);
+  border-top: 1px solid var(--mc-border);
+  padding: 0.85rem 0 0.25rem;
+  margin-top: 0.25rem;
+}
+
+.settings-updated-at {
+  font-size: 0.8rem;
+}
+
+.settings-footer-actions {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+}
+
+.settings-footer-actions .form-error {
+  margin: 0;
+}
+
+@keyframes toast-in {
+  from {
+    opacity: 0;
+    transform: translateY(6px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* ---------- Tabs (shared primitive, first used by Expedientes Médicos) ---------- */
+
+.tabs {
+  display: flex;
+  gap: 0.25rem;
+  border-bottom: 1px solid var(--mc-border);
+  margin: 1rem 0 1rem;
+  overflow-x: auto;
+}
+
+.tab {
+  appearance: none;
+  background: none;
+  border: none;
+  border-bottom: 2px solid transparent;
+  padding: 0.6rem 0.9rem;
+  min-height: 44px;
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: var(--mc-muted);
+  cursor: pointer;
+  white-space: nowrap;
+}
+
+.tab:hover {
+  color: var(--mc-primary-dark);
+}
+
+.tab.active {
+  color: var(--mc-primary-dark);
+  border-bottom-color: var(--mc-primary);
+}
+
+.tab:focus-visible {
+  outline: 2px solid var(--mc-primary);
+  outline-offset: -2px;
+}
+
+.tab-panel {
+  outline: none;
+}
+
+/* ---------- Expediente snapshot header ---------- */
+
+.record-snapshot {
+  background: var(--mc-lightest);
+  border: 1px solid var(--mc-border);
+  border-radius: 10px;
+  padding: 0.9rem 1.1rem;
+  margin-bottom: 1rem;
+}
+
+.record-snapshot-name {
+  margin: 0 0 0.6rem;
+  color: var(--mc-primary-dark);
+}
+
+.record-snapshot-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+  gap: 0.5rem 1.5rem;
+}
+
+.record-snapshot-item {
+  font-size: 0.85rem;
+}
+
+.record-snapshot-label {
+  display: block;
+  color: var(--mc-muted);
+  font-size: 0.75rem;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+}
+
+.record-snapshot-value {
+  font-weight: 600;
+}
+
+.record-guardian-section {
+  margin-top: 0.9rem;
+  padding-top: 0.75rem;
+  border-top: 1px dashed var(--mc-border);
+}
+
+.record-guardian-list {
+  display: grid;
+  gap: 0.4rem;
+}
+
+.record-guardian-row {
+  font-size: 0.85rem;
+}
+
+/* ---------- AP (antecedentes patológicos) chip multi-select ---------- */
+
+.ap-multiselect {
+  display: grid;
+  gap: 0.9rem;
+}
+
+.ap-category-group {
+  display: grid;
+  gap: 0.4rem;
+}
+
+.ap-category-name {
+  margin: 0;
+  font-size: 0.8rem;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+  color: var(--mc-muted);
+}
+
+.ap-chip-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.45rem;
+}
+
+.ap-chip {
+  appearance: none;
+  border: 1px solid var(--mc-border);
+  background: var(--mc-white);
+  color: var(--mc-text);
+  border-radius: 999px;
+  padding: 0.4rem 0.85rem;
+  min-height: 36px;
+  font-size: 0.85rem;
+  cursor: pointer;
+  white-space: nowrap;
+}
+
+.ap-chip:hover:not(:disabled) {
+  border-color: var(--mc-primary);
+}
+
+.ap-chip:disabled {
+  cursor: not-allowed;
+  opacity: 0.7;
+}
+
+.ap-chip.selected {
+  background: var(--mc-primary);
+  border-color: var(--mc-primary);
+  color: #fff;
+}
+
+.ap-chip:focus-visible {
+  outline: 2px solid var(--mc-primary-dark);
+  outline-offset: 1px;
+}
+
+.ap-custom-add {
+  display: flex;
+  gap: 0.5rem;
+  align-items: center;
+}
+
+.ap-custom-add input {
+  flex: 1;
+  max-width: 260px;
+}
+
+.ap-empty-note {
+  color: var(--mc-muted);
+  font-size: 0.85rem;
+}
+
+.ap-section-summary {
+  margin-bottom: 0.5rem;
+}
+
+.ap-section-toggle-row {
+  margin-bottom: 0.75rem;
+}
+
+/* ---------- Family AP (heredofamiliares) rows ---------- */
+
+.record-family-list {
+  display: grid;
+  gap: 0.6rem;
+  margin-bottom: 0.75rem;
+}
+
+.record-family-row {
+  background: var(--mc-lightest);
+  border-radius: 8px;
+  padding: 0.5rem 0.8rem;
+  font-size: 0.85rem;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.record-family-row-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+}
+
+.record-family-add {
+  border: 1px dashed var(--mc-border);
+  border-radius: 8px;
+  padding: 0.75rem 0.9rem;
+  margin-bottom: 0.75rem;
+}
+
+/* ---------- Datos clínicos + Conclusiones ---------- */
+/* Formerly a standalone .clinical-theme pilot restyle
+   (Requirements/Datos_Conclusiones/datos_conclusiones_mockup.html); folded
+   into .mc-form as part of the system-wide rollout. --dc-* tokens match
+   --hist-*'s values exactly -- do not alias. */
+
+.mc-form {
+  --dc-green: #1f7a3a;
+  --dc-soft: #e7f6ec;
+  --dc-wash: #f3faf5;
+  --dc-line: #d7e3d9;
+  --dc-muted: #5c6b60;
+  --dc-text: #1c2a20;
+}
+
+/* ---- Signos vitales ---- */
+
+.mc-form .dc-section-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 8px;
+  margin: 10px 0 4px;
+}
+
+.mc-form .dc-section-row h4 {
+  margin: 0;
+  color: var(--dc-green);
+  font-size: 16px;
+}
+
+.mc-form .dc-ghost-btn {
+  background: #fff;
+  border: 1px solid var(--dc-green);
+  color: var(--dc-green);
+  border-radius: 8px;
+  padding: 7px 12px;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.mc-form .dc-card {
+  border: 1px solid var(--dc-line);
+  border-radius: 10px;
+  padding: 14px 16px;
+  margin: 0 0 16px;
+  background: #fff;
+  color: var(--dc-text);
+}
+
+.mc-form .dc-mini-grid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 8px;
+}
+
+@media (max-width: 900px) {
+  .mc-form .dc-mini-grid { grid-template-columns: repeat(2, 1fr); }
+}
+@media (max-width: 560px) {
+  .mc-form .dc-mini-grid { grid-template-columns: 1fr; }
+}
+
+.mc-form .dc-mini-cell {
+  background: #fff;
+  border: 1px solid var(--dc-line);
+  border-radius: 8px;
+  padding: 6px 8px;
+}
+
+.mc-form .dc-mini-cell em {
+  display: block;
+  font-style: normal;
+  font-size: 11px;
+  color: var(--dc-muted);
+}
+
+.mc-form .dc-mini-cell b {
+  font-size: 14px;
+  color: var(--dc-text);
+}
+
+.mc-form .dc-vitals-grid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 10px;
+}
+
+@media (max-width: 900px) {
+  .mc-form .dc-vitals-grid { grid-template-columns: repeat(2, 1fr); }
+}
+@media (max-width: 560px) {
+  .mc-form .dc-vitals-grid { grid-template-columns: 1fr; }
+}
+
+.mc-form .dc-vitals-grid label.field span {
+  font-size: 12px;
+  color: var(--dc-muted);
+  font-weight: 700;
+}
+
+.mc-form .dc-vitals-grid input {
+  border: 1px solid var(--dc-line);
+  border-radius: 8px;
+  padding: 8px 10px;
+  color: var(--dc-text);
+}
+
+.mc-form .dc-ta-inputs {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.mc-form .dc-ta-inputs input {
+  width: 72px;
+}
+
+.mc-form .dc-vitals-notes {
+  margin-top: 10px;
+}
+
+.mc-form .dc-vitals-notes textarea {
+  width: 100%;
+  resize: vertical;
+  min-height: 72px;
+  border: 1px solid var(--dc-line);
+  border-radius: 8px;
+  padding: 8px 10px;
+  color: var(--dc-text);
+}
+
+.mc-form .dc-badge {
+  display: inline-block;
+  margin-top: 10px;
+  background: var(--dc-soft);
+  color: var(--dc-green);
+  font-weight: 800;
+  padding: 4px 8px;
+  border-radius: 6px;
+}
+
+/* ---- Imágenes ---- */
+
+.mc-form .dc-gallery {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+  margin-top: 4px;
+}
+
+.mc-form .dc-thumb {
+  width: 128px;
+  position: relative;
+}
+
+.mc-form .dc-thumb img {
+  width: 128px;
+  height: 128px;
+  object-fit: cover;
+  border-radius: 8px;
+  border: 1px solid var(--dc-line);
+  background: #ddd;
+  display: block;
+}
+
+.mc-form .dc-thumb .dc-cap {
+  font-size: 12px;
+  font-weight: 700;
+  margin-top: 4px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  color: var(--dc-text);
+}
+
+.mc-form .dc-thumb .dc-when {
+  font-size: 11px;
+  color: var(--dc-muted);
+}
+
+.mc-form .dc-thumb-actions {
+  position: absolute;
+  inset: 0;
+  bottom: 40px;
+  display: none;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  background: rgba(28, 42, 32, 0.55);
+  border-radius: 8px;
+}
+
+.mc-form .dc-thumb:hover .dc-thumb-actions {
+  display: flex;
+}
+
+.mc-form .dc-thumb-actions button {
+  border: 0;
+  border-radius: 6px;
+  padding: 4px 8px;
+  font-size: 12px;
+  font-weight: 700;
+  cursor: pointer;
+  background: #fff;
+  color: var(--dc-text);
+}
+
+.mc-form .dc-add-tile {
+  width: 128px;
+  height: 128px;
+  border: 1.5px dashed var(--dc-green);
+  border-radius: 8px;
+  display: grid;
+  place-items: center;
+  color: var(--dc-green);
+  font-weight: 800;
+  cursor: pointer;
+  background: var(--dc-wash);
+  font-size: 24px;
+}
+
+.mc-form .dc-empty-gallery {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.mc-form .dc-empty-gallery p {
+  color: var(--dc-muted);
+  font-size: 13px;
+  margin: 0;
+}
+
+/* ---- Upload sheet ---- */
+
+.mc-form .dc-upload-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 0;
+}
+
+.mc-form .dc-upload-row img {
+  width: 56px;
+  height: 56px;
+  object-fit: cover;
+  border-radius: 6px;
+  border: 1px solid var(--dc-line);
+}
+
+.mc-form .dc-upload-row input[type="text"] {
+  flex: 1;
+  border: 1px solid var(--dc-line);
+  border-radius: 8px;
+  padding: 6px 8px;
+}
+
+.mc-form .dc-upload-status {
+  font-size: 12px;
+  color: var(--dc-muted);
+}
+
+.mc-form .dc-upload-status.error {
+  color: #b3261e;
+}
+
+/* ---- Conclusiones ---- */
+
+.mc-form .dc-concl-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 16px;
+}
+
+@media (max-width: 900px) {
+  .mc-form .dc-concl-grid { grid-template-columns: 1fr; }
+}
+
+.mc-form .dc-concl-grid label.field span,
+.mc-form .dc-observaciones label.field span {
+  font-size: 13px;
+  font-weight: 700;
+  color: #175a2c;
+}
+
+.mc-form .dc-concl-grid textarea {
+  min-height: 120px;
+  width: 100%;
+  resize: vertical;
+  border: 1px solid var(--dc-line);
+  border-radius: 8px;
+  padding: 8px 10px;
+  color: var(--dc-text);
+}
+
+.mc-form .dc-observaciones {
+  margin-top: 12px;
+}
+
+.mc-form .dc-observaciones textarea {
+  min-height: 140px;
+  width: 100%;
+  resize: vertical;
+  border: 1px solid var(--dc-line);
+  border-radius: 8px;
+  padding: 8px 10px;
+  color: var(--dc-text);
+}
+
+.mc-form .dc-help {
+  color: var(--dc-muted);
+  font-size: 12px;
+  margin-top: 4px;
+}
+
+/* ---------- Hábitos tab ---------- */
+/* Formerly a standalone .habits-theme pilot restyle
+   (Requirements/Habits/habitos_tab_mockup.html) with its own near-miss
+   green (#1f6b3a); folded into the shared .mc-form system-wide green
+   (#1f7a3a) as part of the full rollout -- do not reintroduce a separate
+   teal here. */
+
+.mc-form {
+  --hb-teal: #1f7a3a;
+  --hb-teal-dark: #175a2c;
+  --hb-teal-soft: #e7f6ec;
+  --hb-line: #d7e3d9;
+  --hb-muted: #5c6b60;
+  --hb-text: #1c2a20;
+  --hb-warn: #8a4b12;
+  --hb-warn-bg: #fff4e5;
+  --hb-ok: #1f7a3a;
+  --hb-ok-bg: #e7f6ec;
+  --hb-pill: #f3f7f4;
+  --hb-header-bg: #f4f7fa;
+  --hb-panel-bg: #fbfcfe;
+  --hb-white: #ffffff;
+}
+
+.habits-toolbar {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 0.75rem;
+  flex-wrap: wrap;
+  margin-bottom: 1rem;
+}
+
+.habits-chip-summary {
+  margin-top: 0.4rem;
+}
+
+.habits-draft-chip {
+  background: var(--hb-teal-soft);
+  color: var(--hb-teal);
+  border: 1px solid var(--hb-line);
+  border-radius: 999px;
+  padding: 0.3rem 0.7rem;
+  font-size: 0.8rem;
+  font-weight: 600;
+}
+
+.habits-columns {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1.25rem;
+}
+
+@media (max-width: 900px) {
+  .habits-columns {
+    grid-template-columns: 1fr;
+  }
+}
+
+.habit-column {
+  display: grid;
+  gap: 0.75rem;
+  align-content: start;
+}
+
+.mc-form .habit-column-card {
+  border: 1px solid var(--hb-line);
+  border-radius: 10px;
+  background: var(--hb-white);
+  overflow: hidden;
+}
+
+.mc-form .habit-column-header {
+  margin: 0;
+  padding: 10px 14px;
+  font-size: 12px;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--hb-teal);
+  background: var(--hb-header-bg);
+  border-bottom: 1px solid var(--hb-line);
+}
+
+.mc-form .habit-column-body {
+  display: grid;
+  gap: 0.75rem;
+  padding: 0.75rem;
+}
+
+.habit-card {
+  border: 1px solid var(--hb-line);
+  border-radius: 10px;
+  padding: 0.9rem 1.1rem;
+  background: var(--hb-white);
+}
+
+.habit-card-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.6rem;
+  flex-wrap: wrap;
+}
+
+.mc-form .habit-card .name {
+  font-weight: 700;
+  color: var(--hb-teal);
+}
+
+.mc-form .habit-card .date {
+  color: var(--hb-muted);
+  font-size: 11px;
+}
+
+.habit-status-group {
+  display: inline-flex;
+  gap: 0.35rem;
+  flex-wrap: wrap;
+}
+
+.habit-status-pill {
+  appearance: none;
+  border: 1px solid var(--hb-line);
+  background: var(--hb-pill);
+  color: var(--hb-muted);
+  font-weight: 600;
+  border-radius: 999px;
+  padding: 0.3rem 0.7rem;
+  min-height: 32px;
+  font-size: 0.8rem;
+  cursor: pointer;
+  white-space: nowrap;
+}
+
+.habit-status-pill:hover:not(:disabled) {
+  border-color: var(--hb-teal);
+}
+
+.habit-status-pill:disabled {
+  cursor: not-allowed;
+  opacity: 0.7;
+}
+
+.habit-status-pill.selected {
+  background: var(--hb-teal);
+  border-color: var(--hb-teal);
+  color: #fff;
+}
+
+.habit-status-pill.selected.warn {
+  background: var(--hb-warn);
+  border-color: var(--hb-warn);
+  color: #fff;
+}
+
+.habit-status-pill:focus-visible {
+  outline: 2px solid var(--hb-teal-dark);
+  outline-offset: 1px;
+}
+
+.habit-detail-panel {
+  border-top: 1px dashed var(--hb-line);
+  margin-top: 0.75rem;
+  padding-top: 0.75rem;
+  display: grid;
+  gap: 0.6rem;
+  background: var(--hb-panel-bg);
+  border-radius: 0 0 10px 10px;
+  padding: 0.75rem 0.9rem;
+}
+
+.habit-detail-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+  gap: 0.6rem 1rem;
+}
+
+.habit-badge-info {
+  background: var(--hb-muted);
+  display: inline-block;
+  justify-self: start;
+}
+
+.mc-form .badge.habit-badge-info {
+  background: var(--hb-ok-bg);
+  color: var(--hb-ok);
+  border-radius: 6px;
+  font-weight: 700;
+}
+
+.habit-help-text {
+  font-size: 0.8rem;
+  color: var(--hb-muted);
+  margin: 0;
+}
+
+.habit-switch {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  min-height: 44px;
+  font-size: 0.85rem;
+  color: var(--hb-text);
+  font-weight: 600;
+}
+
+.habit-switch input {
+  accent-color: var(--hb-teal);
+}
+
+.habit-otro-row {
+  background: var(--hb-teal-soft);
+  border-radius: 8px;
+  padding: 0.5rem 0.8rem;
+  font-size: 0.85rem;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 0.75rem;
+  margin-bottom: 0.6rem;
+}
+
+.mc-form .habits-chip-summary .ap-chip.selected {
+  background: var(--hb-teal-soft);
+  color: var(--hb-teal);
+  border-color: var(--hb-teal-soft);
+  border-radius: 999px;
+  padding: 3px 10px;
+  font-size: 12px;
+  font-weight: 600;
+  min-height: 0;
+}
+
+.mc-form .habits-chip-summary .ap-chip.selected.warn {
+  background: var(--hb-warn-bg);
+  color: var(--hb-warn);
+  border-color: var(--hb-warn-bg);
+}
+
+.mc-form .habits-columns .ap-chip {
+  border: 1px dashed var(--hb-line);
+  background: var(--hb-white);
+  color: var(--hb-teal);
+  border-radius: 999px;
+  padding: 5px 10px;
+  font-size: 12px;
+  min-height: 0;
+  font-weight: 400;
+}
+
+.mc-form .habits-columns .ap-chip.selected {
+  background: var(--hb-teal-soft);
+  border: 1px solid var(--hb-teal);
+  color: var(--hb-teal);
+  font-weight: 700;
+}
+
+.mc-form .habits-columns .ap-chip:hover:not(:disabled) {
+  border-color: var(--hb-teal);
+}
+
+.mc-form .btn.ghost {
+  border: 1px solid var(--hb-line);
+  background: var(--hb-white);
+  border-radius: 8px;
+  color: var(--hb-teal);
+  font-weight: 600;
+}
+
+.mc-form .btn.primary {
+  background: var(--hb-teal);
+  border-radius: 8px;
+  font-weight: 700;
+  color: #fff;
+}
+
+.mc-form .btn.primary:hover {
+  background: var(--hb-teal-dark);
+}
+
+.mc-form .field span {
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--hb-muted);
+}
+
+.mc-form .field input,
+.mc-form .field select,
+.mc-form .field textarea {
+  border: 1px solid var(--hb-line);
+  border-radius: 6px;
+  color: var(--hb-text);
+}
+
+/* ---------- Conclusiones / draft ---------- */
+
+.draft-banner {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  flex-wrap: wrap;
+  background: var(--mc-warning-bg);
+  border: 1px solid var(--mc-warning);
+  color: var(--mc-warning-text);
+  border-radius: 8px;
+  padding: 0.6rem 0.9rem;
+  margin-bottom: 0.9rem;
+  font-size: 0.85rem;
+}
+
+.draft-banner-actions {
+  display: flex;
+  gap: 0.5rem;
+}
+
+/* ---------- Historial ---------- */
+/* Formerly a standalone .history-theme pilot restyle
+   (Requirements/HistoryTab/historial_tab_mockup.html); folded into
+   .mc-form as part of the system-wide rollout. --hist-* now matches
+   --hb- and --dc-'s green exactly (the pilots' near-miss greens were
+   merged into one system-wide palette). */
+
+.mc-form {
+  --hist-green: #1f7a3a;
+  --hist-green-soft: #e7f6ec;
+  --hist-green-wash: #f3faf5;
+  --hist-line: #d7e3d9;
+  --hist-muted: #5c6b60;
+  --hist-text: #1c2a20;
+}
+
+.mc-form.record-history-list {
+  display: block;
+}
+
+.mc-form .history-card {
+  border: 1px solid var(--hist-line);
+  border-radius: 10px;
+  padding: 14px 16px;
+  margin-bottom: 10px;
+  background: #fff;
+  color: var(--hist-text);
+}
+
+.mc-form .history-card.latest {
+  border: 2px solid var(--hist-green);
+  background: var(--hist-green-wash);
+}
+
+.mc-form .history-head {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  align-items: flex-start;
+}
+
+.mc-form .history-who {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  align-items: center;
+}
+
+.mc-form .history-chip {
+  border: 1px solid var(--hist-green);
+  color: var(--hist-green);
+  border-radius: 999px;
+  padding: 1px 8px;
+  font-size: 11px;
+  font-weight: 700;
+  background: #fff;
+}
+
+.mc-form .history-when {
+  color: var(--hist-muted);
+  font-size: 13px;
+}
+
+.mc-form .history-edit {
+  border: 1px solid var(--hist-green);
+  background: #fff;
+  color: var(--hist-green);
+  border-radius: 8px;
+  padding: 6px 10px;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.mc-form .history-changed {
+  margin: 8px 0 10px;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  align-items: center;
+}
+
+.mc-form .history-changed-lbl {
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--hist-muted);
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.mc-form .history-tag {
+  background: var(--hist-green-soft);
+  color: var(--hist-green);
+  border-radius: 999px;
+  padding: 2px 8px;
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.mc-form .history-tag.ghost {
+  background: #fff;
+  border: 1px solid var(--hist-line);
+  color: var(--hist-muted);
+}
+
+.mc-form .history-sec {
+  margin-top: 10px;
+}
+
+.mc-form .history-sec-lbl {
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--hist-muted);
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  margin-bottom: 6px;
+}
+
+.mc-form .history-vitals {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 8px;
+}
+
+@media (max-width: 720px) {
+  .mc-form .history-vitals {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+.mc-form .history-v {
+  background: #fff;
+  border: 1px solid var(--hist-line);
+  border-radius: 8px;
+  padding: 6px 8px;
+}
+
+.mc-form .history-card.latest .history-v {
+  border-color: #cfe6d5;
+}
+
+.mc-form .history-v em {
+  display: block;
+  font-style: normal;
+  font-size: 10px;
+  color: var(--hist-muted);
+  font-weight: 700;
+}
+
+.mc-form .history-v b {
+  font-size: 14px;
+}
+
+.mc-form .history-row-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.mc-form .history-dx {
+  font-size: 15px;
+}
+
+.mc-form .history-dx p {
+  margin: 0 0 4px;
+}
+
+.mc-form .k {
+  color: var(--hist-muted);
+  font-weight: 700;
+  font-size: 12px;
+}
+
+.mc-form .history-dx.compact p {
+  display: -webkit-box;
+  -webkit-line-clamp: 3;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+.mc-form .history-notes-line {
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+  font-size: 13px;
+  margin-top: 4px;
+}
+
+.mc-form .history-more {
+  margin-top: 10px;
+  background: transparent;
+  border: 0;
+  color: var(--hist-green);
+  font-weight: 700;
+  cursor: pointer;
+  padding: 0;
+}
+
+.mc-form .history-detail {
+  display: none;
+  margin-top: 12px;
+  padding-top: 12px;
+  border-top: 1px dashed var(--hist-line);
+}
+
+.mc-form .history-detail.open {
+  display: block;
+}
+
+.mc-form .history-muted {
+  color: var(--hist-muted);
+  font-size: 13px;
+}
+
+/* ---------- Recetas (prescriptions) ---------- */
+
+/* Read-only letterhead preview at the top of the Receta composer -- a
+   printed-document box, not a card-with-shadow: same border color/radius
+   tokens as inputs (--mc-border, 8px), not the elevated .dc-card treatment. */
+.receta-letterhead {
+  border: 1px solid var(--mc-border);
+  border-radius: 8px;
+  padding: 0.75rem 1rem;
+  margin-bottom: 1rem;
+  background: var(--mc-white);
+}
+
+.receta-letterhead-name {
+  font-weight: 700;
+  color: var(--mc-text);
+}
+
+.receta-letterhead-short {
+  color: var(--mc-primary-dark);
+  font-weight: 700;
+}
+
+.receta-letterhead-line {
+  color: var(--mc-muted);
+  font-size: 0.85rem;
+  margin-top: 0.15rem;
+}
+
+.receta-patient-info {
+  display: flex;
+  gap: 0.75rem;
+  align-items: baseline;
+  color: var(--mc-muted);
+  font-size: 0.85rem;
+  margin: 0.25rem 0 0.75rem;
+}
+
+.receta-lines {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  margin: 0.5rem 0 1rem;
+}
+
+.receta-line-card {
+  border: 1px solid var(--mc-border);
+  border-radius: 12px;
+  padding: 0.75rem 1rem;
+  background: var(--mc-white);
+}
+
+.receta-line-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 0.5rem;
+  margin-bottom: 0.5rem;
+}
+
+.receta-line-head span {
+  font-weight: 700;
+  color: var(--mc-muted);
+  font-size: 0.8rem;
+  text-transform: uppercase;
+  letter-spacing: 0.02em;
+}
+
+/* The line's collapse/expand control (§2) -- a plain button reset to read
+   as the same bold label the bare <span> used to be, just clickable. */
+.receta-line-toggle {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  background: none;
+  border: none;
+  padding: 0;
+  cursor: pointer;
+  font: inherit;
+  text-align: left;
+}
+
+.receta-line-label {
+  font-weight: 700;
+  color: var(--mc-muted);
+  font-size: 0.8rem;
+  text-transform: uppercase;
+  letter-spacing: 0.02em;
+}
+
+.receta-line-summary {
+  font-weight: 400;
+  text-transform: none;
+  letter-spacing: normal;
+  color: var(--mc-text);
+  font-size: 0.85rem;
+}
+
+.receta-line-actions {
+  display: flex;
+  gap: 0.25rem;
+}
+
+.receta-line-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.5rem 0.75rem;
+}
+
+@media (max-width: 720px) {
+  .receta-line-grid { grid-template-columns: 1fr; }
+}
+
+.dose-builder {
+  border-top: 1px dashed var(--mc-border);
+  margin-top: 0.5rem;
+  padding-top: 0.5rem;
+}
+
+.dose-builder-row {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.5rem 0.75rem;
+}
+
+@media (max-width: 720px) {
+  .dose-builder-row { grid-template-columns: 1fr; }
+}
+
+/* Live preview of the printed Dosis line -- reuses the Clinical Green
+   Lightest tint (--mc-lightest/--mc-primary-dark) already established for
+   inline success/preview boxes elsewhere, not a new hue. */
+.dose-builder-preview {
+  margin-top: 0.5rem;
+  background: var(--mc-lightest);
+  color: var(--mc-primary-dark);
+  border-radius: 8px;
+  padding: 0.5rem 0.75rem;
+  font-weight: 700;
+  font-size: 0.85rem;
+}
+
+.receta-cita-fields {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.5rem 0.75rem;
+}
+
+@media (max-width: 720px) {
+  .receta-cita-fields { grid-template-columns: 1fr; }
+}
+
+/* Recetas tab inside the Expediente modal -- dense list rows, mirroring
+   RecordHistoryList's row structure rather than the full Table component. */
+.recetas-tab-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.receta-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  border: 1px solid var(--mc-border);
+  border-radius: 12px;
+  padding: 0.6rem 0.85rem;
+  flex-wrap: wrap;
+}
+
+.receta-row-info {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  flex-wrap: wrap;
+  font-size: 0.88rem;
+}
+
+.receta-row-actions {
+  display: flex;
+  gap: 0.4rem;
+  flex-wrap: wrap;
+}
+
+.recetas-tab-empty {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.recetas-tab-empty p {
+  color: var(--mc-muted);
+  font-size: 0.88rem;
+  margin: 0;
+}
+
+/* ---------- Recetas visual system (adopted direction, see DESIGN.md) ----------
+   Shipped and permanent: adopts recetas_mockup.html's own palette/materials
+   (a brighter, more saturated green than Clinical Green, a navy letterhead
+   frame, pill-style buttons, bold field labels) for the Recetas composer/tab.
+   Per DESIGN.md's "Adopted Direction" section, this is the direction the
+   whole app is moving toward -- currently rolled out here only, with the
+   rest of the app's re-theme planned as separate future work. Scoped to
+   elements inside .receta-prototype (class name kept as-is; it no longer
+   means "prototype" in the throwaway sense) so today's rollout stays
+   contained to this one surface. */
+.receta-prototype {
+  --rx-g: #1f7a3a;
+  --rx-soft: #e7f6ec;
+  --rx-line: #d7e3d9;
+  --rx-muted: #5c6b60;
+  --rx-text: #1c2a20;
+  --rx-navy: #1a3a6b;
+  color: var(--rx-text);
+}
+
+.receta-prototype h4 {
+  color: var(--rx-g);
+}
+
+.receta-prototype .receta-letterhead {
+  border: 2px solid var(--rx-navy);
+  border-radius: 4px;
+  padding: 0.75rem 1rem;
+  background: var(--mc-white);
+}
+
+.receta-prototype .receta-letterhead-name {
+  color: var(--rx-navy);
+}
+
+.receta-prototype .receta-letterhead-short {
+  color: var(--rx-navy);
+}
+
+.receta-prototype .receta-letterhead-line {
+  color: var(--rx-muted);
+}
+
+.receta-prototype .receta-patient-info {
+  color: var(--rx-muted);
+}
+
+.receta-prototype .receta-line-card {
+  border: 1px solid var(--rx-line);
+  border-radius: 10px;
+  background: #fafcfa;
+}
+
+.receta-prototype .receta-line-head span {
+  color: var(--rx-muted);
+  text-transform: none;
+  letter-spacing: normal;
+  font-weight: 700;
+}
+
+/* `Field` (components/ui.tsx) renders <label class="field"><span>...</span>
+   ...</label> -- the base `.field span` rule sets an explicit color, which
+   an inherited color from a `label` selector can't override (only a rule
+   targeting the span itself can), so this must match the span directly. */
+.receta-prototype .field span,
+.receta-prototype label {
+  color: var(--rx-muted);
+  font-weight: 700;
+}
+
+.receta-prototype input,
+.receta-prototype select,
+.receta-prototype textarea {
+  border-color: var(--rx-line);
+  border-radius: 8px;
+}
+
+.receta-prototype input:focus,
+.receta-prototype select:focus,
+.receta-prototype textarea:focus {
+  border-color: var(--rx-g);
+  outline: 2px solid var(--rx-g);
+  outline-offset: 1px;
+}
+
+.receta-prototype .dose-builder {
+  border-top: 1px dashed var(--rx-line);
+}
+
+.receta-prototype .dose-builder-preview {
+  background: var(--rx-soft);
+  color: var(--rx-g);
+  border-radius: 8px;
+  font-weight: 700;
+}
+
+.receta-prototype .btn.primary {
+  background: var(--rx-g);
+  border-color: var(--rx-g);
+  color: #fff;
+  border-radius: 8px;
+  font-weight: 700;
+}
+
+.receta-prototype .btn.primary:hover {
+  filter: brightness(0.92);
+}
+
+.receta-prototype .btn.ghost {
+  background: #fff;
+  border: 1px solid var(--rx-g);
+  color: var(--rx-g);
+  border-radius: 8px;
+  font-weight: 700;
+}
+
+.receta-prototype .btn.ghost:hover {
+  background: var(--rx-soft);
+}
+
+.receta-prototype .receta-row {
+  border: 1px solid var(--rx-line);
+  border-radius: 10px;
+  background: #fafcfa;
+}
+
+.receta-prototype .badge.status-draft {
+  background: var(--rx-muted);
+}
+
+.receta-prototype .badge.status-completed {
+  background: var(--rx-g);
+}
+
+.receta-prototype .dc-ghost-btn {
+  border-color: var(--rx-g);
+  color: var(--rx-g);
+  border-radius: 8px;
+}
+
+/* PDF-file tile in the Archivos gallery -- same .dc-thumb container as an
+   image tile, but the icon replaces <img>. */
+.mc-form .dc-thumb-pdf {
+  width: 128px;
+  height: 128px;
+  border-radius: 8px;
+  border: 1px solid var(--dc-line);
+  background: var(--dc-wash);
+  display: grid;
+  place-items: center;
+  color: var(--dc-green);
+}
+
+.mc-form .dc-upload-row-pdf {
+  width: 56px;
+  height: 56px;
+  flex-shrink: 0;
+}
+
+/* ---------- .mc-form: system-wide form redesign ---------- */
+/* Permanent successor to the .receta-prototype/.clinical-theme/.habits-theme/
+   .history-theme pilots -- one shared token set + generic overrides for the
+   Field/SearchableSelect/DateField/.btn primitives everything already funnels
+   through, applied once on Dialog's own className (ui.tsx) so it cascades
+   into every FormModal/ConfirmDialog/bare Dialog with no per-page CSS. The
+   habits tab's near-miss #1f6b3a is intentionally folded into the single
+   #1f7a3a here (per rollout decision) -- do not reintroduce a separate teal. */
+
+.mc-form {
+  --mcf-g: #1f7a3a;
+  --mcf-g-dark: #175a2c;
+  --mcf-soft: #e7f6ec;
+  --mcf-line: #d7e3d9;
+  --mcf-muted: #5c6b60;
+  --mcf-text: #1c2a20;
+  --mcf-navy: #1a3a6b;
+  color: var(--mcf-text);
+}
+
+.mc-form h3,
+.mc-form h4 {
+  color: var(--mcf-g);
+}
+
+.mc-form .field span,
+.mc-form label {
+  color: var(--mcf-muted);
+  font-weight: 700;
+}
+
+.mc-form .field input,
+.mc-form .field select,
+.mc-form .field textarea,
+.mc-form .date-field input[type="text"],
+.mc-form .searchable-select-trigger,
+.mc-form .searchable-select-input {
+  border-color: var(--mcf-line);
+  color: var(--mcf-text);
+}
+
+.mc-form .field input:focus,
+.mc-form .field select:focus,
+.mc-form .field textarea:focus,
+.mc-form .date-field input[type="text"]:focus {
+  border-color: var(--mcf-g);
+  outline: 2px solid var(--mcf-g);
+}
+
+.mc-form .searchable-select-list {
+  border-color: var(--mcf-line);
+}
+
+.mc-form .searchable-select-option:hover {
+  background: var(--mcf-soft);
+}
+
+.mc-form .btn.primary {
+  background: var(--mcf-g);
+  border-color: var(--mcf-g);
+}
+
+.mc-form .btn.primary:hover {
+  background: var(--mcf-g-dark);
+}
+
+.mc-form .btn.ghost {
+  background: transparent;
+  border: 1px solid var(--mcf-g);
+  color: var(--mcf-g);
+}
+
+.mc-form .btn.ghost:hover {
+  background: var(--mcf-soft);
+}

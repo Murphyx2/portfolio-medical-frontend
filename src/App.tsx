@@ -1,0 +1,65 @@
+import type { ReactNode } from "react";
+import { Route, Routes } from "react-router-dom";
+
+import { Layout } from "./components/Layout";
+import { ProtectedRoute } from "./components/guards";
+import type { Resource } from "./utils/can";
+import { Appointments } from "./pages/Appointments";
+import { Centers } from "./pages/Centers";
+import { Dashboard } from "./pages/Dashboard";
+import { Doctors } from "./pages/Doctors";
+import { Login } from "./pages/Login";
+import { Medicines } from "./pages/Medicines";
+import { Patients } from "./pages/Patients";
+import { Records } from "./pages/Records";
+import { RecordApTypes } from "./pages/RecordApTypes";
+import { Rooms } from "./pages/Rooms";
+import { RoomTypes } from "./pages/RoomTypes";
+import { Settings } from "./pages/Settings";
+import { ServiceTypes } from "./pages/ServiceTypes";
+import { Services } from "./pages/Services";
+import { Users } from "./pages/Users";
+
+/**
+ * Data-driven route table. Each entry's `resource` (when present) is the
+ * single thing `ProtectedRoute` checks via `can(role, "view", resource)` --
+ * replaces the previous hand-written per-route JSX plus the page-local
+ * `RoleGate` wraps (Users, Centers, Records). Routes with no `resource`
+ * stay open to all authenticated roles, matching current nav/page behavior
+ * (Dashboard has no resource of its own).
+ */
+const ROUTES: { path: string; element: ReactNode; resource?: Resource }[] = [
+  { path: "/", element: <Dashboard /> },
+  { path: "/patients", element: <Patients />, resource: "patients" },
+  { path: "/doctors", element: <Doctors />, resource: "doctors" },
+  { path: "/centers", element: <Centers />, resource: "centers" },
+  { path: "/medicines", element: <Medicines />, resource: "medicines" },
+  { path: "/rooms", element: <Rooms />, resource: "rooms" },
+  { path: "/rooms/types", element: <RoomTypes />, resource: "roomTypes" },
+  { path: "/appointments", element: <Appointments />, resource: "appointments" },
+  { path: "/records", element: <Records />, resource: "records" },
+  { path: "/records/types", element: <RecordApTypes />, resource: "recordApTypes" },
+  { path: "/services", element: <Services />, resource: "services" },
+  { path: "/services/types", element: <ServiceTypes />, resource: "serviceTypes" },
+  { path: "/users", element: <Users />, resource: "users" },
+  { path: "/settings", element: <Settings />, resource: "settings" },
+];
+
+export default function App() {
+  return (
+    <Routes>
+      <Route path="/login" element={<Login />} />
+      {ROUTES.map(({ path, element, resource }) => (
+        <Route
+          key={path}
+          path={path}
+          element={
+            <ProtectedRoute resource={resource}>
+              <Layout>{element}</Layout>
+            </ProtectedRoute>
+          }
+        />
+      ))}
+    </Routes>
+  );
+}
